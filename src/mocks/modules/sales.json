@@ -1,0 +1,67 @@
+{
+  "sales": [
+    {
+      "id": "s-01",
+      "reference": "V-2026-000101",
+      "customerId": "c-01",
+      "customerName": "Mme Clarisse Dossou",
+      "status": "PARTIELLEMENT_PAYEE",
+      "totalAmount": 24300,
+      "discountTotal": 0,
+      "paidAmount": 10000,
+      "balanceDue": 14300,
+      "paymentMethod": "MOBILE_MONEY",
+      "createdAt": "2026-10-17T14:30:00Z",
+      "lines": [
+        {
+          "id": "sl-01",
+          "productId": "p-01",
+          "productName": "Riz Parfumé Royal 25kg",
+          "unitName": "Sac 25kg",
+          "quantity": 1,
+          "unitPriceApplied": 18500,
+          "discount": 0,
+          "costPriceSnapshot": 16500,
+          "total": 18500
+        },
+        {
+          "id": "sl-02",
+          "productId": "p-02",
+          "productName": "Huile Végétale Dinor 5L",
+          "unitName": "Bidon 5L",
+          "quantity": 1,
+          "unitPriceApplied": 5800,
+          "discount": 0,
+          "costPriceSnapshot": 5200,
+          "total": 5800
+        }
+      ]
+    },
+    {
+      "id": "s-02",
+      "reference": "V-2026-000100",
+      "customerId": null,
+      "customerName": "Client Comptoir",
+      "status": "PAYEE",
+      "totalAmount": 1350,
+      "discountTotal": 0,
+      "paidAmount": 1350,
+      "balanceDue": 0,
+      "paymentMethod": "ESPECE",
+      "createdAt": "2026-10-17T12:10:00Z",
+      "lines": [
+        {
+          "id": "sl-03",
+          "productId": "p-03",
+          "productName": "Savon BF Marseille",
+          "unitName": "Morceau",
+          "quantity": 3,
+          "unitPriceApplied": 450,
+          "discount": 0,
+          "costPriceSnapshot": 350,
+          "total": 1350
+        }
+      ]
+    }
+  ]
+}

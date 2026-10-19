@@ -1,0 +1,38 @@
+{
+  "activeSession": {
+    "id": "cash-01",
+    "date": "2026-10-18T07:30:00Z",
+    "status": "OUVERTE",
+    "openingFloat": 25000,
+    "cashIn": 42000,
+    "cashOut": 15000,
+    "theoreticalCash": 52000,
+    "momoBalance": 98500,
+    "bankBalance": 150000
+  },
+  "todayExpenses": [
+    {
+      "id": "exp-01",
+      "amount": 5000,
+      "category": "Transport & Déchargement",
+      "method": "ESPECE",
+      "comment": "Déchargement sacs de riz au magasin",
+      "date": "2026-10-18T08:15:00Z"
+    },
+    {
+      "id": "exp-02",
+      "amount": 10000,
+      "category": "Électricité & Énergie",
+      "method": "MOBILE_MONEY",
+      "comment": "Recharge compteur SBEE",
+      "date": "2026-10-18T10:00:00Z"
+    }
+  ],
+  "expenseCategories": [
+    "Transport & Déchargement",
+    "Loyer & Magasin",
+    "Électricité & Énergie",
+    "Entretien & Fournitures",
+    "Frais divers"
+  ]
+}

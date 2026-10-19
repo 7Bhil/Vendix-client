@@ -1,0 +1,22 @@
+{
+  "kpis": {
+    "todaySalesTotal": 128500,
+    "todayCollected": 95000,
+    "todayBalanceDue": 33500,
+    "totalCustomerDebt": 142000,
+    "totalSupplierDebt": 210000,
+    "lowStockAlertCount": 3,
+    "negativeStockCount": 1,
+    "recentSalesCount": 14
+  },
+  "topProducts": [
+    { "id": "p-01", "name": "Riz Parfumé Royal 25kg", "unitsSold": 8, "totalRevenue": 148000 },
+    { "id": "p-02", "name": "Huile Végétale Dinor 5L", "unitsSold": 6, "totalRevenue": 34800 },
+    { "id": "p-03", "name": "Savon BF Marseille", "unitsSold": 45, "totalRevenue": 20250 }
+  ],
+  "recentActivities": [
+    { "id": "act-1", "type": "VENTE", "description": "Vente V-2026-000101 (24 300 FCFA)", "date": "2026-10-17T14:30:00Z" },
+    { "id": "act-2", "type": "PAIEMENT_DETTE", "description": "Remboursement M. Paul Agbodjan (15 000 FCFA)", "date": "2026-10-17T11:15:00Z" },
+    { "id": "act-3", "type": "ALERTE_STOCK", "description": "Stock négatif sur Huile Végétale Dinor 5L (-2)", "date": "2026-10-17T09:40:00Z" }
+  ]
+}

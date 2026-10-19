@@ -1,0 +1,27 @@
+{
+  "commerce": {
+    "id": "e4b2d56a-73b2-4d56-b92c-88e9981a3290",
+    "name": "Boutique Le Progrès",
+    "slug": "le-progres-cotonou",
+    "description": "Grossiste et détaillant en vivres frais et produits alimentaires généraux à Cotonou.",
+    "whatsapp": "+22997000001",
+    "logoUrl": "https://res.cloudinary.com/vendix/image/upload/v1/samples/logo-demo.png",
+    "primaryColor": "#15803d",
+    "secondaryColor": "#ca8a04",
+    "isPublic": true,
+    "status": "ACTIF",
+    "createdAt": "2026-10-01T08:00:00Z",
+    "settings": {
+      "showViewsToPublic": true,
+      "allowNegativeStock": true,
+      "currency": "FCFA"
+    }
+  },
+  "user": {
+    "id": "usr-001",
+    "phone": "+22997000001",
+    "email": "commercant@leprogres.bj",
+    "role": "VENDEUR",
+    "status": "ACTIF"
+  }
+}

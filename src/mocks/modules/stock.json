@@ -1,0 +1,45 @@
+{
+  "stockSummary": {
+    "totalReferenceProducts": 38,
+    "lowStockCount": 3,
+    "outOfStockCount": 1,
+    "negativeStockCount": 1
+  },
+  "movements": [
+    {
+      "id": "mvt-01",
+      "productId": "p-02",
+      "productName": "Huile Végétale Dinor 5L",
+      "type": "VENTE",
+      "quantityBase": -4,
+      "sourceType": "VENTE",
+      "sourceReference": "V-2026-000101",
+      "reason": "Vente comptoir rapide",
+      "authorName": "Vendeur Principal",
+      "createdAt": "2026-10-17T14:30:00Z"
+    },
+    {
+      "id": "mvt-02",
+      "productId": "p-01",
+      "productName": "Riz Parfumé Royal 25kg",
+      "type": "ACHAT",
+      "quantityBase": 10,
+      "sourceType": "ACHAT",
+      "sourceReference": "ACH-2026-0042",
+      "reason": "Approvisionnement fournisseur Ets Albarika",
+      "authorName": "Vendeur Principal",
+      "createdAt": "2026-10-16T09:00:00Z"
+    },
+    {
+      "id": "mvt-03",
+      "productId": "p-03",
+      "productName": "Savon BF Marseille",
+      "type": "CORRECTION",
+      "quantityBase": -2,
+      "sourceType": "MANUEL",
+      "reason": "Perte / Casse lors du déchargement",
+      "authorName": "Vendeur Principal",
+      "createdAt": "2026-10-15T16:20:00Z"
+    }
+  ]
+}
