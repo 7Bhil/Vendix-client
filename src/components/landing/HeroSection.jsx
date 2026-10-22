@@ -30,7 +30,7 @@ function HeroSection() {
   const total = produits.reduce((somme, produit) => somme + produit.prix, 0);
 
   return (
-    <section className="overflow-hidden bg-vendix-surface">
+    <section className="overflow-hidden bg-vendix-whatsapp">
       <div className="mx-auto grid max-w-7xl items-center gap-14 px-5 py-16 sm:px-8 md:py-20 lg:grid-cols-2 lg:gap-10 lg:py-24">
 
         {/* PARTIE GAUCHE : TITRE ET ARGUMENTS */}
