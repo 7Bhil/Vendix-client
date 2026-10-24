@@ -1,4 +1,6 @@
 
+import { Quote, ArrowRight } from "lucide-react";
+
 const testimonials = [
   {
     initials: "AM",
@@ -31,15 +33,15 @@ const testimonials = [
 
 export default function TestimonialsSection() {
   return (
-    <section className="bg-slate-200 px-6 py-20 sm:py-24">
+    <section className="bg-slate-300 px-6 py-20 sm:py-24">
       <div className="mx-auto max-w-7xl">
         {/* En-tête de la section */}
         <div className="mx-auto max-w-3xl text-center">
-          <span className="inline-flex rounded-full bg-emerald-100 px-4 py-2 text-sm font-semibold text-emerald-800">
+          <span className="inline-flex rounded-full border border-blue-100 bg-white px-4 py-2 text-sm font-semibold text-vendix-brand">
             Pensé pour les commerçants
           </span>
 
-          <h2 className="mt-5 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+          <h2 className="mt-5 text-3xl font-extrabold tracking-tight text-vendix-ink sm:text-4xl">
             Votre commerce mérite de grandir
           </h2>
 
@@ -55,17 +57,17 @@ export default function TestimonialsSection() {
           {testimonials.map((testimonial) => (
             <article
               key={testimonial.initials}
-              className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-7 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+              className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-7 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-lg"
             >
               {/* Icône de citation */}
               <div
-                className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-2xl font-bold text-emerald-700"
+                className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-vendix-brand"
                 aria-hidden="true"
               >
-                “
+                <Quote size={24} strokeWidth={2} />
               </div>
 
-              <h3 className="mt-5 text-lg font-bold text-slate-900">
+              <h3 className="mt-5 text-lg font-bold text-vendix-ink">
                 {testimonial.title}
               </h3>
 
@@ -83,7 +85,7 @@ export default function TestimonialsSection() {
                 </div>
 
                 <div>
-                  <p className="font-semibold text-slate-900">
+                  <p className="font-semibold text-vendix-ink">
                     {testimonial.name}
                   </p>
                   <p className="mt-1 text-sm text-slate-500">
@@ -105,12 +107,10 @@ export default function TestimonialsSection() {
         <div className="mt-10 text-center">
           <a
             href="/register"
-            className="inline-flex items-center justify-center rounded-xl bg-emerald-700 px-6 py-3.5 font-semibold text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-200"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-vendix-brand px-6 py-3.5 font-semibold text-white shadow-sm transition hover:bg-vendix-brand-dark focus:outline-none focus:ring-4 focus:ring-blue-200"
           >
             Découvrir Vendix
-            <span className="ml-2" aria-hidden="true">
-              →
-            </span>
+            <ArrowRight size={19} aria-hidden="true" />
           </a>
         </div>
       </div>

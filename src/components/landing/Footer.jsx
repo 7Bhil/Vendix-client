@@ -1,4 +1,6 @@
 
+import { MessageCircle, ArrowUp } from "lucide-react";
+
 export default function Footer() {
   // Remplace ce numéro par le numéro WhatsApp officiel de Vendix.
   // Format international sans + ni espaces, par exemple pour le Bénin.
@@ -7,7 +9,7 @@ export default function Footer() {
   const whatsappLink = `https://wa.me/${whatsappNumber}`;
 
   return (
-    <footer className="bg-slate-950 text-white">
+    <footer className="bg-vendix-ink text-white">
       <div className="mx-auto max-w-7xl px-6 py-14 sm:py-16">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
           {/* Logo et description */}
@@ -17,12 +19,12 @@ export default function Footer() {
               aria-label="Vendix - Accueil"
               className="inline-flex items-center gap-3"
             >
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500 text-2xl font-extrabold text-white shadow-lg shadow-emerald-500/20">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-vendix-brand text-2xl font-extrabold text-white shadow-lg shadow-blue-900/20">
                 V
               </span>
 
               <span className="text-2xl font-extrabold tracking-tight">
-                Vendix<span className="text-emerald-400">.</span>
+                Vendix<span className="text-vendix-accent">.</span>
               </span>
             </a>
 
@@ -32,8 +34,11 @@ export default function Footer() {
               leur activité en toute simplicité.
             </p>
 
-            <span className="mt-5 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-300">
-              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+            <span className="mt-5 inline-flex items-center gap-2 rounded-full border border-vendix-accent/20 bg-vendix-accent/10 px-3 py-1.5 text-xs font-medium text-amber-300">
+              <span
+                className="h-2 w-2 rounded-full bg-vendix-accent"
+                aria-hidden="true"
+              />
               Grandissez avec Vendix
             </span>
           </div>
@@ -48,7 +53,7 @@ export default function Footer() {
               <li>
                 <a
                   href="/login"
-                  className="transition-colors hover:text-emerald-400"
+                  className="transition-colors hover:text-vendix-accent"
                 >
                   Connexion
                 </a>
@@ -57,7 +62,7 @@ export default function Footer() {
               <li>
                 <a
                   href="/register"
-                  className="transition-colors hover:text-emerald-400"
+                  className="transition-colors hover:text-vendix-accent"
                 >
                   Inscription
                 </a>
@@ -66,7 +71,7 @@ export default function Footer() {
               <li>
                 <a
                   href="/vitrines"
-                  className="transition-colors hover:text-emerald-400"
+                  className="transition-colors hover:text-vendix-accent"
                 >
                   Vitrines publiques
                 </a>
@@ -75,7 +80,7 @@ export default function Footer() {
               <li>
                 <a
                   href="/conditions-utilisation"
-                  className="transition-colors hover:text-emerald-400"
+                  className="transition-colors hover:text-vendix-accent"
                 >
                   Conditions d'utilisation
                 </a>
@@ -84,7 +89,7 @@ export default function Footer() {
               <li>
                 <a
                   href="/confidentialite"
-                  className="transition-colors hover:text-emerald-400"
+                  className="transition-colors hover:text-vendix-accent"
                 >
                   Confidentialité
                 </a>
@@ -107,23 +112,9 @@ export default function Footer() {
               href={whatsappLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-5 inline-flex items-center justify-center gap-3 rounded-xl bg-emerald-500 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/10 transition duration-300 hover:-translate-y-0.5 hover:bg-emerald-400 hover:shadow-emerald-500/20 focus:outline-none focus:ring-4 focus:ring-emerald-500/30"
+              className="mt-5 inline-flex items-center justify-center gap-3 rounded-xl bg-vendix-whatsapp px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-green-900/10 transition duration-300 hover:-translate-y-0.5 hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-green-500/30"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="21"
-                height="21"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z" />
-              </svg>
-
+              <MessageCircle size={21} strokeWidth={1.8} aria-hidden="true" />
               Contacter sur WhatsApp
             </a>
 
@@ -141,9 +132,10 @@ export default function Footer() {
 
           <a
             href="/"
-            className="transition-colors hover:text-emerald-400"
+            className="inline-flex items-center gap-2 transition-colors hover:text-vendix-accent"
           >
-            Retour à l'accueil ↑
+            Retour à l'accueil
+            <ArrowUp size={17} aria-hidden="true" />
           </a>
         </div>
       </div>

@@ -42,7 +42,6 @@ export default function App() {
       {/*Pied de page*/}
        <Footer />
 
-
     </div>
   );
 }

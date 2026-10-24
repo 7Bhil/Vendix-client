@@ -1,15 +1,20 @@
+
 import { useState } from "react";
+import { Menu, X } from "lucide-react";
 
 function Navbar() {
-  // Permet d'ouvrir et de fermer le menu sur téléphone
+  // Ouvrir et fermer le menu sur téléphone
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Liens de navigation vers les différentes sections de la page
+  // Liens vers les sections de la page d'accueil
   const navLinks = [
     { label: "Fonctionnalités", href: "#fonctionnalites" },
     { label: "Comment ça marche", href: "#comment-ca-marche" },
     { label: "Témoignages", href: "#temoignages" },
   ];
+
+  // Fermer le menu mobile après un clic sur un lien
+  const closeMenu = () => setMenuOpen(false);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/90 backdrop-blur">
@@ -22,11 +27,12 @@ function Navbar() {
           href="/"
           className="text-2xl font-extrabold tracking-tight text-vendix-brand"
           aria-label="Vendix - Accueil"
+          onClick={closeMenu}
         >
           Vendix<span className="text-vendix-accent">.</span>
         </a>
 
-        {/* Liens de navigation sur ordinateur */}
+        {/* Navigation sur ordinateur */}
         <div className="hidden items-center gap-8 md:flex">
           {navLinks.map((link) => (
             <a
@@ -39,9 +45,8 @@ function Navbar() {
           ))}
         </div>
 
-        {/* Boutons et menu mobile */}
+        {/* Actions et bouton du menu mobile */}
         <div className="flex items-center gap-3">
-          {/* Bouton Connexion */}
           <a
             href="/connexion"
             className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-vendix-ink transition-colors hover:bg-slate-100 sm:inline-flex"
@@ -49,7 +54,6 @@ function Navbar() {
             Connexion
           </a>
 
-          {/* Bouton principal */}
           <a
             href="/inscription"
             className="hidden rounded-lg bg-vendix-brand px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-vendix-brand-dark sm:inline-flex"
@@ -57,61 +61,37 @@ function Navbar() {
             Créer ma boutique
           </a>
 
-          {/* Bouton d'ouverture du menu sur téléphone */}
+          {/* Bouton du menu mobile */}
           <button
             type="button"
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="inline-flex items-center justify-center rounded-lg p-2 text-vendix-ink hover:bg-slate-100 md:hidden"
+            onClick={() => setMenuOpen((previous) => !previous)}
+            className="inline-flex items-center justify-center rounded-lg p-2 text-vendix-ink transition-colors hover:bg-slate-100 md:hidden"
             aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
             aria-expanded={menuOpen}
+            aria-controls="mobile-navigation"
           >
             {menuOpen ? (
-              // Icône de fermeture
-              <svg
-                className="h-6 w-6"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 6l12 12M18 6L6 18"
-                />
-              </svg>
+              <X size={24} aria-hidden="true" />
             ) : (
-              // Icône du menu
-              <svg
-                className="h-6 w-6"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
+              <Menu size={24} aria-hidden="true" />
             )}
           </button>
         </div>
       </nav>
 
-      {/* Menu déroulant sur téléphone */}
+      {/* Navigation sur téléphone */}
       {menuOpen && (
-        <div className="border-t border-slate-200 bg-white px-4 py-4 md:hidden">
+        <div
+          id="mobile-navigation"
+          className="border-t border-slate-200 bg-white px-4 py-4 md:hidden"
+        >
           <div className="flex flex-col gap-4">
             {navLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                onClick={() => setMenuOpen(false)}
-                className="text-sm font-medium text-vendix-ink hover:text-vendix-brand"
+                onClick={closeMenu}
+                className="text-sm font-medium text-vendix-ink transition-colors hover:text-vendix-brand"
               >
                 {link.label}
               </a>
@@ -119,16 +99,16 @@ function Navbar() {
 
             <a
               href="/connexion"
-              onClick={() => setMenuOpen(false)}
-              className="rounded-lg px-3 py-2 text-center text-sm font-semibold text-vendix-ink hover:bg-slate-100"
+              onClick={closeMenu}
+              className="rounded-lg px-3 py-2 text-center text-sm font-semibold text-vendix-ink transition-colors hover:bg-slate-100"
             >
               Connexion
             </a>
 
             <a
               href="/inscription"
-              onClick={() => setMenuOpen(false)}
-              className="rounded-lg bg-vendix-brand px-4 py-3 text-center text-sm font-semibold text-white hover:bg-vendix-brand-dark"
+              onClick={closeMenu}
+              className="rounded-lg bg-vendix-brand px-4 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-vendix-brand-dark"
             >
               Créer ma boutique
             </a>
