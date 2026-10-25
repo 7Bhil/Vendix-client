@@ -1,0 +1,43 @@
+{
+  "customers": [
+    {
+      "id": "c-01",
+      "fullName": "Mme Clarisse Dossou",
+      "phone": "+22996112233",
+      "address": "Dantokpa, Allée 4",
+      "currentDebt": 14300,
+      "oldestDebtDate": "2026-10-17T14:30:00Z",
+      "totalPurchases": 184500,
+      "totalPaid": 170200,
+      "notes": "Commerçante au marché, règle généralement le vendredi.",
+      "statement": [
+        { "date": "2026-10-17T14:30:00Z", "type": "VENTE_CREDIT", "ref": "V-2026-000101", "debit": 24300, "credit": 0, "balance": 24300 },
+        { "date": "2026-10-17T14:35:00Z", "type": "ACOMPTE_MOMO", "ref": "PAY-0089", "debit": 0, "credit": 10000, "balance": 14300 }
+      ]
+    },
+    {
+      "id": "c-02",
+      "fullName": "M. Paul Agbodjan",
+      "phone": "+22995445566",
+      "address": "Akpakpa, Cotonou",
+      "currentDebt": 0,
+      "oldestDebtDate": null,
+      "totalPurchases": 95000,
+      "totalPaid": 95000,
+      "notes": "Client fidèle, paie toujours comptant ou sous 48h.",
+      "statement": []
+    }
+  ],
+  "reminderTemplates": [
+    {
+      "id": "tpl-01",
+      "name": "Relance amicale standard",
+      "template": "Bonjour {client}, nous vous rappelons que votre solde auprès de {boutique} est de {montant} FCFA. Merci de bien vouloir passer faire le point à votre convenance."
+    },
+    {
+      "id": "tpl-02",
+      "name": "Relance formelle dette ancienne",
+      "template": "Bonjour {client}, sauf erreur de notre part, une créance de {montant} FCFA reste en attente de règlement chez {boutique}. Merci de nous contacter pour convenir d'une date."
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "categories": [
+    { "id": "cat-1", "name": "Alimentation générale", "productsCount": 18 },
+    { "id": "cat-2", "name": "Boissons & Jus", "productsCount": 12 },
+    { "id": "cat-3", "name": "Entretien & Hygiène", "productsCount": 8 }
+  ],
+  "products": [
+    {
+      "id": "p-01",
+      "name": "Riz Parfumé Royal 25kg",
+      "categoryId": "cat-1",
+      "categoryName": "Alimentation générale",
+      "description": "Riz de qualité supérieure, grains longs et parfumés.",
+      "costPrice": 16500,
+      "salePrice": 18500,
+      "baseUnit": "Sac",
+      "currentStock": 14,
+      "alertThreshold": 5,
+      "photoUrl": "https://res.cloudinary.com/vendix/image/upload/v1/samples/rice.jpg",
+      "viewsCount": 342,
+      "isVisible": true,
+      "isFavorite": true,
+      "units": [
+        { "id": "u-01", "name": "Sac 25kg", "conversionFactor": 1, "isBase": true },
+        { "id": "u-02", "name": "Demi-sac (12.5kg)", "conversionFactor": 0.5, "isBase": false }
+      ],
+      "priceTiers": [
+        { "tier": "detail", "minQuantity": 1, "price": 18500 },
+        { "tier": "demi_gros", "minQuantity": 5, "price": 18000 },
+        { "tier": "gros", "minQuantity": 20, "price": 17500 }
+      ]
+    },
+    {
+      "id": "p-02",
+      "name": "Huile Végétale Dinor 5L",
+      "categoryId": "cat-1",
+      "categoryName": "Alimentation générale",
+      "description": "Huile raffinée sans cholestérol.",
+      "costPrice": 5200,
+      "salePrice": 5800,
+      "baseUnit": "Bidon",
+      "currentStock": -2,
+      "alertThreshold": 4,
+      "photoUrl": "https://res.cloudinary.com/vendix/image/upload/v1/samples/oil.jpg",
+      "viewsCount": 518,
+      "isVisible": true,
+      "isFavorite": true,
+      "units": [
+        { "id": "u-03", "name": "Bidon 5L", "conversionFactor": 1, "isBase": true },
+        { "id": "u-04", "name": "Carton (4 bidons)", "conversionFactor": 4, "isBase": false }
+      ],
+      "priceTiers": [
+        { "tier": "detail", "minQuantity": 1, "price": 5800 },
+        { "tier": "gros", "minQuantity": 4, "price": 5500 }
+      ]
+    },
+    {
+      "id": "p-03",
+      "name": "Savon BF Marseille",
+      "categoryId": "cat-3",
+      "categoryName": "Entretien & Hygiène",
+      "description": "Savon ménager pour lessive et vaisselle.",
+      "costPrice": 350,
+      "salePrice": 450,
+      "baseUnit": "Morceau",
+      "currentStock": 38,
+      "alertThreshold": 10,
+      "photoUrl": "https://res.cloudinary.com/vendix/image/upload/v1/samples/soap.jpg",
+      "viewsCount": 184,
+      "isVisible": true,
+      "isFavorite": false,
+      "units": [
+        { "id": "u-05", "name": "Morceau", "conversionFactor": 1, "isBase": true },
+        { "id": "u-06", "name": "Carton (36 morceaux)", "conversionFactor": 36, "isBase": false }
+      ],
+      "priceTiers": [
+        { "tier": "detail", "minQuantity": 1, "price": 450 },
+        { "tier": "gros", "minQuantity": 36, "price": 400 }
+      ]
+    }
+  ]
+}

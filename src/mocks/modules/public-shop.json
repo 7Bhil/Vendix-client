@@ -1,0 +1,48 @@
+{
+  "shop": {
+    "name": "Boutique Le Progrès",
+    "description": "Grossiste et détaillant en vivres frais et produits alimentaires généraux à Cotonou.",
+    "whatsapp": "+22997000001",
+    "logoUrl": "https://res.cloudinary.com/vendix/image/upload/v1/samples/logo-demo.png",
+    "primaryColor": "#15803d",
+    "secondaryColor": "#ca8a04",
+    "showViewsToPublic": true
+  },
+  "publicCategories": [
+    "Alimentation générale",
+    "Boissons & Jus",
+    "Entretien & Hygiène"
+  ],
+  "publicProducts": [
+    {
+      "id": "p-01",
+      "name": "Riz Parfumé Royal 25kg",
+      "category": "Alimentation générale",
+      "publicPrice": 18500,
+      "baseUnit": "Sac",
+      "photoUrl": "https://res.cloudinary.com/vendix/image/upload/v1/samples/rice.jpg",
+      "viewsCount": 342,
+      "available": true
+    },
+    {
+      "id": "p-02",
+      "name": "Huile Végétale Dinor 5L",
+      "category": "Alimentation générale",
+      "publicPrice": 5800,
+      "baseUnit": "Bidon",
+      "photoUrl": "https://res.cloudinary.com/vendix/image/upload/v1/samples/oil.jpg",
+      "viewsCount": 518,
+      "available": true
+    },
+    {
+      "id": "p-03",
+      "name": "Savon BF Marseille",
+      "category": "Entretien & Hygiène",
+      "publicPrice": 450,
+      "baseUnit": "Morceau",
+      "photoUrl": "https://res.cloudinary.com/vendix/image/upload/v1/samples/soap.jpg",
+      "viewsCount": 184,
+      "available": true
+    }
+  ]
+}
