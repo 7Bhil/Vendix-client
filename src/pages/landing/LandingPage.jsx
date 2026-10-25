@@ -6,7 +6,7 @@ import HowItWorksSection from "../../components/landing/HowItWorksSection";
 import ShopDemoSection from "../../components/landing/ShopDemoSection";
 import TestimonialsSection from "../../components/landing/TestimonialsSection";
 import FaqSection from "../../components/landing/FaqSection";
-import CTABannerSection from "../../components/landing/CTABannerSection";
+import CtaBannerSection from "../../components/landing/CtaBannerSection";
 import Footer from "../../components/landing/Footer";
 
 
@@ -22,7 +22,7 @@ function LandingPage() {
         <ShopDemoSection />
         <TestimonialsSection />
         <FaqSection />
-        <CTABannerSection />
+        <CtaBannerSection />
       </main>
       <Footer />
     </>
