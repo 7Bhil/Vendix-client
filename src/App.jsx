@@ -6,6 +6,7 @@ import SignupPage from './pages/auth/SignupPage.jsx';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage.jsx';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage.jsx';
 import DemarragePage from './pages/auth/DemarragePage.jsx';
+import DashboardPage from './pages/dashboard/DashboardPage.jsx';
 
 export default function App() {
   return (
@@ -20,6 +21,9 @@ export default function App() {
         <Route path="/demarrage" element={<DemarragePage />} />
         <Route path="/recuperation-compte" element={<ForgotPasswordPage />} />
         <Route path="/reinitialiser-mot-de-passe" element={<ResetPasswordPage />} />
+
+        {/* Espace Commerçant après connexion */}
+        <Route path="/app/tableau-de-bord" element={<DashboardPage />} />
 
         {/* Redirection par défaut si route inconnue */}
         <Route path="*" element={<Navigate to="/" replace />} />
