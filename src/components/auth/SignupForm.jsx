@@ -174,7 +174,7 @@ export default function SignupForm() {
             Numéro de téléphone
           </label>
           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
-            💬 Pour vos alertes SMS & WhatsApp
+            Pour vos alertes WhatsApp
           </span>
         </div>
 
@@ -191,7 +191,7 @@ export default function SignupForm() {
           error={errors.phone}
         />
         <p className="mt-1.5 text-xs text-slate-500">
-          🟢 Compatible MTN MoMo, Moov Money et Celtiis Cash
+          Compatible MTN MoMo, Moov Money et Celtiis Cash
         </p>
       </div>
 
