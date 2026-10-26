@@ -1,118 +1,103 @@
-
 import {
-  BookOpen,
-  Package,
-  Wallet,
-  AlertCircle,
+  FileText,
+  AlertTriangle,
+  TrendingDown,
+  ArrowRight,
 } from "lucide-react";
 
-const painPoints = [
-  {
-    number: "01",
-    icon: BookOpen,
-    title: "Dettes oubliées",
-    description:
-      "Les clients tardent à payer et vous ne savez plus exactement qui vous doit combien.",
-    consequence: "Un historique des dettes difficile à suivre.",
-    iconBg: "bg-amber-100 text-amber-700",
-  },
-  {
-    number: "02",
-    icon: Package,
-    title: "Ruptures surprises",
-    description:
-      "Un client passe commande, mais vous découvrez au dernier moment que votre stock est épuisé.",
-    consequence: "Des ventes perdues et des clients déçus.",
-    iconBg: "bg-red-100 text-red-700",
-  },
-  {
-    number: "03",
-    icon: Wallet,
-    title: "Bénéfice flou",
-    description:
-      "Entre les achats, le transport et les frais du magasin, vous ignorez parfois ce que vous gagnez réellement.",
-    consequence: "Une rentabilité difficile à mesurer.",
-    iconBg: "bg-emerald-100 text-emerald-700",
-  },
-];
+export default function PainPointsSection() {
+  const problems = [
+    {
+      icon: FileText,
+      badge: "Perte de traçabilité",
+      badgeColor: "bg-amber-50 text-amber-800 border-amber-200",
+      title: "Dettes oubliées sur le cahier",
+      problem:
+        "Les pages de cahier s'abîment, les clients contestent les montants ou tardent à payer, et vous perdez le fil de qui vous doit quoi.",
+      solution:
+        "Solde débiteur exact par client et relance courtoise en un clic sur WhatsApp avec montant prérempli.",
+    },
+    {
+      icon: AlertTriangle,
+      badge: "Rupture au comptoir",
+      badgeColor: "bg-rose-50 text-rose-800 border-rose-200",
+      title: "Stock épuisé au moment de la vente",
+      problem:
+        "Découvrir que le stock est vide quand le client est déjà devant le comptoir fait perdre la vente au profit du voisin.",
+      solution:
+        "Alertes de stock critique en direct et liberté d'enregistrer la vente même en rupture avec régularisation ultérieure.",
+    },
+    {
+      icon: TrendingDown,
+      badge: "Incertitude financière",
+      badgeColor: "bg-blue-50 text-vendix-brand border-blue-200",
+      title: "Bénéfice flou en fin de mois",
+      problem:
+        "Entre le chiffre d'affaires brut, les frais de transport, le magasin et les crédits dehors, vous ignorez ce qu'il vous reste réellement en poche.",
+      solution:
+        "Distinction automatique entre CA encaissé, créances dehors et marge nette journalière estimée.",
+    },
+  ];
 
-function PainPointsSection() {
   return (
-    <section
-      id="problemes"
-      className="bg-vendix-surface px-5 py-20 sm:px-8 lg:py-28"
-    >
-      <div className="mx-auto max-w-7xl">
-        {/* En-tête de la section */}
-        <div className="mx-auto mb-14 max-w-3xl text-center">
-          <span className="mb-4 inline-block rounded-full border border-blue-100 bg-white px-4 py-2 text-xs font-bold uppercase tracking-widest text-vendix-brand">
-            Le constat
+    <section id="problemes" className="border-b border-slate-200/80 bg-vendix-surface py-16 sm:py-20 lg:py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        
+        {/* En-tête de section sobre */}
+        <div className="mx-auto max-w-3xl text-center">
+          <span className="text-xs font-bold uppercase tracking-wider text-vendix-brand">
+            Le constat du terrain
           </span>
-
-          <h2 className="text-3xl font-extrabold leading-tight tracking-tight text-vendix-ink sm:text-4xl lg:text-5xl">
-            Vous gérez encore votre boutique
-            <span className="text-vendix-brand">
-              {" "}avec un cahier et WhatsApp ?
-            </span>
+          <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-vendix-ink sm:text-4xl">
+            Pourquoi le cahier et la mémoire ne suffisent plus
           </h2>
-
-          <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-            Gérer une boutique au quotidien ne devrait pas être
-            une source permanente de stress. Pourtant, certaines
-            difficultés freinent encore votre activité.
+          <p className="mt-4 text-base text-slate-600 sm:text-lg">
+            La gestion manuelle ralentit le service, génère des erreurs de caisse et laisse s'envoler vos bénéfices.
           </p>
         </div>
 
-        {/* Les trois problèmes métier */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {painPoints.map((point) => {
-            const Icon = point.icon;
-
+        {/* Grille de 3 cartes orientées problème -> solution */}
+        <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
+          {problems.map((item) => {
+            const Icon = item.icon;
             return (
-              <article
-                key={point.number}
-                className="group flex flex-col rounded-2xl border border-slate-200 bg-white p-7 shadow-sm transition duration-300 hover:-translate-y-2 hover:border-blue-200 hover:shadow-xl sm:p-8"
+              <div
+                key={item.title}
+                className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-slate-300 sm:p-7"
               >
-                <div className="mb-7 flex items-center justify-between">
-                  <div
-                    className={`flex h-14 w-14 items-center justify-center rounded-2xl ${point.iconBg}`}
-                    aria-hidden="true"
-                  >
-                    <Icon size={27} strokeWidth={1.8} />
+                <div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-vendix-ink">
+                      <Icon size={20} strokeWidth={2} aria-hidden="true" />
+                    </div>
+                    <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${item.badgeColor}`}>
+                      {item.badge}
+                    </span>
                   </div>
 
-                  <span className="text-sm font-bold tracking-widest text-slate-300">
-                    {point.number}
-                  </span>
-                </div>
+                  <h3 className="mt-5 text-lg font-bold text-vendix-ink">
+                    {item.title}
+                  </h3>
 
-                <h3 className="mb-3 text-xl font-bold text-vendix-ink transition-colors group-hover:text-vendix-brand">
-                  {point.title}
-                </h3>
-
-                <p className="mb-7 flex-1 text-sm leading-7 text-slate-600 sm:text-base">
-                  {point.description}
-                </p>
-
-                <div className="flex items-start gap-3 border-t border-slate-100 pt-5">
-                  <span
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700"
-                    aria-hidden="true"
-                  >
-                    <AlertCircle size={17} strokeWidth={2} />
-                  </span>
-
-                  <p className="text-sm font-medium leading-6 text-slate-700">
-                    {point.consequence}
+                  <p className="mt-2.5 text-sm leading-relaxed text-slate-600">
+                    {item.problem}
                   </p>
                 </div>
-              </article>
+
+                <div className="mt-6 border-t border-slate-100 pt-4">
+                  <p className="text-xs font-semibold text-vendix-brand">
+                    Réponse Vendix :
+                  </p>
+                  <p className="mt-1 text-xs leading-normal text-slate-600">
+                    {item.solution}
+                  </p>
+                </div>
+              </div>
             );
           })}
         </div>
+
       </div>
     </section>
   );
 }
-
-export default PainPointsSection;

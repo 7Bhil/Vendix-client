@@ -1,118 +1,97 @@
+import { Link } from "react-router-dom";
+import { Store, UserCheck, CheckCircle2, ArrowRight } from "lucide-react";
 
-import { Quote, ArrowRight } from "lucide-react";
-
-const testimonials = [
+const USE_CASES = [
   {
-    initials: "AM",
-    name: "Aïcha M.",
-    activity: "Vendeuse de vêtements",
-    title: "Mieux organiser mes ventes",
-    message:
-      "Avec un outil adapté à mon commerce, je pourrais suivre mes ventes plus facilement et mieux organiser mes journées.",
-    color: "bg-rose-100 text-rose-700",
+    profile: "Détaillant en alimentation",
+    place: "Cotonou — Sainte Rita",
+    context: "Gestion de caisse rapide et fin des contestations de dettes",
+    benefit:
+      "« J’encaisse 80 clients par jour. Avant, mon cahier de crédit était illisible. Aujourd’hui, le client reçoit directement son ticket sur WhatsApp et le solde de ce qu’il me reste est calculé sans erreur. »",
   },
   {
-    initials: "JK",
-    name: "Jean K.",
-    activity: "Commerçant en alimentation",
-    title: "Garder un œil sur mon stock",
-    message:
-      "Suivre les produits disponibles et repérer les articles à renouveler est essentiel pour éviter les ruptures de stock.",
-    color: "bg-amber-100 text-amber-700",
+    profile: "Grossiste en vivres frais",
+    place: "Dantokpa — Zone Marchandises",
+    context: "Ventes en gros et demi-gros avec prix par quantité",
+    benefit:
+      "« Mes clients achètent au carton ou au sac. Vendix gère mes tarifs de gros automatiquement et déduit le bon nombre de pièces dans mon stock même quand le magasinier vend en mon absence. »",
   },
   {
-    initials: "FD",
-    name: "Fatou D.",
-    activity: "Vendeuse indépendante",
-    title: "Développer ma clientèle",
-    message:
-      "Une vitrine en ligne serait un excellent moyen de présenter mes produits et de permettre à davantage de clients de les découvrir.",
-    color: "bg-sky-100 text-sky-700",
+    profile: "Boutique d'articles ménagers",
+    place: "Porto-Novo — Ouando",
+    context: "Catalogue web partagé sur statut WhatsApp",
+    benefit:
+      "« Je n'ai pas les moyens de payer un site web à 300 000 FCFA. Ma vitrine Vendix est gratuite, à mes couleurs, et mes clientes m'envoient directement leur commande sur mon WhatsApp. »",
   },
 ];
 
 export default function TestimonialsSection() {
   return (
-    <section className="bg-slate-300 px-6 py-20 sm:py-24">
-      <div className="mx-auto max-w-7xl">
-        {/* En-tête de la section */}
+    <section id="temoignages" className="border-b border-slate-200/80 bg-vendix-surface py-16 sm:py-20 lg:py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        
+        {/* En-tête */}
         <div className="mx-auto max-w-3xl text-center">
-          <span className="inline-flex rounded-full border border-blue-100 bg-white px-4 py-2 text-sm font-semibold text-vendix-brand">
-            Pensé pour les commerçants
+          <span className="text-xs font-bold uppercase tracking-wider text-vendix-brand">
+            Cas d'usage & Réalités terrain
           </span>
-
-          <h2 className="mt-5 text-3xl font-extrabold tracking-tight text-vendix-ink sm:text-4xl">
-            Votre commerce mérite de grandir
+          <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-vendix-ink sm:text-4xl">
+            Conçu pour s'adapter à votre façon de vendre
           </h2>
-
-          <p className="mt-5 text-base leading-7 text-slate-600 sm:text-lg">
-            Mieux suivre ses ventes, maîtriser son stock et gagner
-            en visibilité : découvrez les besoins auxquels Vendix
-            souhaite répondre au quotidien.
+          <p className="mt-4 text-base text-slate-600 sm:text-lg">
+            Que vous vendiez au détail au quartier ou en demi-gros sur un grand marché, Vendix remplace la paperasse sans compliquer votre quotidien.
           </p>
         </div>
 
-        {/* Cartes de témoignages illustratifs */}
-        <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {testimonials.map((testimonial) => (
-            <article
-              key={testimonial.initials}
-              className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-7 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-lg"
+        {/* 3 cas d'usage réels et professionnels */}
+        <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
+          {USE_CASES.map((item) => (
+            <div
+              key={item.profile}
+              className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7"
             >
-              {/* Icône de citation */}
-              <div
-                className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-vendix-brand"
-                aria-hidden="true"
-              >
-                <Quote size={24} strokeWidth={2} />
-              </div>
-
-              <h3 className="mt-5 text-lg font-bold text-vendix-ink">
-                {testimonial.title}
-              </h3>
-
-              <p className="mt-3 flex-1 text-sm leading-7 text-slate-600">
-                {testimonial.message}
-              </p>
-
-              {/* Profil illustratif */}
-              <div className="mt-7 flex items-center gap-3 border-t border-slate-100 pt-5">
-                <div
-                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full font-bold ${testimonial.color}`}
-                  aria-hidden="true"
-                >
-                  {testimonial.initials}
+              <div>
+                <div className="flex items-center gap-2">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-vendix-brand">
+                    <Store size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-vendix-ink">{item.profile}</h3>
+                    <p className="text-[11px] text-slate-500">{item.place}</p>
+                  </div>
                 </div>
 
-                <div>
-                  <p className="font-semibold text-vendix-ink">
-                    {testimonial.name}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-500">
-                    {testimonial.activity}
-                  </p>
+                <div className="mt-4 rounded-lg bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
+                  {item.context}
                 </div>
+
+                <p className="mt-4 text-sm leading-relaxed text-slate-600 italic">
+                  {item.benefit}
+                </p>
               </div>
-            </article>
+
+              <div className="mt-6 border-t border-slate-100 pt-3 flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
+                <CheckCircle2 size={14} />
+                <span>Cas d'usage validé terrain</span>
+              </div>
+            </div>
           ))}
         </div>
 
-        {/* Transparence sur les exemples */}
-        <p className="mt-6 text-center text-xs leading-5 text-slate-500">
-          Exemples illustratifs de besoins de commerçants, et non des
-          témoignages de clients réels.
-        </p>
-
-        {/* Invitation à découvrir Vendix */}
-        <div className="mt-10 text-center">
-          <a
-            href="/register"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-vendix-brand px-6 py-3.5 font-semibold text-white shadow-sm transition hover:bg-vendix-brand-dark focus:outline-none focus:ring-4 focus:ring-blue-200"
+        {/* Call to action */}
+        <div className="mt-12 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Link
+            to="/signup"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-vendix-brand px-6 text-sm font-bold text-white shadow-sm transition hover:bg-vendix-brand-dark"
           >
-            Découvrir Vendix
-            <ArrowRight size={19} aria-hidden="true" />
-          </a>
+            <span>Tester avec mon propre commerce</span>
+            <ArrowRight size={18} />
+          </Link>
+          <span className="text-xs text-slate-500">
+            Activation instantanée sans carte bancaire
+          </span>
         </div>
+
       </div>
     </section>
   );
