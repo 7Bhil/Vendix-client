@@ -31,7 +31,7 @@ export default function TestimonialsSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* En-tête */}
-        <div className="max-w-3xl">
+        <div className="mx-auto max-w-3xl text-center">
           <span className="text-xs font-bold uppercase tracking-wider text-vendix-brand">
             Cas d'usage & Réalités terrain
           </span>
@@ -79,7 +79,7 @@ export default function TestimonialsSection() {
         </div>
 
         {/* Call to action */}
-        <div className="mt-12 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="mt-12 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
             to="/inscription"
             className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-vendix-brand px-6 text-sm font-bold text-white shadow-sm transition hover:bg-vendix-brand-dark"

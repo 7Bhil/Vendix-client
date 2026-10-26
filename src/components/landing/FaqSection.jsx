@@ -42,7 +42,7 @@ export default function FaqSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* En-tête */}
-        <div className="max-w-3xl">
+        <div className="mx-auto max-w-3xl text-center">
           <span className="text-xs font-bold uppercase tracking-wider text-vendix-brand">
             Foire aux questions
           </span>
@@ -55,7 +55,7 @@ export default function FaqSection() {
         </div>
 
         {/* Accordéon FAQ épuré */}
-        <div className="mt-12 max-w-3xl divide-y divide-slate-200 border-y border-slate-200">
+        <div className="mx-auto mt-12 max-w-3xl divide-y divide-slate-200 border-y border-slate-200">
           {FAQS.map((item, index) => {
             const isOpen = openIndex === index;
             return (
@@ -84,7 +84,7 @@ export default function FaqSection() {
           })}
         </div>
 
-        <div className="mt-10 max-w-3xl rounded-xl border border-slate-200 bg-white p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="mx-auto mt-10 max-w-3xl rounded-xl border border-slate-200 bg-white p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <HelpCircle size={18} className="text-vendix-brand" />
             <span className="text-xs text-slate-600">Une autre question sur votre activité ?</span>

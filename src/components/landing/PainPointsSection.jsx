@@ -44,7 +44,7 @@ export default function PainPointsSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* En-tête de section sobre */}
-        <div className="max-w-3xl">
+        <div className="mx-auto max-w-3xl text-center">
           <span className="text-xs font-bold uppercase tracking-wider text-vendix-brand">
             Le constat du terrain
           </span>

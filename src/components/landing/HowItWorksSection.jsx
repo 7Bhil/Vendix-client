@@ -31,7 +31,7 @@ export default function HowItWorksSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* En-tête */}
-        <div className="max-w-3xl">
+        <div className="mx-auto max-w-3xl text-center">
           <span className="text-xs font-bold uppercase tracking-wider text-vendix-brand">
             Prise en main express
           </span>
@@ -80,7 +80,7 @@ export default function HowItWorksSection() {
         </div>
 
         {/* Action */}
-        <div className="mt-12">
+        <div className="mt-12 text-center">
           <Link
             to="/inscription"
             className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-vendix-brand px-6 text-sm font-bold text-white shadow-sm transition hover:bg-vendix-brand-dark"

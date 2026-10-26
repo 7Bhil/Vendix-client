@@ -49,7 +49,7 @@ export default function FeaturesSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* En-tête */}
-        <div className="max-w-3xl">
+        <div className="mx-auto max-w-3xl text-center">
           <span className="text-xs font-bold uppercase tracking-wider text-vendix-brand">
             Les 4 Piliers Vendix
           </span>
@@ -105,7 +105,7 @@ export default function FeaturesSection() {
         </div>
 
         {/* Call to action direct vers l'essai */}
-        <div className="mt-12 text-center sm:text-left">
+        <div className="mt-12 text-center">
           <Link
             to="/inscription"
             className="inline-flex items-center gap-2 text-sm font-bold text-vendix-brand hover:underline"
