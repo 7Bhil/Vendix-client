@@ -25,7 +25,7 @@ export default function OnboardingPage() {
 
   // Passer directement au tableau de bord
   function handleSkip() {
-    navigate("/app/tableau-de-bord");
+    navigate("/app/dashboard");
   }
 
   // Étape 1 validée
@@ -55,7 +55,7 @@ export default function OnboardingPage() {
 
     setTimeout(() => {
       setIsSubmitting(false);
-      navigate("/app/tableau-de-bord");
+      navigate("/app/dashboard");
     }, 400);
   }
 

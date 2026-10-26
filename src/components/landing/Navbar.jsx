@@ -51,14 +51,14 @@ export default function Navbar() {
         {/* Actions d'accès */}
         <div className="flex items-center gap-3">
           <Link
-            to="/connexion"
+            to="/login"
             className="hidden rounded-xl px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 sm:inline-flex"
           >
             Connexion
           </Link>
 
           <Link
-            to="/inscription"
+            to="/signup"
             className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-vendix-brand px-4 text-xs font-bold text-white shadow-sm transition hover:bg-vendix-brand-dark"
           >
             <span>Créer ma boutique</span>
@@ -95,7 +95,7 @@ export default function Navbar() {
 
           <div className="border-t border-slate-100 pt-3 flex flex-col gap-2">
             <Link
-              to="/connexion"
+              to="/login"
               onClick={closeMenu}
               className="flex h-11 items-center justify-center rounded-xl border border-slate-200 text-xs font-bold text-slate-700"
             >

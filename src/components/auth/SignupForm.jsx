@@ -116,7 +116,7 @@ export default function SignupForm() {
     // Petite temporisation pour simuler la création fluide de compte
     setTimeout(() => {
       setIsSubmitting(false)
-      navigate('/demarrage', {
+      navigate('/onboarding', {
         state: { user: mockCreatedUser },
       })
     }, 350)

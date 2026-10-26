@@ -68,17 +68,17 @@ export default function Footer() {
             </p>
             <ul className="mt-4 space-y-2.5 text-xs text-slate-400">
               <li>
-                <Link to="/connexion" className="hover:text-white transition">
+                <Link to="/login" className="hover:text-white transition">
                   Connexion Commerçant
                 </Link>
               </li>
               <li>
-                <Link to="/inscription" className="hover:text-white transition">
+                <Link to="/signup" className="hover:text-white transition">
                   Créer ma boutique
                 </Link>
               </li>
               <li>
-                <Link to="/recuperation-compte" className="hover:text-white transition">
+                <Link to="/forgot-password" className="hover:text-white transition">
                   Récupération de compte
                 </Link>
               </li>

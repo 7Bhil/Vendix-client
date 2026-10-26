@@ -54,8 +54,8 @@ export default function LoginForm() {
       formData.phone === '0197000001' && formData.password === 'Vendix@2026'
 
     if (isDemoUser) {
-      // Connexion réussie : un utilisateur existant va TOUJOURS au tableau de bord, JAMAIS à l'onboarding
-      navigate('/app/tableau-de-bord', {
+      // Connexion réussie : un utilisateur existant va TOUJOURS au dashboard
+      navigate('/app/dashboard', {
         state: {
           user: {
             phone: formData.phone,
@@ -126,12 +126,12 @@ export default function LoginForm() {
       </div>
 
       <div className="mb-6 flex justify-end">
-      <Link
-  to="/recuperation-compte"
-  className="text-sm font-medium text-teal-700 hover:text-teal-900"
->
-  Mot de passe oublié ?
-</Link>
+        <Link
+          to="/forgot-password"
+          className="text-sm font-medium text-teal-700 hover:text-teal-900"
+        >
+          Mot de passe oublié ?
+        </Link>
       </div>
 
       {errors.form && (
@@ -152,12 +152,12 @@ export default function LoginForm() {
 
       <p className="mt-6 text-center text-sm text-slate-600">
         Vous n'avez pas encore de boutique ?{' '}
-        <a
-          href="/inscription"
+        <Link
+          to="/signup"
           className="font-medium text-teal-700 hover:text-teal-900"
         >
           Créer une boutique
-        </a>
+        </Link>
       </p>
     </form>
   )

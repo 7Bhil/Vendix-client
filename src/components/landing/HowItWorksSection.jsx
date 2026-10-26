@@ -82,7 +82,7 @@ export default function HowItWorksSection() {
         {/* Action */}
         <div className="mt-12 text-center">
           <Link
-            to="/inscription"
+            to="/signup"
             className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-vendix-brand px-6 text-sm font-bold text-white shadow-sm transition hover:bg-vendix-brand-dark"
           >
             <span>Créer ma boutique maintenant</span>

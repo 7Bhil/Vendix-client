@@ -89,7 +89,7 @@ export default function FaqSection() {
             <HelpCircle size={18} className="text-vendix-brand" />
             <span className="text-xs text-slate-600">Une autre question sur votre activité ?</span>
           </div>
-          <Link to="/inscription" className="text-xs font-bold text-vendix-brand hover:underline">
+          <Link to="/signup" className="text-xs font-bold text-vendix-brand hover:underline">
             Créer ma boutique pour tester directement
           </Link>
         </div>

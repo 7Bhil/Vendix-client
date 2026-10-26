@@ -16,14 +16,22 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
 
         {/* Parcours d'authentification */}
-        <Route path="/connexion" element={<LoginPage />} />
-        <Route path="/inscription" element={<SignupPage />} />
-        <Route path="/demarrage" element={<OnboardingPage />} />
-        <Route path="/recuperation-compte" element={<ForgotPasswordPage />} />
-        <Route path="/reinitialiser-mot-de-passe" element={<ResetPasswordPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/onboarding" element={<OnboardingPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+        {/* Alias rétrocompatibles */}
+        <Route path="/connexion" element={<Navigate to="/login" replace />} />
+        <Route path="/inscription" element={<Navigate to="/signup" replace />} />
+        <Route path="/demarrage" element={<Navigate to="/onboarding" replace />} />
+        <Route path="/recuperation-compte" element={<Navigate to="/forgot-password" replace />} />
+        <Route path="/reinitialiser-mot-de-passe" element={<Navigate to="/reset-password" replace />} />
 
         {/* Espace Commerçant après connexion */}
-        <Route path="/app/tableau-de-bord" element={<DashboardPage />} />
+        <Route path="/app/dashboard" element={<DashboardPage />} />
+        <Route path="/app/tableau-de-bord" element={<Navigate to="/app/dashboard" replace />} />
 
         {/* Redirection par défaut si route inconnue */}
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -153,7 +153,7 @@ export default function FeaturesSection() {
         {/* Call to action direct vers l'essai */}
         <div className="mt-12 text-center">
           <Link
-            to="/inscription"
+            to="/signup"
             className="inline-flex items-center gap-2 text-sm font-bold text-vendix-brand hover:underline"
           >
             <span>Démarrer sans frais avec ces fonctionnalités</span>

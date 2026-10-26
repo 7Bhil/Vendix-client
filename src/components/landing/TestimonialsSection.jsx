@@ -81,7 +81,7 @@ export default function TestimonialsSection() {
         {/* Call to action */}
         <div className="mt-12 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
-            to="/inscription"
+            to="/signup"
             className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-vendix-brand px-6 text-sm font-bold text-white shadow-sm transition hover:bg-vendix-brand-dark"
           >
             <span>Tester avec mon propre commerce</span>

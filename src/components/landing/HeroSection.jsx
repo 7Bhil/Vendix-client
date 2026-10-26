@@ -197,7 +197,7 @@ export default function HeroSection() {
             <div ref={ctaRef} className="mt-8">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Link
-                  to="/inscription"
+                  to="/signup"
                   className="group inline-flex h-12 items-center justify-center gap-2.5 rounded-xl bg-vendix-brand px-7 text-sm font-bold text-white shadow-lg shadow-blue-900/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-vendix-brand-dark hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand focus-visible:ring-offset-2"
                 >
                   <span>Commencer gratuitement</span>
@@ -205,7 +205,7 @@ export default function HeroSection() {
                 </Link>
 
                 <Link
-                  to="/connexion"
+                  to="/login"
                   className="inline-flex h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-vendix-ink transition-all duration-200 hover:bg-slate-50 hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
                 >
                   Accéder à ma caisse

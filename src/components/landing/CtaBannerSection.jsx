@@ -16,7 +16,7 @@ export default function CtaBannerSection() {
 
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
-              to="/inscription"
+              to="/signup"
               className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-vendix-brand px-7 text-sm font-bold text-white shadow-lg shadow-blue-900/30 transition hover:bg-vendix-brand-dark sm:w-auto"
             >
               <span>Créer ma boutique gratuitement</span>
@@ -24,7 +24,7 @@ export default function CtaBannerSection() {
             </Link>
 
             <Link
-              to="/connexion"
+              to="/login"
               className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-slate-700 bg-slate-800 px-6 text-sm font-semibold text-white transition hover:bg-slate-700 sm:w-auto"
             >
               Déjà inscrit ? Se connecter
