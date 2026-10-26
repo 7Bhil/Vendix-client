@@ -5,7 +5,7 @@ import LoginPage from './pages/auth/LoginPage.jsx';
 import SignupPage from './pages/auth/SignupPage.jsx';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage.jsx';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage.jsx';
-import DemarragePage from './pages/auth/DemarragePage.jsx';
+import OnboardingPage from './pages/onboarding/OnboardingPage.jsx';
 import DashboardPage from './pages/dashboard/DashboardPage.jsx';
 
 export default function App() {
@@ -18,7 +18,7 @@ export default function App() {
         {/* Parcours d'authentification */}
         <Route path="/connexion" element={<LoginPage />} />
         <Route path="/inscription" element={<SignupPage />} />
-        <Route path="/demarrage" element={<DemarragePage />} />
+        <Route path="/demarrage" element={<OnboardingPage />} />
         <Route path="/recuperation-compte" element={<ForgotPasswordPage />} />
         <Route path="/reinitialiser-mot-de-passe" element={<ResetPasswordPage />} />
 
