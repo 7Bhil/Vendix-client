@@ -1,149 +1,99 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Minus, ArrowRight } from "lucide-react";
+import { Plus, Minus, HelpCircle } from "lucide-react";
 
-const faqs = [
+const FAQS = [
   {
-    question: "Qu'est-ce que Vendix ?",
+    question: "Est-ce que Vendix est vraiment gratuit au démarrage ?",
     answer:
-      "Vendix est une solution conçue pour aider les commerçants à gérer leurs ventes, suivre leur stock, organiser les crédits clients et présenter leurs produits en ligne.",
+      "Oui. Le démarrage sur Vendix ne requiert aucune carte bancaire ni aucun frais fixe. La création de compte, la caisse et la vitrine en ligne sont utilisables immédiatement sans abonnement payant imposé.",
   },
   {
-    question: "Est-ce que Vendix est gratuit ?",
+    question: "Puis-je enregistrer des ventes si la connexion Internet est coupée ?",
     answer:
-      "Vous pouvez commencer avec l'offre gratuite prévue par Vendix. Les fonctionnalités et les éventuelles limites dépendent de l'offre proposée sur la plateforme.",
+      "Absolument. Vendix est une PWA (Progressive Web App) conçue pour fonctionner hors-ligne. Vos tickets de caisse sont enregistrés localement sur votre téléphone et se synchronisent automatiquement dès que le réseau revient.",
   },
   {
-    question: "Comment créer ma boutique sur Vendix ?",
+    question: "Que se passe-t-il si je vends un article qui affiche zéro en stock ?",
     answer:
-      "Cliquez sur « Créer ma boutique », accédez au formulaire d'inscription et renseignez les informations demandées pour commencer à configurer votre espace.",
+      "La règle métier de Vendix est formelle : on ne bloque jamais une vente devant un client au comptoir. Vous pouvez valider la vente. Le stock passe temporairement en négatif et se régularisera lors de votre prochain bon d'achat.",
   },
   {
-    question: "Puis-je suivre mes ventes et mon stock ?",
+    question: "Mes relances de dettes aux clients entraînent-elles des frais SMS ?",
     answer:
-      "Oui, Vendix est conçu pour vous aider à suivre vos ventes et vos produits disponibles afin de mieux organiser votre activité commerciale.",
+      "Non, aucun frais de SMS n'est facturé. Vendix génère un lien direct WhatsApp préformaté avec le nom du client et le montant exact restant dû, que vous envoyez gratuitement en un clic.",
   },
   {
-    question: "Puis-je vendre mes produits en ligne ?",
+    question: "Comment mes clients accèdent-ils à ma vitrine en ligne ?",
     answer:
-      "Vendix prévoit des vitrines publiques pour présenter vos produits et faciliter leur découverte par vos clients, selon les fonctionnalités disponibles sur votre compte.",
-  },
-  {
-    question: "Que faire si j'ai besoin d'aide ?",
-    answer:
-      "Vous pourrez contacter l'assistance Vendix via le canal de contact officiel indiqué sur la plateforme pour obtenir de l'aide.",
+      "Vous disposez d'un lien unique (ex. vendix.bj/b/votre-boutique) que vous pouvez copier sur votre statut WhatsApp ou envoyer par message. Vos clients voient vos produits et vous commandent directement sur WhatsApp sans rien avoir à installer.",
   },
 ];
 
 export default function FaqSection() {
   const [openIndex, setOpenIndex] = useState(0);
 
-  const toggleQuestion = (index) => {
-    setOpenIndex((currentIndex) =>
-      currentIndex === index ? -1 : index
-    );
-  };
+  function toggleFaq(index) {
+    setOpenIndex((current) => (current === index ? -1 : index));
+  }
 
   return (
-    <section
-      id="faq"
-      className="bg-white px-6 py-20 sm:py-24"
-    >
-      <div className="mx-auto max-w-7xl">
+    <section id="faq" className="border-b border-slate-200/80 bg-vendix-surface py-16 sm:py-20 lg:py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        
         {/* En-tête */}
-        <div className="mx-auto max-w-3xl text-center">
-          <span className="inline-flex items-center rounded-full border border-blue-100 bg-vendix-surface px-4 py-2 text-sm font-semibold text-vendix-brand">
-            Centre d'aide
+        <div className="max-w-3xl">
+          <span className="text-xs font-bold uppercase tracking-wider text-vendix-brand">
+            Foire aux questions
           </span>
-
-          <h2 className="mt-5 text-3xl font-extrabold tracking-tight text-vendix-ink sm:text-4xl lg:text-5xl">
-            Vous avez des questions ?
-            <span className="mt-2 block text-vendix-whatsapp">
-              Nous avons les réponses.
-            </span>
+          <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-vendix-ink sm:text-4xl">
+            Questions fréquentes des commerçants
           </h2>
-
-          <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-slate-500 sm:text-lg">
-            Retrouvez les informations essentielles pour comprendre
-            Vendix et découvrir comment la plateforme peut accompagner
-            votre commerce au quotidien.
+          <p className="mt-4 text-base text-slate-600 sm:text-lg">
+            Tout ce que vous devez savoir sur le fonctionnement au quotidien, le stock et l'absence de frais cachés.
           </p>
         </div>
 
-        {/* Liste des questions */}
-        <div className="mx-auto mt-12 max-w-3xl">
-          <div className="divide-y divide-slate-200 border-y border-slate-200">
-            {faqs.map((faq, index) => {
-              const isOpen = openIndex === index;
-              const answerId = `faq-answer-${index}`;
-              const Icon = isOpen ? Minus : Plus;
+        {/* Accordéon FAQ épuré */}
+        <div className="mt-12 max-w-3xl divide-y divide-slate-200 border-y border-slate-200">
+          {FAQS.map((item, index) => {
+            const isOpen = openIndex === index;
+            return (
+              <div key={item.question} className="py-5">
+                <button
+                  type="button"
+                  onClick={() => toggleFaq(index)}
+                  className="flex w-full items-start justify-between text-left gap-4"
+                  aria-expanded={isOpen}
+                >
+                  <span className="text-base font-bold text-vendix-ink">
+                    {item.question}
+                  </span>
+                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-slate-300 text-slate-600">
+                    {isOpen ? <Minus size={14} /> : <Plus size={14} />}
+                  </span>
+                </button>
 
-              return (
-                <div key={faq.question} className="py-1">
-                  <button
-                    type="button"
-                    onClick={() => toggleQuestion(index)}
-                    aria-expanded={isOpen}
-                    aria-controls={answerId}
-                    className="group flex w-full items-center justify-between gap-5 py-5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand focus-visible:ring-offset-2"
-                  >
-                    <span
-                      className={`text-base font-semibold transition-colors sm:text-lg ${
-                        isOpen
-                          ? "text-vendix-brand"
-                          : "text-vendix-ink group-hover:text-vendix-brand"
-                      }`}
-                    >
-                      {faq.question}
-                    </span>
-
-                    <span
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-all duration-300 ${
-                        isOpen
-                          ? "border-vendix-brand bg-vendix-brand text-white"
-                          : "border-slate-200 bg-white text-slate-500 group-hover:border-vendix-brand group-hover:text-vendix-brand"
-                      }`}
-                      aria-hidden="true"
-                    >
-                      <Icon size={19} strokeWidth={2} />
-                    </span>
-                  </button>
-
-                  {isOpen && (
-                    <div
-                      id={answerId}
-                      className="animate-fade-in pb-5 pr-10"
-                    >
-                      <p className="text-sm leading-7 text-slate-600 sm:text-base">
-                        {faq.answer}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Invitation à passer à l'action */}
-          <div className="mt-10 rounded-2xl border border-slate-100 bg-vendix-surface p-6 text-center sm:p-8">
-            <h3 className="text-lg font-bold text-vendix-ink">
-              Vous êtes prêt à vous lancer ?
-            </h3>
-
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Faites le premier pas vers une gestion plus simple de votre commerce.
-            </p>
-
-            <Link
-              to="/inscription"
-              className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-vendix-brand px-6 py-3.5 font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-vendix-brand-dark hover:shadow-md focus:outline-none focus:ring-4 focus:ring-blue-200"
-            >
-              Créer ma boutique
-              <ArrowRight size={19} aria-hidden="true" />
-            </Link>
-          </div>
+                {isOpen && (
+                  <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                    {item.answer}
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
+
+        <div className="mt-10 max-w-3xl rounded-xl border border-slate-200 bg-white p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <HelpCircle size={18} className="text-vendix-brand" />
+            <span className="text-xs text-slate-600">Une autre question sur votre activité ?</span>
+          </div>
+          <Link to="/inscription" className="text-xs font-bold text-vendix-brand hover:underline">
+            Créer ma boutique pour tester directement
+          </Link>
+        </div>
+
       </div>
     </section>
   );
