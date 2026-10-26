@@ -21,29 +21,32 @@ export default function FeaturesSection() {
 
   useGSAP(
     () => {
-      // Animation au défilement pour les piliers
+      // Animation douce d'apparition sans laisser d'opacité à 0 si le trigger est manqué
       gsap.from(headerRef.current, {
         scrollTrigger: {
-          trigger: headerRef.current,
-          start: "top 85%",
+          trigger: sectionRef.current,
+          start: "top 90%",
         },
-        y: 30,
+        y: 20,
         opacity: 0,
-        duration: 0.8,
-        ease: "power3.out",
+        duration: 0.6,
+        ease: "power2.out",
       });
 
-      gsap.from(cardsRef.current.children, {
-        scrollTrigger: {
-          trigger: cardsRef.current,
-          start: "top 80%",
-        },
-        y: 40,
-        opacity: 0,
-        duration: 0.8,
-        stagger: 0.15,
-        ease: "power3.out",
-      });
+      if (cardsRef.current?.children) {
+        gsap.from(cardsRef.current.children, {
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 85%",
+          },
+          y: 25,
+          opacity: 0,
+          duration: 0.6,
+          stagger: 0.1,
+          ease: "power2.out",
+          clearProps: "all",
+        });
+      }
     },
     { scope: sectionRef }
   );
