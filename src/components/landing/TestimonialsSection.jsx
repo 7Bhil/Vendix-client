@@ -34,7 +34,7 @@ const testimonials = [
 
 export default function TestimonialsSection() {
   return (
-    <section className="bg-slate-300 px-6 py-20 sm:py-24">
+    <section id="temoignages" className="bg-vendix-surface px-6 py-20 sm:py-24">
       <div className="mx-auto max-w-7xl">
         {/* En-tête de la section */}
         <div className="mx-auto max-w-3xl text-center">
