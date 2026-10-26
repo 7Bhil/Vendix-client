@@ -1,4 +1,7 @@
+import { useRef } from "react";
 import { Link } from "react-router-dom";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 import {
   WifiOff,
   Smartphone,
@@ -19,6 +22,77 @@ import {
 } from "lucide-react";
 
 export default function HeroSection() {
+  const containerRef = useRef(null);
+  const headlineRef = useRef(null);
+  const subtitleRef = useRef(null);
+  const highlightsRef = useRef(null);
+  const ctaRef = useRef(null);
+  const phoneContainerRef = useRef(null);
+  const badgeRef = useRef(null);
+
+  useGSAP(
+    () => {
+      // Timeline d'entrée séquentielle avec GSAP
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+
+      tl.from(headlineRef.current, {
+        y: 35,
+        opacity: 0,
+        duration: 0.9,
+      })
+        .from(
+          subtitleRef.current,
+          {
+            y: 25,
+            opacity: 0,
+            duration: 0.7,
+          },
+          "-=0.5"
+        )
+        .from(
+          highlightsRef.current.children,
+          {
+            y: 20,
+            opacity: 0,
+            duration: 0.6,
+            stagger: 0.12,
+          },
+          "-=0.4"
+        )
+        .from(
+          ctaRef.current,
+          {
+            y: 15,
+            opacity: 0,
+            duration: 0.5,
+          },
+          "-=0.3"
+        )
+        .from(
+          phoneContainerRef.current,
+          {
+            scale: 0.92,
+            y: 40,
+            opacity: 0,
+            duration: 1,
+            ease: "back.out(1.4)",
+          },
+          "-=0.7"
+        )
+        .from(
+          badgeRef.current,
+          {
+            scale: 0.6,
+            opacity: 0,
+            duration: 0.6,
+            ease: "back.out(1.8)",
+          },
+          "-=0.3"
+        );
+    },
+    { scope: containerRef }
+  );
+
   const highlights = [
     {
       icon: Check,
@@ -50,7 +124,10 @@ export default function HeroSection() {
   const total = demoProducts.reduce((sum, item) => sum + item.price, 0);
 
   return (
-    <section className="relative flex min-h-[calc(100vh-65px)] flex-col justify-center overflow-hidden border-b border-slate-200/80 bg-vendix-surface">
+    <section
+      ref={containerRef}
+      className="relative flex min-h-[calc(100vh-65px)] flex-col justify-center overflow-hidden border-b border-slate-200/80 bg-vendix-surface"
+    >
       {/* Grille de fond technique & halos d'ambiance */}
       <div
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:28px_28px] opacity-60"
@@ -71,7 +148,10 @@ export default function HeroSection() {
           {/* Colonne gauche : Titre & Proposition de valeur */}
           <div className="lg:col-span-7">
             {/* H1 direct et ancré dans le marché */}
-            <h1 className="text-3xl font-extrabold tracking-tight text-vendix-ink sm:text-5xl lg:text-6xl sm:leading-[1.12]">
+            <h1
+              ref={headlineRef}
+              className="text-3xl font-extrabold tracking-tight text-vendix-ink sm:text-5xl lg:text-6xl sm:leading-[1.12]"
+            >
               Gérez votre commerce{" "}
               <span className="text-vendix-brand">
                 plus vite
@@ -80,7 +160,10 @@ export default function HeroSection() {
             </h1>
 
             {/* Sous-titre orienté bénéfices terrain */}
-            <p className="mt-6 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg lg:text-xl">
+            <p
+              ref={subtitleRef}
+              className="mt-6 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg lg:text-xl"
+            >
               Ventes rapides au comptoir, suivi automatique des dettes et boutique en ligne gratuite.
               <span className="mt-1 block font-bold text-vendix-brand">
                 Même sans connexion Internet.
@@ -88,7 +171,7 @@ export default function HeroSection() {
             </p>
 
             {/* 3 piliers de réassurance visuels */}
-            <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div ref={highlightsRef} className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
               {highlights.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -111,30 +194,35 @@ export default function HeroSection() {
             </div>
 
             {/* Actions principales */}
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Link
-                to="/inscription"
-                className="group inline-flex h-12 items-center justify-center gap-2.5 rounded-xl bg-vendix-brand px-7 text-sm font-bold text-white shadow-lg shadow-blue-900/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-vendix-brand-dark hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand focus-visible:ring-offset-2"
-              >
-                <span>Commencer gratuitement</span>
-                <ArrowRight size={18} className="transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
-              </Link>
+            <div ref={ctaRef} className="mt-8">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <Link
+                  to="/inscription"
+                  className="group inline-flex h-12 items-center justify-center gap-2.5 rounded-xl bg-vendix-brand px-7 text-sm font-bold text-white shadow-lg shadow-blue-900/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-vendix-brand-dark hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand focus-visible:ring-offset-2"
+                >
+                  <span>Commencer gratuitement</span>
+                  <ArrowRight size={18} className="transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
+                </Link>
 
-              <Link
-                to="/connexion"
-                className="inline-flex h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-vendix-ink transition-all duration-200 hover:bg-slate-50 hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
-              >
-                Accéder à ma caisse
-              </Link>
+                <Link
+                  to="/connexion"
+                  className="inline-flex h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-vendix-ink transition-all duration-200 hover:bg-slate-50 hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                >
+                  Accéder à ma caisse
+                </Link>
+              </div>
+
+              <p className="mt-3 text-xs text-slate-500">
+                Prêt en 2 minutes • Sans carte bancaire • 100% sécurisé
+              </p>
             </div>
-
-            <p className="mt-3 text-xs text-slate-500">
-              Prêt en 2 minutes • Sans carte bancaire • 100% sécurisé
-            </p>
           </div>
 
           {/* Colonne droite : Smartphone interactif vivant & badge flottant */}
-          <div className="relative mx-auto flex w-full max-w-lg items-center justify-center py-4 lg:col-span-5">
+          <div
+            ref={phoneContainerRef}
+            className="relative mx-auto flex w-full max-w-lg items-center justify-center py-4 lg:col-span-5"
+          >
             {/* Halo lumineux de fond */}
             <div
               className="absolute h-72 w-72 rounded-full bg-blue-100/80 blur-2xl sm:h-96 sm:w-96"
@@ -250,7 +338,10 @@ export default function HeroSection() {
             </div>
 
             {/* Badge flottant "Vente validée en 12s" */}
-            <div className="absolute right-2 top-10 z-20 flex items-center gap-2 rounded-full bg-vendix-whatsapp px-3.5 py-2 text-xs font-bold text-white shadow-lg shadow-green-900/20 sm:-right-4 sm:px-4 sm:py-2.5 sm:text-sm">
+            <div
+              ref={badgeRef}
+              className="absolute right-2 top-10 z-20 flex items-center gap-2 rounded-full bg-vendix-whatsapp px-3.5 py-2 text-xs font-bold text-white shadow-lg shadow-green-900/20 sm:-right-4 sm:px-4 sm:py-2.5 sm:text-sm"
+            >
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-vendix-whatsapp">
                 <Check size={13} strokeWidth={3} aria-hidden="true" />
               </span>

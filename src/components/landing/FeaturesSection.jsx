@@ -1,4 +1,8 @@
+import { useRef } from "react";
 import { Link } from "react-router-dom";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
 import {
   Zap,
   BookOpen,
@@ -8,7 +12,42 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
+gsap.registerPlugin(ScrollTrigger);
+
 export default function FeaturesSection() {
+  const sectionRef = useRef(null);
+  const headerRef = useRef(null);
+  const cardsRef = useRef(null);
+
+  useGSAP(
+    () => {
+      // Animation au défilement pour les piliers
+      gsap.from(headerRef.current, {
+        scrollTrigger: {
+          trigger: headerRef.current,
+          start: "top 85%",
+        },
+        y: 30,
+        opacity: 0,
+        duration: 0.8,
+        ease: "power3.out",
+      });
+
+      gsap.from(cardsRef.current.children, {
+        scrollTrigger: {
+          trigger: cardsRef.current,
+          start: "top 80%",
+        },
+        y: 40,
+        opacity: 0,
+        duration: 0.8,
+        stagger: 0.15,
+        ease: "power3.out",
+      });
+    },
+    { scope: sectionRef }
+  );
+
   const pillars = [
     {
       number: "01",
@@ -45,11 +84,15 @@ export default function FeaturesSection() {
   ];
 
   return (
-    <section id="fonctionnalites" className="border-b border-slate-200/80 bg-white py-16 sm:py-20 lg:py-24">
+    <section
+      ref={sectionRef}
+      id="fonctionnalites"
+      className="border-b border-slate-200/80 bg-white py-16 sm:py-20 lg:py-24"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* En-tête */}
-        <div className="mx-auto max-w-3xl text-center">
+        <div ref={headerRef} className="mx-auto max-w-3xl text-center">
           <span className="text-xs font-bold uppercase tracking-wider text-vendix-brand">
             Les 4 Piliers Vendix
           </span>
@@ -61,14 +104,14 @@ export default function FeaturesSection() {
           </p>
         </div>
 
-        {/* Grille 2x2 propre, sans numéros géants kitsch */}
-        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:gap-8">
+        {/* Grille 2x2 propre */}
+        <div ref={cardsRef} className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:gap-8">
           {pillars.map((item) => {
             const Icon = item.icon;
             return (
               <div
                 key={item.number}
-                className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-vendix-surface p-6 transition hover:border-slate-300 hover:bg-slate-50 sm:p-8"
+                className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-vendix-surface p-6 transition duration-200 hover:-translate-y-1 hover:border-slate-300 hover:bg-slate-50 hover:shadow-md sm:p-8"
               >
                 <div>
                   <div className="flex items-center justify-between">
