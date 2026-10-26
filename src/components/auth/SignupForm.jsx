@@ -98,49 +98,28 @@ export default function SignupForm() {
     setIsSubmitting(true)
     setErrors({})
 
-    try {
-      const response = await fetch(`${API_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          shopName: formData.shopName.trim(),
-          phone: formData.phone,
-          email: formData.email.trim() || undefined,
-          activityType: formData.activityType,
-          password: formData.password,
-          termsAccepted: formData.acceptTerms,
-        }),
-      })
-
-      const result = await response.json().catch(() => ({}))
-
-      if (!response.ok) {
-        const serverMessage = Array.isArray(result.message)
-          ? result.message.join(' ')
-          : result.message
-
-        setErrors({
-          form:
-            response.status === 409
-              ? 'Ce numéro ou cet e-mail possède déjà un compte. Vérifiez vos informations.'
-              : serverMessage ||
-                'Impossible de créer le compte. Veuillez réessayer.',
-        })
-        return
-      }
-
-      navigate('/demarrage', {
-        state: { user: result.user },
-      })
-    } catch {
-      setErrors({
-        form: 'Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.',
-      })
-    } finally {
-      setIsSubmitting(false)
+    // Simulation front-end autonome (sans appel backend)
+    const mockCreatedUser = {
+      id: 'usr_' + Date.now(),
+      phone: formData.phone,
+      shopName: formData.shopName.trim(),
+      email: formData.email.trim() || null,
+      activityType: formData.activityType,
     }
+
+    try {
+      localStorage.setItem('vendix_active_user', JSON.stringify(mockCreatedUser))
+    } catch {
+      // Pas de blocage si localStorage indisponible
+    }
+
+    // Petite temporisation pour simuler la création fluide de compte
+    setTimeout(() => {
+      setIsSubmitting(false)
+      navigate('/demarrage', {
+        state: { user: mockCreatedUser },
+      })
+    }, 350)
   }
 
   return (
