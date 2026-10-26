@@ -1,4 +1,5 @@
 
+import { Link } from "react-router-dom";
 import { MessageCircle, ArrowUp } from "lucide-react";
 
 export default function Footer() {
@@ -51,21 +52,21 @@ export default function Footer() {
 
             <ul className="mt-5 space-y-4 text-sm text-slate-400">
               <li>
-                <a
-                  href="/login"
+                <Link
+                  to="/connexion"
                   className="transition-colors hover:text-vendix-accent"
                 >
                   Connexion
-                </a>
+                </Link>
               </li>
 
               <li>
-                <a
-                  href="/register"
+                <Link
+                  to="/inscription"
                   className="transition-colors hover:text-vendix-accent"
                 >
                   Inscription
-                </a>
+                </Link>
               </li>
 
               <li>

@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react'
-import { useLocation, Link } from 'react-router-dom'
+import { useLocation, Link, useNavigate } from 'react-router-dom'
 
 const COLOR_OPTIONS = [
   { name: 'Bleu Vendix', value: '#1e40af' },
@@ -18,6 +18,7 @@ const STEPS = [
 ]
 
 export default function DemarragePage() {
+  const navigate = useNavigate()
   const location = useLocation()
   const user = location.state?.user
 
@@ -79,11 +80,17 @@ export default function DemarragePage() {
       return
     }
 
-    setMessage(
-      'Votre configuration est prête sur cette page. ' +
-      'L’enregistrement définitif sera ajouté lorsque ' +
-      'l’intégration avec le serveur sera disponible.'
-    )
+    // Redirection directe vers le tableau de bord avec les configurations enregistrées
+    navigate('/app/tableau-de-bord', {
+      state: {
+        user: {
+          ...user,
+          configured: true,
+          primaryColor,
+          secondaryColor,
+        },
+      },
+    })
   }
 
   return (
@@ -440,9 +447,15 @@ export default function DemarragePage() {
           </div>
         </section>
 
-        <p className="mt-6 text-center text-xs text-slate-500">
-          Vous pourrez compléter votre boutique plus tard.
-        </p>
+        <div className="mt-6 text-center">
+          <button
+            type="button"
+            onClick={() => navigate('/app/tableau-de-bord')}
+            className="text-xs font-semibold text-slate-500 underline transition hover:text-vendix-brand"
+          >
+            Passer la configuration et accéder directement à la caisse
+          </button>
+        </div>
       </div>
     </main>
   )

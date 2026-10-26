@@ -1,4 +1,5 @@
 
+import { Link } from "react-router-dom";
 import { Quote, ArrowRight } from "lucide-react";
 
 const testimonials = [
@@ -105,13 +106,13 @@ export default function TestimonialsSection() {
 
         {/* Invitation à découvrir Vendix */}
         <div className="mt-10 text-center">
-          <a
-            href="/register"
+          <Link
+            to="/inscription"
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-vendix-brand px-6 py-3.5 font-semibold text-white shadow-sm transition hover:bg-vendix-brand-dark focus:outline-none focus:ring-4 focus:ring-blue-200"
           >
             Découvrir Vendix
             <ArrowRight size={19} aria-hidden="true" />
-          </a>
+          </Link>
         </div>
       </div>
     </section>

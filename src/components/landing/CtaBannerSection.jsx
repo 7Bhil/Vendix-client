@@ -1,4 +1,5 @@
 
+import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 
 export default function FinalCTASection() {
@@ -18,13 +19,13 @@ export default function FinalCTASection() {
         </p>
 
         {/* Bouton contrasté */}
-        <a
-          href="/register"
+        <Link
+          to="/inscription"
           className="mt-8 inline-flex items-center justify-center gap-3 rounded-xl bg-vendix-accent px-8 py-4 text-base font-bold text-vendix-ink shadow-lg transition duration-300 hover:-translate-y-1 hover:brightness-95 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-amber-200"
         >
           Créer ma boutique maintenant
           <ArrowRight size={21} strokeWidth={2.2} aria-hidden="true" />
-        </a>
+        </Link>
       </div>
     </section>
   );

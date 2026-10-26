@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Plus, Minus, ArrowRight } from "lucide-react";
 
 const faqs = [
@@ -134,13 +135,13 @@ export default function FaqSection() {
               Faites le premier pas vers une gestion plus simple de votre commerce.
             </p>
 
-            <a
-              href="/register"
+            <Link
+              to="/inscription"
               className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-vendix-brand px-6 py-3.5 font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-vendix-brand-dark hover:shadow-md focus:outline-none focus:ring-4 focus:ring-blue-200"
             >
               Créer ma boutique
               <ArrowRight size={19} aria-hidden="true" />
-            </a>
+            </Link>
           </div>
         </div>
       </div>

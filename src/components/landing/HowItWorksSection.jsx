@@ -1,4 +1,5 @@
 
+import { Link } from "react-router-dom";
 import {
   Smartphone,
   Store,
@@ -115,13 +116,13 @@ function HowItWorksSection() {
 
         {/* Appel à l'action */}
         <div className="mt-14 text-center">
-          <a
-            href="#inscription"
+          <Link
+            to="/inscription"
             className="inline-flex items-center justify-center gap-3 rounded-xl bg-vendix-brand px-7 py-4 text-sm font-bold text-white shadow-lg shadow-blue-900/20 transition duration-300 hover:-translate-y-1 hover:bg-vendix-brand-dark focus:outline-none focus:ring-4 focus:ring-blue-200"
           >
             Créer ma boutique
             <ArrowRight size={19} aria-hidden="true" />
-          </a>
+          </Link>
 
           <p className="mt-4 text-sm text-slate-500">
             Votre boutique commence ici.
