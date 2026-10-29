@@ -7,6 +7,7 @@ import ForgotPasswordPage from './pages/auth/ForgotPasswordPage.jsx';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage.jsx';
 import OnboardingPage from './pages/onboarding/OnboardingPage.jsx';
 import DashboardPage from './pages/dashboard/DashboardPage.jsx';
+import NewSalePage from './pages/sales/NewSalePage.jsx';
 
 export default function App() {
   return (
@@ -35,6 +36,8 @@ export default function App() {
 
         {/* Redirection par défaut si route inconnue */}
         <Route path="*" element={<Navigate to="/" replace />} />
+
+        <Route path="/app/sales/new" element={<NewSalePage />} />
       </Routes>
     </BrowserRouter>
   );

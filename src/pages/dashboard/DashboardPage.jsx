@@ -10,10 +10,12 @@ import {
   TrendingUp,
 } from "lucide-react";
 
+import { useNavigate } from "react-router-dom";
 import StatCard from "../../components/dashboard/StatCard";
 import LowStockAlertBanner from "../../components/dashboard/LowStockAlertBanner";
 import RecentTransactionsList from "../../components/dashboard/RecentTransactionsList";
 import OfflineSyncBadge from "../../components/dashboard/OfflineSyncBadge";
+
 
 const initialDashboardData = {
   salesToday: 0,
@@ -45,12 +47,12 @@ function validateDashboardData(data) {
     "estimatedProfit",
   ];
 
-  for (const field of numericFields) {
+for (const field of numericFields) {
     if (
       data[field] !== undefined &&
       (typeof data[field] !== "number" ||
         !Number.isFinite(data[field]) ||
-        data[field] < 0)
+        (field !== "estimatedProfit" && data[field] < 0))
     ) {
       throw new Error(`La valeur ${field} est invalide.`);
     }
@@ -80,6 +82,7 @@ function validateDashboardData(data) {
 
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(initialDashboardData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -173,9 +176,10 @@ function reloadDashboard() {
       <div className="mx-auto max-w-7xl space-y-6">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm font-medium text-vendix-brand">
+            <OfflineSyncBadge isOnline={isOnline} />
+              <p className="text-sm font-medium text-vendix-brand">
               Espace commerçant
-            </p>
+              </p>
             <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-vendix-ink sm:text-3xl">
               Tableau de bord
             </h1>
@@ -187,9 +191,7 @@ function reloadDashboard() {
           <div className="flex flex-wrap items-center gap-3">
           <button
   type="button"
-  onClick={() => {
-    // La navigation sera ajoutée lorsque la page de vente sera définie.
-  }}
+  onClick={() => navigate("/app/sales/new")}
   className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-vendix-brand px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-vendix-brand-dark"
 >
   <Plus size={18} aria-hidden="true" />
