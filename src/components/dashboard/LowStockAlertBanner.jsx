@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 
@@ -10,15 +9,15 @@ export default function LowStockAlertBanner({ products = [] }) {
   }
 
   return (
-    <section className="rounded-2xl border border-vendix-accent/40 bg-white p-4 sm:p-5">
+    <section className="rounded-2xl border border-amber-300 bg-white p-4 sm:p-5 shadow-sm">
       <button
         type="button"
         onClick={() => setIsExpanded((previous) => !previous)}
         aria-expanded={isExpanded}
-        className="flex min-h-12 w-full items-center justify-between gap-3 text-left"
+        className="flex min-h-12 w-full items-center justify-between gap-3 text-left rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand"
       >
         <span className="flex items-center gap-3">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-vendix-surface text-vendix-ink">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-900 border border-amber-200">
             <AlertTriangle size={22} aria-hidden="true" />
           </span>
 
