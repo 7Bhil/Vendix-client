@@ -136,7 +136,18 @@ export default function CustomerListPage() {
               })}
             </div>
           ) : (
-            <p className="p-8 text-center text-sm text-slate-500">Aucun client ne correspond à cette recherche.</p>
+            <div className="p-8 text-center">
+              <p className="text-sm font-semibold text-slate-700">Aucun client ne correspond à cette recherche.</p>
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery('')}
+                  className="mt-2 text-xs font-bold text-vendix-brand hover:underline"
+                >
+                  Effacer la recherche
+                </button>
+              )}
+            </div>
           )}
         </section>
         <p className="mt-5 text-xs text-slate-500">

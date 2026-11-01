@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Minus, Plus, Trash2, ShoppingBasket } from "lucide-react";
 
 const formatPrice = (price) =>
@@ -10,6 +11,8 @@ export default function CartSheet({
   onClearCart,
   onContinue,
 }) {
+  const [confirmClear, setConfirmClear] = useState(false);
+
   const totalAmount = cart.reduce(
     (total, item) => total + Number(item.salePrice) * Number(item.quantity),
     0
@@ -19,6 +22,16 @@ export default function CartSheet({
     (total, item) => total + Number(item.quantity),
     0
   );
+
+  const handleClear = () => {
+    if (!confirmClear) {
+      setConfirmClear(true);
+      setTimeout(() => setConfirmClear(false), 3000);
+      return;
+    }
+    setConfirmClear(false);
+    onClearCart?.();
+  };
 
   return (
     <section className="flex flex-col rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -37,10 +50,14 @@ export default function CartSheet({
         {cart.length > 0 && (
           <button
             type="button"
-            onClick={onClearCart}
-            className="text-xs font-semibold text-red-600 hover:text-red-700 hover:underline"
+            onClick={handleClear}
+            className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+              confirmClear
+                ? "bg-red-50 text-red-700 ring-1 ring-red-300"
+                : "text-slate-500 hover:text-red-600 hover:bg-slate-50"
+            }`}
           >
-            Vider
+            {confirmClear ? "Confirmer ?" : "Vider"}
           </button>
         )}
       </div>
