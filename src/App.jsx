@@ -12,6 +12,7 @@ import NewProductPage from './pages/products/NewProductPage.jsx';
 import NewCustomerPage from './pages/customers/NewCustomerPage.jsx';
 import CustomerListPage from './pages/customers/CustomerListPage.jsx';
 import CustomerDetailPage from './pages/customers/CustomerDetailPage.jsx';
+import AppLayout from './components/layout/AppLayout.jsx';
 
 export default function App() {
   return (
@@ -27,17 +28,55 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-        {/* Merchant Workspace */}
-        <Route path="/app/dashboard" element={<DashboardPage />} />
-
-        {/* Quick Actions */}
-        <Route path="/app/sales/new" element={<NewSalePage />} />
-        <Route path="/app/products/new" element={<NewProductPage />} />
-        <Route path="/app/customers/new" element={<NewCustomerPage />} />
-
-        {/* Customers & Debt Tracking */}
-        <Route path="/app/customers" element={<CustomerListPage />} />
-        <Route path="/app/customers/:id" element={<CustomerDetailPage />} />
+        {/* Merchant Workspace avec AppLayout unifié */}
+        <Route
+          path="/app/dashboard"
+          element={
+            <AppLayout>
+              <DashboardPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/app/sales/new"
+          element={
+            <AppLayout>
+              <NewSalePage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/app/products/new"
+          element={
+            <AppLayout>
+              <NewProductPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/app/customers/new"
+          element={
+            <AppLayout>
+              <NewCustomerPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/app/customers"
+          element={
+            <AppLayout>
+              <CustomerListPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/app/customers/:id"
+          element={
+            <AppLayout>
+              <CustomerDetailPage />
+            </AppLayout>
+          }
+        />
 
         {/* Default fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

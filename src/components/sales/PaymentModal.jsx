@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   X,
   Banknote,
@@ -6,11 +6,13 @@ import {
   CreditCard,
   Wallet,
   CheckCircle,
+  AlertTriangle,
+  User,
 } from "lucide-react";
+import { loadCustomers } from "../../utils/customerDebtUtils";
 
-// Formater les montants en FCFA
 const formatPrice = (price) =>
-  new Intl.NumberFormat("fr-FR").format(price || 0) + " FCFA";
+  new Intl.NumberFormat("fr-FR").format(Number(price) || 0) + " FCFA";
 
 export default function PaymentModal({
   isOpen,
@@ -18,220 +20,249 @@ export default function PaymentModal({
   onClose,
   onConfirm,
 }) {
-  // Montant déjà saisi par le vendeur
   const [paidAmount, setPaidAmount] = useState(String(totalAmount));
-
-  // Mode de paiement sélectionné
   const [paymentMethod, setPaymentMethod] = useState("CASH");
+  const [selectedCustomerId, setSelectedCustomerId] = useState("");
+  const [customCustomerName, setCustomCustomerName] = useState("");
 
-  // Ne rien afficher si la fenêtre est fermée
+  const customers = useMemo(() => {
+    try {
+      return loadCustomers();
+    } catch {
+      return [];
+    }
+  }, []);
+
   if (!isOpen) return null;
 
-  // Conversion du montant saisi en nombre
-  const amount = Number(paidAmount) || 0;
+  const numericPaid = Number(paidAmount) || 0;
+  const remainingAmount = Math.max(totalAmount - numericPaid, 0);
+  const changeAmount = Math.max(numericPaid - totalAmount, 0);
 
-  // Calcul du reste à payer
-  const remainingAmount = Math.max(totalAmount - amount, 0);
+  // La vente est valide si montant payé >= 0, mais si dette, un client doit être désigné
+  const isCreditSale = remainingAmount > 0;
+  const isCustomerProvided =
+    selectedCustomerId !== "" || customCustomerName.trim().length > 0;
+  const isValid = !isCreditSale || isCustomerProvided;
 
-  // Calcul de la monnaie à rendre
-  const changeAmount = Math.max(amount - totalAmount, 0);
-
-  // Vérifier si le montant est valide
-  const isValid = amount > 0;
-
-  // Modes de paiement proposés
   const paymentMethods = [
-    {
-      id: "CASH",
-      label: "Espèces",
-      icon: Banknote,
-    },
-    {
-      id: "MOBILE_MONEY",
-      label: "Mobile Money",
-      icon: Smartphone,
-    },
-    {
-      id: "CARD",
-      label: "Carte bancaire",
-      icon: CreditCard,
-    },
-    {
-      id: "OTHER",
-      label: "Autre",
-      icon: Wallet,
-    },
+    { id: "CASH", label: "Espèces", icon: Banknote },
+    { id: "MOBILE_MONEY", label: "Mobile Money", icon: Smartphone },
+    { id: "CARD", label: "Carte", icon: CreditCard },
+    { id: "CREDIT", label: "Crédit", icon: Wallet },
   ];
 
-  // Confirmer le paiement
   const handleConfirm = () => {
     if (!isValid) return;
 
+    let customerName = "Client Comptoir";
+    let customerId = null;
+
+    if (selectedCustomerId) {
+      const found = customers.find((c) => c.id === selectedCustomerId);
+      if (found) {
+        customerName = found.fullName;
+        customerId = found.id;
+      }
+    } else if (customCustomerName.trim()) {
+      customerName = customCustomerName.trim();
+    }
+
     onConfirm?.({
-      paidAmount: amount,
+      paidAmount: numericPaid,
       paymentMethod,
       remainingAmount,
       changeAmount,
+      customerId,
+      customerName,
       status:
-        remainingAmount > 0
+        numericPaid === 0
+          ? "NON_PAYEE"
+          : remainingAmount > 0
           ? "PARTIELLEMENT_PAYEE"
           : "PAYEE",
     });
   };
 
   return (
-    // Fond sombre de la fenêtre
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
-
-      {/* Fenêtre de paiement */}
-      <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
-
+      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-2xl">
         {/* En-tête */}
         <div className="flex items-center justify-between border-b border-slate-100 p-5">
           <div>
-            <h2 className="text-xl font-bold text-slate-900">
-              Encaisser la vente
-            </h2>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Enregistrez le paiement du client.
+            <h2 className="text-xl font-bold text-slate-900">Encaisser la vente</h2>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Précisez le règlement et le client associé.
             </p>
           </div>
-
           <button
             type="button"
             onClick={onClose}
             className="rounded-lg p-2 text-slate-400 hover:bg-slate-100"
             aria-label="Fermer"
           >
-            <X size={21} />
+            <X size={20} />
           </button>
         </div>
 
-        {/* Contenu */}
-        <div className="space-y-6 p-5">
-
+        {/* Corps */}
+        <div className="space-y-5 p-5">
           {/* Montant total */}
-          <div className="rounded-xl bg-blue-50 p-4">
-            <p className="text-sm font-medium text-blue-700">
-              Montant total de la vente
-            </p>
-
-            <p className="mt-1 text-2xl font-extrabold text-blue-900">
+          <div className="flex items-center justify-between rounded-xl bg-blue-50 p-4">
+            <span className="text-sm font-semibold text-vendix-brand">
+              Montant total net
+            </span>
+            <span className="text-2xl font-black text-vendix-brand">
               {formatPrice(totalAmount)}
-            </p>
+            </span>
+          </div>
+
+          {/* Sélection du client */}
+          <div className="space-y-2">
+            <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-700">
+              <User size={15} className="text-vendix-brand" />
+              <span>Client associé {isCreditSale && <span className="text-red-500">*</span>}</span>
+            </label>
+
+            <select
+              value={selectedCustomerId}
+              onChange={(e) => {
+                setSelectedCustomerId(e.target.value);
+                if (e.target.value) setCustomCustomerName("");
+              }}
+              className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
+            >
+              <option value="">Sélectionner un client existant (ou saisir ci-dessous)</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.fullName} ({c.phone}) {c.currentDebt > 0 ? `· Dette: ${formatPrice(c.currentDebt)}` : ""}
+                </option>
+              ))}
+            </select>
+
+            {!selectedCustomerId && (
+              <input
+                type="text"
+                placeholder="Ou nom du client comptoir / nouveau client"
+                value={customCustomerName}
+                onChange={(e) => setCustomCustomerName(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
+              />
+            )}
+
+            {isCreditSale && !isCustomerProvided && (
+              <p className="flex items-center gap-1 text-xs font-semibold text-red-600">
+                <AlertTriangle size={14} />
+                Veuillez désigner un client pour enregistrer une vente à crédit.
+              </p>
+            )}
           </div>
 
           {/* Montant versé */}
           <div>
             <label
               htmlFor="paidAmount"
-              className="mb-2 block text-sm font-semibold text-slate-700"
+              className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-700"
             >
               Montant versé par le client (FCFA)
             </label>
-
             <input
               id="paidAmount"
               type="number"
               min="0"
               value={paidAmount}
-              onChange={(event) => setPaidAmount(event.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 text-lg font-bold outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-100"
-              placeholder="Ex : 20000"
+              onChange={(e) => setPaidAmount(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 p-3 text-lg font-black outline-none focus:border-vendix-brand focus:ring-2 focus:ring-blue-100"
+              placeholder="0"
             />
 
-            <button
-              type="button"
-              onClick={() => setPaidAmount(String(totalAmount))}
-              className="mt-2 text-sm font-medium text-blue-700 hover:underline"
-            >
-              Le client paie le montant exact
-            </button>
+            <div className="mt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPaidAmount(String(totalAmount))}
+                className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+              >
+                Paiement exact
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPaidAmount("0");
+                  setPaymentMethod("CREDIT");
+                }}
+                className="rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100"
+              >
+                100% à crédit (0 FCFA)
+              </button>
+            </div>
           </div>
 
           {/* Mode de paiement */}
           <div>
-            <p className="mb-3 text-sm font-semibold text-slate-700">
+            <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-700">
               Mode de paiement
-            </p>
-
-            <div className="grid grid-cols-2 gap-3">
+            </span>
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
               {paymentMethods.map((method) => {
                 const Icon = method.icon;
-                const selected = paymentMethod === method.id;
+                const isSelected = paymentMethod === method.id;
 
                 return (
                   <button
                     key={method.id}
                     type="button"
                     onClick={() => setPaymentMethod(method.id)}
-                    className={`flex items-center gap-2 rounded-xl border p-3 text-sm font-medium transition ${
-                      selected
-                        ? "border-blue-700 bg-blue-50 text-blue-800"
+                    className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border p-2.5 text-xs font-bold transition ${
+                      isSelected
+                        ? "border-vendix-brand bg-blue-50 text-vendix-brand ring-2 ring-vendix-brand/20"
                         : "border-slate-200 text-slate-600 hover:bg-slate-50"
                     }`}
                   >
-                    <Icon size={19} />
-                    {method.label}
+                    <Icon size={18} />
+                    <span>{method.label}</span>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* Reste à payer ou monnaie */}
-          <div className="rounded-xl border border-slate-200 p-4">
+          {/* Bilan financier de la transaction */}
+          <div className="rounded-xl border border-slate-200 p-3.5">
             {remainingAmount > 0 ? (
-              <div>
-                <p className="text-sm text-slate-500">
-                  Reste à payer
-                </p>
-
-                <p className="mt-1 text-xl font-bold text-orange-600">
-                  {formatPrice(remainingAmount)}
-                </p>
+              <div className="flex items-center justify-between text-amber-800">
+                <span className="text-xs font-bold">Reste à recouvrer (Dette client)</span>
+                <span className="text-base font-black">{formatPrice(remainingAmount)}</span>
               </div>
             ) : changeAmount > 0 ? (
-              <div>
-                <p className="text-sm text-slate-500">
-                  Monnaie à rendre
-                </p>
-
-                <p className="mt-1 text-xl font-bold text-green-700">
-                  {formatPrice(changeAmount)}
-                </p>
+              <div className="flex items-center justify-between text-emerald-800">
+                <span className="text-xs font-bold">Monnaie à rendre au client</span>
+                <span className="text-base font-black">{formatPrice(changeAmount)}</span>
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-green-700">
-                <CheckCircle size={20} />
-
-                <p className="font-semibold">
-                  Paiement complet
-                </p>
+              <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700">
+                <CheckCircle size={16} />
+                <span>Règlement intégral comptant</span>
               </div>
             )}
           </div>
         </div>
 
-        {/* Boutons d'action */}
+        {/* Actions */}
         <div className="flex gap-3 border-t border-slate-100 p-5">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 rounded-xl border border-slate-300 px-4 py-3 font-semibold text-slate-700 hover:bg-slate-50"
+            className="flex-1 rounded-xl border border-slate-300 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
           >
             Annuler
           </button>
-
           <button
             type="button"
             onClick={handleConfirm}
             disabled={!isValid}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-800 px-4 py-3 font-semibold text-white hover:bg-blue-900 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex-1 rounded-xl bg-vendix-brand py-2.5 text-xs font-bold text-white transition hover:bg-vendix-brand-dark disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand"
           >
-            <CheckCircle size={18} />
-            Confirmer
+            Valider et imprimer le reçu
           </button>
         </div>
       </div>
