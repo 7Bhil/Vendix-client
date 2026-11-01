@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, PackagePlus } from 'lucide-react';
+import { ArrowLeft, PackagePlus, Loader2 } from 'lucide-react';
 import productsData from '../../mocks/modules/products.json';
 import ProductImageUpload from '../../components/products/ProductImageUpload.jsx';
 import PriceTierManager from '../../components/products/PriceTierManager.jsx';
@@ -15,16 +15,18 @@ export default function NewProductPage() {
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
+  const [photoUrl, setPhotoUrl] = useState('');
   const [costPrice, setCostPrice] = useState('');
   const [salePrice, setSalePrice] = useState('');
   const [currentStock, setCurrentStock] = useState('');
   const [alertThreshold, setAlertThreshold] = useState('');
-  const [baseUnit, setBaseUnit] = useState('');
+  const [baseUnit, setBaseUnit] = useState('Unité');
   const [priceTiers, setPriceTiers] = useState([]);
   const [unitConversions, setUnitConversions] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const margin = Number(salePrice) - Number(costPrice);
+  const margin = (Number(salePrice) || 0) - (Number(costPrice) || 0);
 
   useEffect(() => {
     if (!id) return;
@@ -51,22 +53,34 @@ export default function NewProductPage() {
     setName(productToEdit.name ?? '');
     setCategory(productToEdit.categoryId ?? productToEdit.category ?? '');
     setDescription(productToEdit.description ?? '');
+    setPhotoUrl(productToEdit.photoUrl ?? '');
     setCostPrice(String(productToEdit.costPrice ?? ''));
     setSalePrice(String(productToEdit.salePrice ?? ''));
     setCurrentStock(String(productToEdit.currentStock ?? ''));
     setAlertThreshold(String(productToEdit.alertThreshold ?? ''));
-    setBaseUnit(productToEdit.baseUnit ?? '');
+    setBaseUnit(productToEdit.baseUnit ?? 'Unité');
     setPriceTiers(productToEdit.priceTiers ?? []);
     setUnitConversions(productToEdit.unitConversions ?? productToEdit.units ?? []);
   }, [id, navigate, toastError]);
 
   const handleSave = (event) => {
     event?.preventDefault();
+    setError('');
 
-    if (!name.trim() || !category || !salePrice || !costPrice) {
-      setError('Veuillez remplir tous les champs obligatoires (*).');
+    if (!name.trim()) {
+      setError('La désignation du produit est obligatoire.');
       return;
     }
+    if (!category) {
+      setError('Veuillez sélectionner une catégorie pour le produit.');
+      return;
+    }
+    if (salePrice === '' || Number(salePrice) < 0) {
+      setError('Veuillez renseigner un prix de vente valide.');
+      return;
+    }
+
+    setIsSubmitting(true);
 
     const categoryNames = {
       'cat-1': 'Alimentation générale',
@@ -79,8 +93,9 @@ export default function NewProductPage() {
       name: name.trim(),
       categoryId: category,
       category,
-      categoryName: categoryNames[category] || 'Autre',
+      categoryName: categoryNames[category] || 'Alimentation générale',
       description: description.trim(),
+      photoUrl: photoUrl || '',
       costPrice: Number(costPrice) || 0,
       salePrice: Number(salePrice) || 0,
       currentStock: Number(currentStock) || 0,
@@ -118,7 +133,6 @@ export default function NewProductPage() {
     }
 
     localStorage.setItem('vendix-custom-products', JSON.stringify(updatedCustom));
-    // Rétrocompatibilité avec vendix_products
     localStorage.setItem('vendix_products', JSON.stringify(updatedCustom));
 
     const message = id ? 'Produit modifié avec succès !' : 'Produit enregistré avec succès !';
@@ -126,7 +140,10 @@ export default function NewProductPage() {
       toastSuccess(message, 'Catalogue');
     }
 
-    navigate('/app/products');
+    setTimeout(() => {
+      setIsSubmitting(false);
+      navigate('/app/products');
+    }, 250);
   };
 
   return (
@@ -160,16 +177,17 @@ export default function NewProductPage() {
         )}
 
         {/* Informations générales */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-base font-bold text-slate-900">
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-100 pb-3">
             Informations générales
           </h2>
+
           <div className="mt-4">
             <label
               htmlFor="name"
               className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700"
             >
-              Nom du produit *
+              Désignation du produit *
             </label>
             <input
               type="text"
@@ -185,28 +203,10 @@ export default function NewProductPage() {
 
           <div className="mt-4">
             <label
-              htmlFor="description"
-              className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700"
-            >
-              Description
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              rows={3}
-              placeholder="Décrivez brièvement votre produit..."
-              className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-            />
-          </div>
-
-          <div className="mt-4">
-            <label
               htmlFor="category"
               className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700"
             >
-              Catégorie *
+              Catégorie d'article *
             </label>
             <select
               id="category"
@@ -225,42 +225,43 @@ export default function NewProductPage() {
             </select>
           </div>
 
-          <ProductImageUpload />
+          <div className="mt-4">
+            <label
+              htmlFor="description"
+              className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700"
+            >
+              Description détaillée (optionnelle)
+            </label>
+            <textarea
+              id="description"
+              name="description"
+              rows={2}
+              placeholder="Ex : Sac scellé d'origine, provenance Thaïlande..."
+              className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+            />
+          </div>
+
+          <ProductImageUpload
+            value={photoUrl}
+            onChange={(newPhoto) => setPhotoUrl(newPhoto)}
+          />
         </section>
 
         {/* Informations commerciales */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-base font-bold text-slate-900">
-            Informations commerciales & Tarification
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-100 pb-3">
+            Tarification & Marge
           </h2>
 
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label
-                htmlFor="costPrice"
-                className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700"
-              >
-                Prix d'achat (FCFA) *
-              </label>
-              <input
-                type="number"
-                id="costPrice"
-                name="costPrice"
-                min="0"
-                placeholder="Ex : 16500"
-                required
-                className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
-                value={costPrice}
-                onChange={(event) => setCostPrice(event.target.value)}
-              />
-            </div>
-
-            <div>
-              <label
                 htmlFor="salePrice"
                 className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700"
               >
-                Prix de vente (FCFA) *
+                Prix de vente unitaire (FCFA) *
               </label>
               <input
                 type="number"
@@ -274,33 +275,102 @@ export default function NewProductPage() {
                 onChange={(event) => setSalePrice(event.target.value)}
               />
             </div>
+
+            <div>
+              <label
+                htmlFor="costPrice"
+                className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700"
+              >
+                Coût d'achat fournisseur (FCFA)
+              </label>
+              <input
+                type="number"
+                id="costPrice"
+                name="costPrice"
+                min="0"
+                placeholder="Ex : 16500"
+                className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
+                value={costPrice}
+                onChange={(event) => setCostPrice(event.target.value)}
+              />
+            </div>
           </div>
 
-          <div className="mt-4 rounded-xl bg-slate-50 p-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Marge commerciale unitaire
-            </p>
-            <p
-              className={`mt-1 text-lg font-bold ${
-                margin < 0 ? 'text-red-600' : 'text-emerald-600'
-              }`}
-            >
-              {margin.toLocaleString('fr-FR')} FCFA
-            </p>
+          <div className="mt-4 rounded-xl bg-slate-50 p-4 border border-slate-200/60">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Marge brute unitaire estimée
+                </p>
+                <p
+                  className={`mt-1 text-lg font-bold ${
+                    margin < 0 ? 'text-red-600' : 'text-emerald-600'
+                  }`}
+                >
+                  {margin.toLocaleString('fr-FR')} FCFA
+                </p>
+              </div>
+
+              {costPrice && salePrice && (
+                <div className="text-right">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Taux de marque
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-slate-700">
+                    {Number(salePrice) > 0
+                      ? Math.round((margin / Number(salePrice)) * 100)
+                      : 0}
+                    %
+                  </p>
+                </div>
+              )}
+            </div>
+
             {margin < 0 && (
-              <p className="mt-1 text-xs font-semibold text-red-600">
-                Attention : le prix de vente est inférieur au prix d'achat !
+              <p className="mt-2 text-xs font-bold text-red-600">
+                Alerte : Le prix de vente est inférieur au coût d'achat (vente à perte interdite).
               </p>
             )}
           </div>
 
+          <PriceTierManager
+            value={priceTiers}
+            onChange={(tiers) => setPriceTiers(tiers)}
+          />
+        </section>
+
+        {/* Stock & Unités */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-100 pb-3">
+            Gestion du Stock & Unités
+          </h2>
+
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div>
+              <label
+                htmlFor="baseUnit"
+                className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700"
+              >
+                Unité de base *
+              </label>
+              <input
+                type="text"
+                id="baseUnit"
+                name="baseUnit"
+                placeholder="Ex : Sac, Carton, Pièce..."
+                required
+                className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
+                value={baseUnit}
+                onChange={(event) => setBaseUnit(event.target.value)}
+              />
+            </div>
+
             <div>
               <label
                 htmlFor="currentStock"
                 className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700"
               >
-                Stock initial *
+                Quantité en stock *
               </label>
               <input
                 type="number"
@@ -320,7 +390,7 @@ export default function NewProductPage() {
                 htmlFor="alertThreshold"
                 className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700"
               >
-                Seuil d'alerte
+                Seuil d'alerte stock faible
               </label>
               <input
                 type="number"
@@ -333,34 +403,18 @@ export default function NewProductPage() {
                 onChange={(event) => setAlertThreshold(event.target.value)}
               />
             </div>
-
-            <div>
-              <label
-                htmlFor="baseUnit"
-                className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700"
-              >
-                Unité de base *
-              </label>
-              <input
-                type="text"
-                id="baseUnit"
-                name="baseUnit"
-                placeholder="Ex : Sac, Carton..."
-                required
-                className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
-                value={baseUnit}
-                onChange={(event) => setBaseUnit(event.target.value)}
-              />
-            </div>
           </div>
 
-          <UnitConversionField onChange={setUnitConversions} />
-          <PriceTierManager onChange={setPriceTiers} />
+          <UnitConversionField
+            baseUnit={baseUnit}
+            value={unitConversions}
+            onChange={(conversions) => setUnitConversions(conversions)}
+          />
 
-          <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 mt-6">
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-6 border-t border-slate-100 mt-6">
             <button
               type="button"
-              className="rounded-xl border border-slate-300 px-5 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
+              className="w-full sm:w-auto rounded-xl border border-slate-300 px-5 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-slate-400"
               onClick={() => navigate('/app/products')}
             >
               Annuler
@@ -368,11 +422,21 @@ export default function NewProductPage() {
 
             <button
               type="button"
-              className="flex items-center gap-2 rounded-xl bg-vendix-brand px-5 py-2.5 text-xs font-bold text-white transition hover:bg-vendix-brand-dark focus-visible:ring-2 focus-visible:ring-vendix-brand"
+              disabled={isSubmitting}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-vendix-brand px-6 py-2.5 text-xs font-bold text-white transition hover:bg-vendix-brand-dark disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-vendix-brand"
               onClick={handleSave}
             >
-              <PackagePlus size={16} />
-              <span>{id ? 'Mettre à jour' : 'Enregistrer le produit'}</span>
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>Enregistrement...</span>
+                </>
+              ) : (
+                <>
+                  <PackagePlus size={16} />
+                  <span>{id ? 'Mettre à jour le produit' : 'Enregistrer le produit'}</span>
+                </>
+              )}
             </button>
           </div>
         </section>

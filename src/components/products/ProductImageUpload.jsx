@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { UploadCloud, Image as ImageIcon, Trash2, RefreshCw } from 'lucide-react';
+import { UploadCloud, Trash2, RefreshCw } from 'lucide-react';
 
 export default function ProductImageUpload({ value, onChange }) {
   const [previewUrl, setPreviewUrl] = useState(value || '');
