@@ -12,14 +12,34 @@ import NewProductPage from './pages/products/NewProductPage.jsx';
 import NewCustomerPage from './pages/customers/NewCustomerPage.jsx';
 import CustomerListPage from './pages/customers/CustomerListPage.jsx';
 import CustomerDetailPage from './pages/customers/CustomerDetailPage.jsx';
+import PublicShopPage from './pages/public/PublicShopPage.jsx';
 import AppLayout from './components/layout/AppLayout.jsx';
+import { getShopSubdomain } from './utils/subdomainUtils.js';
 
 export default function App() {
+  // Détection du sous-domaine pour afficher la boutique du commerçant
+  // Exemple : "alimentation-dossou.vendix.com"
+  const shopSubdomain = getShopSubdomain();
+
+  if (shopSubdomain) {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<PublicShopPage shopSlug={shopSubdomain} />} />
+          <Route path="/product/:id" element={<PublicShopPage shopSlug={shopSubdomain} />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
+
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Landing */}
+        {/* Public Landing & Vitrines de boutiques */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/shop/:slug" element={<PublicShopPage />} />
+        <Route path="/boutique/:slug" element={<PublicShopPage />} />
 
         {/* Auth Flow */}
         <Route path="/login" element={<LoginPage />} />
