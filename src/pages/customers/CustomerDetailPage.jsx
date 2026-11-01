@@ -1,10 +1,23 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CalendarDays, CircleDollarSign, CreditCard, ReceiptText } from 'lucide-react';
+import {
+  ArrowLeft,
+  CreditCard,
+  ReceiptText,
+  Phone,
+  MapPin,
+  Plus,
+} from 'lucide-react';
 import DebtSummaryCard from '../../components/customers/DebtSummaryCard.jsx';
 import PaymentRecordModal from '../../components/customers/PaymentRecordModal.jsx';
 import WhatsAppReminderButton from '../../components/customers/WhatsAppReminderButton.jsx';
-import { formatCurrency, formatDate, getInitialPaymentHistory, loadCustomers, saveCustomers } from '../../utils/customerDebtUtils.js';
+import {
+  formatCurrency,
+  formatDate,
+  getInitialPaymentHistory,
+  loadCustomers,
+  saveCustomers,
+} from '../../utils/customerDebtUtils.js';
 
 const PAYMENT_METHODS = {
   ESPECE: 'Espèces',
@@ -24,15 +37,20 @@ export default function CustomerDetailPage() {
 
   if (!customer) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-        <section className="max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <h1 className="text-xl font-bold text-slate-900">Client introuvable</h1>
-          <p className="mt-2 text-sm text-slate-600">Ce client n’existe pas dans les données de démonstration.</p>
-          <Link to="/app/customers" className="mt-5 inline-flex font-semibold text-vendix-brand hover:underline">
-            Retour à la liste des clients
+      <div className="flex min-h-[60vh] items-center justify-center p-4">
+        <section className="max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
+          <h1 className="text-lg font-bold text-slate-900">Client introuvable</h1>
+          <p className="mt-1 text-xs text-slate-500">
+            Cette fiche client n’existe pas dans vos données.
+          </p>
+          <Link
+            to="/app/customers"
+            className="mt-4 inline-flex text-xs font-bold text-vendix-brand hover:underline"
+          >
+            Retour aux clients
           </Link>
         </section>
-      </main>
+      </div>
     );
   }
 
@@ -40,15 +58,18 @@ export default function CustomerDetailPage() {
     ...getInitialPaymentHistory(customer),
     ...(customer.paymentHistory ?? []),
   ].sort((first, second) => new Date(second.date) - new Date(first.date));
-  const statement = [...(customer.statement ?? [])]
-    .sort((first, second) => new Date(second.date) - new Date(first.date));
+
+  const statement = [...(customer.statement ?? [])].sort(
+    (first, second) => new Date(second.date) - new Date(first.date)
+  );
 
   function recordPayment(payment) {
     const updatedCustomer = {
       ...customer,
-      currentDebt: customer.currentDebt - payment.amount,
+      currentDebt: Math.max(customer.currentDebt - payment.amount, 0),
       totalPaid: (customer.totalPaid ?? 0) + payment.amount,
-      oldestDebtDate: customer.currentDebt - payment.amount === 0 ? null : customer.oldestDebtDate,
+      oldestDebtDate:
+        customer.currentDebt - payment.amount <= 0 ? null : customer.oldestDebtDate,
       paymentHistory: [
         ...(customer.paymentHistory ?? []),
         {
@@ -64,12 +85,13 @@ export default function CustomerDetailPage() {
           ref: `PAY-${payment.date}-${(customer.paymentHistory ?? []).length + 1}`,
           debit: 0,
           credit: payment.amount,
-          balance: customer.currentDebt - payment.amount,
+          balance: Math.max(customer.currentDebt - payment.amount, 0),
         },
       ],
     };
+
     const updatedCustomers = customers.map((entry) =>
-      entry.id === customer.id ? updatedCustomer : entry,
+      entry.id === customer.id ? updatedCustomer : entry
     );
 
     try {
@@ -78,156 +100,186 @@ export default function CustomerDetailPage() {
       setStorageError('');
       setShowPaymentModal(false);
     } catch (error) {
-      setStorageError(`Le règlement n’a pas pu être sauvegardé dans ce navigateur. ${error.message}`);
+      setStorageError(`Le règlement n’a pas pu être sauvegardé. ${error.message}`);
     }
   }
 
-  return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
-          <Link to="/" className="text-xl font-extrabold tracking-tight text-vendix-brand">
-            Vendix<span className="text-vendix-accent">.</span>
-          </Link>
-          <Link to="/app/customers" className="text-sm font-semibold text-slate-600 hover:text-vendix-brand">
-            Tous les clients
-          </Link>
-        </div>
-      </header>
+  const initials = customer.fullName
+    .split(' ')
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join('');
 
-      <div className="mx-auto max-w-5xl px-4 py-7 sm:px-6 sm:py-10">
+  return (
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+      {/* Navigation et actions principales */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <button
           type="button"
           onClick={() => navigate('/app/customers')}
-          className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-vendix-brand"
+          className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-vendix-brand"
         >
-          <ArrowLeft size={17} aria-hidden="true" />
-          Retour aux clients
+          <ArrowLeft size={16} aria-hidden="true" />
+          <span>Retour à la liste des clients</span>
         </button>
 
-        <section className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
-            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-lg font-bold text-vendix-brand">
-              {customer.fullName.split(' ').map((part) => part[0]).slice(0, 2).join('')}
-            </span>
-            <div>
-              <p className="text-sm font-medium text-slate-500">Fiche client</p>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">{customer.fullName}</h1>
-              <p className="mt-1 text-sm text-slate-600">{customer.phone}{customer.address ? ` · ${customer.address}` : ''}</p>
-            </div>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            {customer.currentDebt > 0 && <WhatsAppReminderButton customer={customer} />}
-            {customer.currentDebt > 0 && (
-              <button
-                type="button"
-                onClick={() => setShowPaymentModal(true)}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-vendix-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-vendix-brand-dark focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
-              >
-                <CircleDollarSign size={18} aria-hidden="true" />
-                Enregistrer un règlement
-              </button>
-            )}
-          </div>
-        </section>
-
-        {storageError && <p role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{storageError}</p>}
-
-        <DebtSummaryCard customer={customer} />
-
-        <section className="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4 sm:px-6">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-              <CreditCard size={19} aria-hidden="true" />
-            </span>
-            <div>
-              <h2 className="font-semibold text-slate-900">Historique des acomptes</h2>
-              <p className="text-sm text-slate-500">Règlements enregistrés pour ce client</p>
-            </div>
-          </div>
-          {payments.length ? (
-            <div className="divide-y divide-slate-100">
-              {payments.map((payment) => (
-                <div key={payment.id} className="flex items-center justify-between gap-4 px-5 py-4 sm:px-6">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <CalendarDays size={18} className="shrink-0 text-slate-400" aria-hidden="true" />
-                    <div className="min-w-0">
-                      <p className="font-medium text-slate-800">{formatDate(payment.date)}</p>
-                      <p className="mt-0.5 truncate text-xs text-slate-500">
-                        {PAYMENT_METHODS[payment.method] ?? payment.method}
-                        {payment.reference ? ` · ${payment.reference}` : ''}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="shrink-0 font-bold text-emerald-700">+ {formatCurrency(payment.amount)} FCFA</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="px-5 py-8 text-center text-sm text-slate-500 sm:px-6">
-              Aucun acompte enregistré pour le moment.
-            </p>
-          )}
-        </section>
-
-        <section className="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4 sm:px-6">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-vendix-brand">
-              <ReceiptText size={19} aria-hidden="true" />
-            </span>
-            <div>
-              <h2 className="font-semibold text-slate-900">Mouvements du compte</h2>
-              <p className="text-sm text-slate-500">Ventes à crédit et règlements enregistrés</p>
-            </div>
-          </div>
-          {statement.length ? (
-            <div className="divide-y divide-slate-100">
-              {statement.map((entry, index) => (
-                <div key={`${entry.ref}-${index}`} className="grid grid-cols-2 gap-2 px-5 py-4 text-sm sm:grid-cols-4 sm:px-6">
-                  <div>
-                    <p className="text-xs text-slate-500">Date</p>
-                    <p className="mt-1 font-medium text-slate-800">{formatDate(entry.date)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500">Opération</p>
-                    <p className="mt-1 font-medium text-slate-800">{entry.type.replaceAll('_', ' ')}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500">Montant</p>
-                    <p className={`mt-1 font-semibold ${entry.credit > 0 ? 'text-emerald-700' : 'text-slate-800'}`}>
-                      {entry.credit > 0 ? '− ' : '+ '}{formatCurrency(entry.credit || entry.debit)} FCFA
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500">Solde après opération</p>
-                    <p className="mt-1 font-semibold text-slate-800">{formatCurrency(entry.balance)} FCFA</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="px-5 py-8 text-center text-sm text-slate-500 sm:px-6">Aucun mouvement enregistré.</p>
-          )}
-        </section>
-
-        {customer.notes && (
-          <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-            <h2 className="font-semibold text-slate-900">Note client</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">{customer.notes}</p>
-          </section>
-        )}
-        <p className="mt-5 text-xs text-slate-500">
-          Prototype local : les règlements sont conservés dans ce navigateur et ne sont pas encore synchronisés avec un serveur.
-        </p>
+        <div className="flex items-center gap-2">
+          {customer.currentDebt > 0 && <WhatsAppReminderButton customer={customer} />}
+          <button
+            type="button"
+            onClick={() => setShowPaymentModal(true)}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-vendix-brand px-4 text-xs font-bold text-white shadow-sm transition hover:bg-vendix-brand-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand"
+          >
+            <Plus size={16} />
+            <span>Enregistrer un versement</span>
+          </button>
+        </div>
       </div>
 
-      {showPaymentModal && (
-        <PaymentRecordModal
-          customer={customer}
-          onClose={() => setShowPaymentModal(false)}
-          onSubmit={recordPayment}
-        />
+      {storageError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700">
+          {storageError}
+        </div>
       )}
-    </main>
+
+      {/* Carte d'identité client épurée */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-base font-black text-vendix-brand">
+              {initials}
+            </div>
+
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Fiche Client Individuelle
+              </span>
+              <h1 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
+                {customer.fullName}
+              </h1>
+
+              <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                <span className="flex items-center gap-1 font-medium">
+                  <Phone size={13} className="text-slate-400" />
+                  {customer.phone}
+                </span>
+                {customer.address && (
+                  <>
+                    <span>•</span>
+                    <span className="flex items-center gap-1 font-medium">
+                      <MapPin size={13} className="text-slate-400" />
+                      {customer.address}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="text-left sm:text-right border-t border-slate-100 pt-3 sm:border-0 sm:pt-0">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Solde débiteur actuel
+            </p>
+            <p
+              className={`text-2xl font-black ${
+                customer.currentDebt > 0 ? 'text-amber-800' : 'text-emerald-700'
+              }`}
+            >
+              {formatCurrency(customer.currentDebt)} <span className="text-xs font-bold text-slate-400">FCFA</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Cartes d'indicateurs de créance */}
+      <DebtSummaryCard customer={customer} />
+
+      {/* Grille : Relevé de compte & Historique des règlements */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Relevé chronologique */}
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div className="border-b border-slate-100 p-4">
+            <h2 className="flex items-center gap-2 text-sm font-bold text-slate-900">
+              <ReceiptText size={17} className="text-vendix-brand" />
+              <span>Carnet de débit & crédit</span>
+            </h2>
+          </div>
+
+          {statement.length > 0 ? (
+            <div className="divide-y divide-slate-100 max-h-80 overflow-y-auto">
+              {statement.map((item, idx) => (
+                <div key={idx} className="flex items-center justify-between p-3.5 text-xs">
+                  <div>
+                    <p className="font-bold text-slate-900">{item.type.replace(/_/g, ' ')}</p>
+                    <p className="text-[11px] text-slate-400">
+                      {formatDate(item.date)} • Ref: {item.ref}
+                    </p>
+                  </div>
+
+                  <div className="text-right">
+                    <p
+                      className={`font-black ${
+                        item.debit > 0 ? 'text-slate-900' : 'text-emerald-700'
+                      }`}
+                    >
+                      {item.debit > 0 ? `+${formatCurrency(item.debit)}` : `-${formatCurrency(item.credit)}`} FCFA
+                    </p>
+                    <p className="text-[10px] text-slate-400 font-medium">
+                      Solde : {formatCurrency(item.balance)} FCFA
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="p-6 text-center text-xs text-slate-400">
+              Aucun mouvement comptable enregistré.
+            </p>
+          )}
+        </div>
+
+        {/* Historique des paiements reçus */}
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div className="border-b border-slate-100 p-4">
+            <h2 className="flex items-center gap-2 text-sm font-bold text-slate-900">
+              <CreditCard size={17} className="text-emerald-600" />
+              <span>Règlements encaissés</span>
+            </h2>
+          </div>
+
+          {payments.length > 0 ? (
+            <div className="divide-y divide-slate-100 max-h-80 overflow-y-auto">
+              {payments.map((payment, idx) => (
+                <div key={idx} className="flex items-center justify-between p-3.5 text-xs">
+                  <div>
+                    <p className="font-bold text-slate-900">
+                      {PAYMENT_METHODS[payment.method] || payment.method}
+                    </p>
+                    <p className="text-[11px] text-slate-400">
+                      {formatDate(payment.date)}
+                    </p>
+                  </div>
+
+                  <p className="font-black text-emerald-700">
+                    +{formatCurrency(payment.amount)} FCFA
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="p-6 text-center text-xs text-slate-400">
+              Aucun paiement antérieur.
+            </p>
+          )}
+        </div>
+      </div>
+
+      <PaymentRecordModal
+        isOpen={showPaymentModal}
+        customer={customer}
+        onClose={() => setShowPaymentModal(false)}
+        onSubmit={recordPayment}
+      />
+    </div>
   );
 }
