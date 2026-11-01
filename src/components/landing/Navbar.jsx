@@ -1,122 +1,109 @@
-
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Menu, X, ArrowRight } from "lucide-react";
 
-function Navbar() {
-  // Ouvrir et fermer le menu sur téléphone
+export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Liens vers les sections de la page d'accueil
   const navLinks = [
     { label: "Fonctionnalités", href: "#fonctionnalites" },
+    { label: "Constat terrain", href: "#problemes" },
     { label: "Comment ça marche", href: "#comment-ca-marche" },
-    { label: "Témoignages", href: "#temoignages" },
+    { label: "Vitrine", href: "#vitrine" },
+    { label: "FAQ", href: "#faq" },
   ];
 
-  // Fermer le menu mobile après un clic sur un lien
   const closeMenu = () => setMenuOpen(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/90 backdrop-blur">
+    <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
       <nav
-        className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8"
+        className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-8"
         aria-label="Navigation principale"
       >
-        {/* Logo Vendix */}
-        <a
-          href="/"
-          className="text-2xl font-extrabold tracking-tight text-vendix-brand"
-          aria-label="Vendix - Accueil"
+        {/* Logo Vendix sobre */}
+        <Link
+          to="/"
+          className="text-xl font-extrabold tracking-tight text-vendix-ink flex items-center gap-2"
           onClick={closeMenu}
         >
-          Vendix<span className="text-vendix-accent">.</span>
-        </a>
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-vendix-brand text-sm font-bold text-white shadow-sm">
+            V
+          </span>
+          <span className="text-xl font-extrabold tracking-tight text-vendix-ink">
+            Vendix<span className="text-vendix-brand">.</span>
+          </span>
+        </Link>
 
-        {/* Navigation sur ordinateur */}
-        <div className="hidden items-center gap-8 md:flex">
+        {/* Navigation desktop sobre */}
+        <div className="hidden items-center gap-7 md:flex">
           {navLinks.map((link) => (
             <a
               key={link.href}
               href={link.href}
-              className="text-sm font-medium text-vendix-ink transition-colors hover:text-vendix-brand"
+              className="text-xs font-semibold text-slate-600 transition hover:text-vendix-brand"
             >
               {link.label}
             </a>
           ))}
         </div>
 
-        {/* Actions et bouton du menu mobile */}
+        {/* Actions d'accès */}
         <div className="flex items-center gap-3">
-          <a
-            href="/connexion"
-            className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-vendix-ink transition-colors hover:bg-slate-100 sm:inline-flex"
+          <Link
+            to="/login"
+            className="hidden rounded-xl px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 sm:inline-flex"
           >
             Connexion
-          </a>
+          </Link>
 
-          <a
-            href="/inscription"
-            className="hidden rounded-lg bg-vendix-brand px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-vendix-brand-dark sm:inline-flex"
+          <Link
+            to="/signup"
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-vendix-brand px-4 text-xs font-bold text-white shadow-sm transition hover:bg-vendix-brand-dark"
           >
-            Créer ma boutique
-          </a>
+            <span>Créer ma boutique</span>
+            <ArrowRight size={14} />
+          </Link>
 
-          {/* Bouton du menu mobile */}
+          {/* Bouton burger mobile */}
           <button
             type="button"
-            onClick={() => setMenuOpen((previous) => !previous)}
-            className="inline-flex items-center justify-center rounded-lg p-2 text-vendix-ink transition-colors hover:bg-slate-100 md:hidden"
+            onClick={() => setMenuOpen((v) => !v)}
+            className="inline-flex items-center justify-center rounded-lg p-2 text-slate-700 hover:bg-slate-100 md:hidden"
             aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
-            aria-expanded={menuOpen}
-            aria-controls="mobile-navigation"
           >
-            {menuOpen ? (
-              <X size={24} aria-hidden="true" />
-            ) : (
-              <Menu size={24} aria-hidden="true" />
-            )}
+            {menuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       </nav>
 
-      {/* Navigation sur téléphone */}
+      {/* Menu mobile déroulant */}
       {menuOpen && (
-        <div
-          id="mobile-navigation"
-          className="border-t border-slate-200 bg-white px-4 py-4 md:hidden"
-        >
-          <div className="flex flex-col gap-4">
+        <div className="border-b border-slate-200 bg-white px-4 py-4 md:hidden space-y-3">
+          <div className="flex flex-col space-y-2">
             {navLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
                 onClick={closeMenu}
-                className="text-sm font-medium text-vendix-ink transition-colors hover:text-vendix-brand"
+                className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
               >
                 {link.label}
               </a>
             ))}
+          </div>
 
-            <a
-              href="/connexion"
+          <div className="border-t border-slate-100 pt-3 flex flex-col gap-2">
+            <Link
+              to="/login"
               onClick={closeMenu}
-              className="rounded-lg px-3 py-2 text-center text-sm font-semibold text-vendix-ink transition-colors hover:bg-slate-100"
+              className="flex h-11 items-center justify-center rounded-xl border border-slate-200 text-xs font-bold text-slate-700"
             >
-              Connexion
-            </a>
-
-            <a
-              href="/inscription"
-              onClick={closeMenu}
-              className="rounded-lg bg-vendix-brand px-4 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-vendix-brand-dark"
-            >
-              Créer ma boutique
-            </a>
+              Connexion Commerçant
+            </Link>
           </div>
         </div>
       )}
     </header>
   );
 }
-
-export default Navbar;

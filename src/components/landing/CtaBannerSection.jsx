@@ -1,30 +1,54 @@
+import { Link } from "react-router-dom";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 
-import { ArrowRight } from "lucide-react";
-
-export default function FinalCTASection() {
+export default function CtaBannerSection() {
   return (
-    <section className="w-full bg-vendix-whatsapp px-6 py-20 sm:py-24">
-      <div className="mx-auto max-w-5xl text-center">
-        {/* Message principal */}
-        <h2 className="text-3xl font-extrabold leading-tight text-white sm:text-4xl lg:text-5xl">
-          Prêt à faire grandir votre commerce dès aujourd'hui ?
-        </h2>
+    <section className="border-b border-slate-200/80 bg-slate-900 py-16 sm:py-20 lg:py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl lg:text-5xl">
+            Passez au digital sans changer votre façon de vendre
+          </h2>
 
-        {/* Promesse de Vendix */}
-        <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-vendix-ink sm:text-lg">
-          Développez vos ventes, gérez mieux votre commerce et améliorez
-          votre rentabilité grâce à Vendix. Créez votre boutique
-          gratuitement et commencez à développer votre activité dès aujourd'hui.
-        </p>
+          <p className="mt-4 text-base leading-relaxed text-slate-300 sm:text-lg">
+            Rejoignez les grossistes et détaillants qui fiabilisent leur caisse, éliminent les oublis de créances et partagent leur catalogue WhatsApp dès aujourd'hui.
+          </p>
 
-        {/* Bouton contrasté */}
-        <a
-          href="/register"
-          className="mt-8 inline-flex items-center justify-center gap-3 rounded-xl bg-vendix-accent px-8 py-4 text-base font-bold text-vendix-ink shadow-lg transition duration-300 hover:-translate-y-1 hover:brightness-95 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-amber-200"
-        >
-          Créer ma boutique maintenant
-          <ArrowRight size={21} strokeWidth={2.2} aria-hidden="true" />
-        </a>
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link
+              to="/signup"
+              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-vendix-brand px-7 text-sm font-bold text-white shadow-lg shadow-blue-900/30 transition hover:bg-vendix-brand-dark sm:w-auto"
+            >
+              <span>Créer ma boutique gratuitement</span>
+              <ArrowRight size={18} />
+            </Link>
+
+            <Link
+              to="/login"
+              className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-slate-700 bg-slate-800 px-6 text-sm font-semibold text-white transition hover:bg-slate-700 sm:w-auto"
+            >
+              Déjà inscrit ? Se connecter
+            </Link>
+          </div>
+
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400">
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 size={14} className="text-emerald-400" />
+              100% Fonctionnel sur smartphone
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 size={14} className="text-emerald-400" />
+              Opérationnel hors-ligne
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 size={14} className="text-emerald-400" />
+              Zéro frais SMS
+            </span>
+          </div>
+
+        </div>
       </div>
     </section>
   );
