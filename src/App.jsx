@@ -9,6 +9,7 @@ import OnboardingPage from './pages/onboarding/OnboardingPage.jsx';
 import DashboardPage from './pages/dashboard/DashboardPage.jsx';
 import NewSalePage from './pages/sales/NewSalePage.jsx';
 import NewProductPage from './pages/products/NewProductPage.jsx';
+import ProductListPage from './pages/products/ProductListPage.jsx';
 import NewCustomerPage from './pages/customers/NewCustomerPage.jsx';
 
 export default function App() {
@@ -35,10 +36,12 @@ export default function App() {
         {/* Espace Commerçant après connexion */}
         <Route path="/app/dashboard" element={<DashboardPage />} />
         <Route path="/app/tableau-de-bord" element={<Navigate to="/app/dashboard" replace />} />
+        <Route path="/app/produits" element={<ProductListPage />} />
 
         {/* Accès rapides vendeur */}
         <Route path="/app/sales/new" element={<NewSalePage />} />
         <Route path="/app/products/new" element={<NewProductPage />} />
+        <Route path="/app/products/:id/modifier" element={<NewProductPage />}/>
         <Route path="/app/customers/new" element={<NewCustomerPage />} />
 
         {/* Redirection par défaut si route inconnue */}
