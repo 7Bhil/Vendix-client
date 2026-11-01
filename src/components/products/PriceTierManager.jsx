@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Trash2, Layers, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Layers } from 'lucide-react';
 
 const TIER_OPTIONS = [
   { value: 'detail', label: 'Détail' },
