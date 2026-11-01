@@ -102,10 +102,9 @@ export default function NewSalePage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-7xl space-y-6">
-        {/* En-tête */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+      {/* En-tête */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <Link
               to="/app/dashboard"
@@ -149,7 +148,6 @@ export default function NewSalePage() {
             />
           </div>
         </div>
-      </div>
 
       {/* Barre flottante mobile d'encaissement rapide */}
       {cart.length > 0 && (

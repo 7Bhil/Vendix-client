@@ -185,10 +185,9 @@ export default function DashboardPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-vendix-surface px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-      <div className="mx-auto max-w-7xl space-y-6">
-        {/* En-tête avec titre, statut réseau et actions */}
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+      {/* En-tête avec titre, statut réseau et actions */}
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold text-vendix-brand">
               Espace commerçant
@@ -442,7 +441,6 @@ export default function DashboardPage() {
             </section>
           </>
         )}
-      </div>
-    </main>
+    </div>
   );
 }
