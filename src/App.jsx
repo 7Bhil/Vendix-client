@@ -5,7 +5,11 @@ import LoginPage from './pages/auth/LoginPage.jsx';
 import SignupPage from './pages/auth/SignupPage.jsx';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage.jsx';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage.jsx';
-import DemarragePage from './pages/auth/DemarragePage.jsx';
+import OnboardingPage from './pages/onboarding/OnboardingPage.jsx';
+import DashboardPage from './pages/dashboard/DashboardPage.jsx';
+import NewSalePage from './pages/sales/NewSalePage.jsx';
+import NewProductPage from './pages/products/NewProductPage.jsx';
+import NewCustomerPage from './pages/customers/NewCustomerPage.jsx';
 import CustomerListPage from './pages/customers/CustomerListPage.jsx';
 import CustomerDetailPage from './pages/customers/CustomerDetailPage.jsx';
 
@@ -17,13 +21,35 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
 
         {/* Parcours d'authentification */}
-        <Route path="/connexion" element={<LoginPage />} />
-        <Route path="/inscription" element={<SignupPage />} />
-        <Route path="/demarrage" element={<DemarragePage />} />
-        <Route path="/recuperation-compte" element={<ForgotPasswordPage />} />
-        <Route path="/reinitialiser-mot-de-passe" element={<ResetPasswordPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/onboarding" element={<OnboardingPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+        {/* Alias rétrocompatibles */}
+        <Route path="/connexion" element={<Navigate to="/login" replace />} />
+        <Route path="/inscription" element={<Navigate to="/signup" replace />} />
+        <Route path="/demarrage" element={<Navigate to="/onboarding" replace />} />
+        <Route path="/recuperation-compte" element={<Navigate to="/forgot-password" replace />} />
+        <Route path="/reinitialiser-mot-de-passe" element={<Navigate to="/reset-password" replace />} />
+
+        {/* Espace Commerçant après connexion */}
+        <Route path="/app/dashboard" element={<DashboardPage />} />
+        <Route path="/app/tableau-de-bord" element={<Navigate to="/app/dashboard" replace />} />
+
+        {/* Accès rapides vendeur */}
+        <Route path="/app/sales/new" element={<NewSalePage />} />
+        <Route path="/app/nouvelle-vente" element={<Navigate to="/app/sales/new" replace />} />
+        <Route path="/app/ventes/nouvelle" element={<Navigate to="/app/sales/new" replace />} />
+        <Route path="/app/products/new" element={<NewProductPage />} />
+        <Route path="/app/customers/new" element={<NewCustomerPage />} />
+
+        {/* Gestion des clients et suivi des dettes */}
         <Route path="/app/clients" element={<CustomerListPage />} />
+        <Route path="/app/customers" element={<Navigate to="/app/clients" replace />} />
         <Route path="/app/clients/:id" element={<CustomerDetailPage />} />
+        <Route path="/app/customers/:id" element={<CustomerDetailPage />} />
 
         {/* Redirection par défaut si route inconnue */}
         <Route path="*" element={<Navigate to="/" replace />} />

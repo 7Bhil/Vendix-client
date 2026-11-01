@@ -132,7 +132,7 @@ export default function ForgotPasswordForm() {
       <p className="text-center text-sm text-slate-600">
         Vous vous souvenez de votre mot de passe ?{' '}
         <Link
-          to="/connexion"
+          to="/login"
           className="font-medium text-vendix-brand hover:text-vendix-brand-dark"
         >
           Se connecter

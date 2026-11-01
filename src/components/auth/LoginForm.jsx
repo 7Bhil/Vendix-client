@@ -1,9 +1,10 @@
 
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import PasswordInput from './PasswordInput.jsx'
 
 export default function LoginForm() {
+  const navigate = useNavigate()
   const [formData, setFormData] = useState({
     phone: '',
     password: '',
@@ -48,8 +49,26 @@ export default function LoginForm() {
       return
     }
 
+    // Identifiants de test / Démo autorisés
+    const isDemoUser =
+      formData.phone === '0197000001' && formData.password === 'Vendix@2026'
+
+    if (isDemoUser) {
+      // Connexion réussie : un utilisateur existant va TOUJOURS au dashboard
+      navigate('/app/dashboard', {
+        state: {
+          user: {
+            phone: formData.phone,
+            shopName: 'Boutique Le Progrès',
+            role: 'MERCHANT',
+          },
+        },
+      })
+      return
+    }
+
     setErrors({
-      form: "Le service de connexion n'est pas encore connecté à l'API.",
+      form: 'Numéro de téléphone ou mot de passe incorrect. Pour tester : 0197000001 / Vendix@2026',
     })
   }
 
@@ -107,12 +126,12 @@ export default function LoginForm() {
       </div>
 
       <div className="mb-6 flex justify-end">
-      <Link
-  to="/recuperation-compte"
-  className="text-sm font-medium text-teal-700 hover:text-teal-900"
->
-  Mot de passe oublié ?
-</Link>
+        <Link
+          to="/forgot-password"
+          className="text-sm font-medium text-teal-700 hover:text-teal-900"
+        >
+          Mot de passe oublié ?
+        </Link>
       </div>
 
       {errors.form && (
@@ -133,12 +152,12 @@ export default function LoginForm() {
 
       <p className="mt-6 text-center text-sm text-slate-600">
         Vous n'avez pas encore de boutique ?{' '}
-        <a
-          href="/inscription"
+        <Link
+          to="/signup"
           className="font-medium text-teal-700 hover:text-teal-900"
         >
           Créer une boutique
-        </a>
+        </Link>
       </p>
     </form>
   )
