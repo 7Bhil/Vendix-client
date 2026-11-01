@@ -89,7 +89,7 @@ export default function CustomerListPage() {
                 const age = getDebtAge(customer.oldestDebtDate);
                 return (
                   <article key={customer.id} className="flex flex-col gap-4 p-4 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
-                    <Link to={`/app/clients/${customer.id}`} className="group min-w-0 flex-1">
+                    <Link to={`/app/customers/${customer.id}`} className="group min-w-0 flex-1">
                       <div className="flex items-start gap-3">
                         <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold ${hasDebt ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
                           {customer.fullName.split(' ').map((part) => part[0]).slice(0, 2).join('')}
@@ -125,7 +125,7 @@ export default function CustomerListPage() {
                     <div className="flex flex-col gap-2 sm:flex-row lg:justify-end">
                       {hasDebt && <WhatsAppReminderButton customer={customer} className="w-full sm:w-auto" />}
                       <Link
-                        to={`/app/clients/${customer.id}`}
+                        to={`/app/customers/${customer.id}`}
                         className="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                       >
                         Voir la fiche
