@@ -8,6 +8,8 @@ import ResetPasswordPage from './pages/auth/ResetPasswordPage.jsx';
 import OnboardingPage from './pages/onboarding/OnboardingPage.jsx';
 import DashboardPage from './pages/dashboard/DashboardPage.jsx';
 import NewSalePage from './pages/sales/NewSalePage.jsx';
+import NewProductPage from './pages/products/NewProductPage.jsx';
+import NewCustomerPage from './pages/customers/NewCustomerPage.jsx';
 
 export default function App() {
   return (
@@ -33,16 +35,13 @@ export default function App() {
         {/* Espace Commerçant après connexion */}
         <Route path="/app/dashboard" element={<DashboardPage />} />
         <Route path="/app/tableau-de-bord" element={<Navigate to="/app/dashboard" replace />} />
-        {/* Espace Commerçant */}
-        <Route path="/app/dashboard" element={<DashboardPage />} />
 
-        {/* Page Nouvelle vente */}
-        <Route path="/app/nouvelle-vente" element={<NewSalePage />} />
-
-        <Route
-          path="/app/tableau-de-bord"
-          element={<Navigate to="/app/dashboard" replace />}
-        />
+        {/* Accès rapides vendeur */}
+        <Route path="/app/sales/new" element={<NewSalePage />} />
+        <Route path="/app/nouvelle-vente" element={<Navigate to="/app/sales/new" replace />} />
+        <Route path="/app/ventes/nouvelle" element={<Navigate to="/app/sales/new" replace />} />
+        <Route path="/app/products/new" element={<NewProductPage />} />
+        <Route path="/app/customers/new" element={<NewCustomerPage />} />
 
         {/* Redirection par défaut si route inconnue */}
         <Route path="*" element={<Navigate to="/" replace />} />

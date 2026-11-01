@@ -1,9 +1,10 @@
-
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   ShoppingCart,
   CheckCircle2,
   RotateCcw,
+  ArrowLeft,
 } from "lucide-react";
 
 // Importation des composants de vente
@@ -161,11 +162,19 @@ export default function NewSalePage() {
 
       <div className="mx-auto max-w-7xl space-y-6">
 
-        {/* En-tête de la page */}
+        {/* En-tête de la page avec navigation retour */}
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
 
           <div>
             <div className="flex items-center gap-3">
+              <Link
+                to="/app/dashboard"
+                className="flex items-center justify-center rounded-xl border border-slate-200 bg-white p-3 text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand"
+                aria-label="Retour au tableau de bord"
+              >
+                <ArrowLeft size={20} />
+              </Link>
+
               <div className="rounded-xl bg-blue-100 p-3 text-blue-800">
                 <ShoppingCart size={25} />
               </div>
