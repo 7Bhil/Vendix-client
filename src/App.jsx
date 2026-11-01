@@ -38,6 +38,8 @@ export default function App() {
 
         {/* Accès rapides vendeur */}
         <Route path="/app/sales/new" element={<NewSalePage />} />
+        <Route path="/app/nouvelle-vente" element={<Navigate to="/app/sales/new" replace />} />
+        <Route path="/app/ventes/nouvelle" element={<Navigate to="/app/sales/new" replace />} />
         <Route path="/app/products/new" element={<NewProductPage />} />
         <Route path="/app/customers/new" element={<NewCustomerPage />} />
 
