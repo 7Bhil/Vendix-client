@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
+  ArrowRight,
   PackagePlus,
   Loader2,
   Eye,
@@ -9,9 +10,12 @@ import {
   Star,
   Plus,
   AlertTriangle,
-  ChevronDown,
-  Layers,
-  Scale,
+  Check,
+  Tag,
+  BadgePercent,
+  Boxes,
+  Sliders,
+  CheckCircle2,
 } from 'lucide-react';
 import productsData from '../../mocks/modules/products.json';
 import ProductImageUpload from '../../components/products/ProductImageUpload.jsx';
@@ -19,10 +23,19 @@ import PriceTierManager from '../../components/products/PriceTierManager.jsx';
 import UnitConversionField from '../../components/products/UnitConversionField.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 
+const STEPS = [
+  { id: 1, title: 'Article & Image', subtitle: 'Nom, catégorie & photo', icon: Tag },
+  { id: 2, title: 'Prix & Marge', subtitle: 'Tarifs & rentabilité', icon: BadgePercent },
+  { id: 3, title: 'Stock & Unités', subtitle: 'Stock de départ & alertes', icon: Boxes },
+  { id: 4, title: 'Paliers & Options', subtitle: 'Gros, visibilité & favori', icon: Sliders },
+];
+
 export default function NewProductPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { success: toastSuccess, error: toastError } = useToast();
+
+  const [currentStep, setCurrentStep] = useState(1);
 
   // Catégories dynamiques
   const [categories, setCategories] = useState(() => {
@@ -39,7 +52,7 @@ export default function NewProductPage() {
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
 
-  // États du formulaire
+  // États du produit
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
@@ -51,18 +64,14 @@ export default function NewProductPage() {
   const [baseUnit, setBaseUnit] = useState('Unité');
   const [isVisible, setIsVisible] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
-
-  // Options avancées (pliables)
   const [priceTiers, setPriceTiers] = useState([]);
   const [unitConversions, setUnitConversions] = useState([]);
-  const [showTiersAccordion, setShowTiersAccordion] = useState(false);
-  const [showConversionsAccordion, setShowConversionsAccordion] = useState(false);
 
-  // Modale d'avertissement vente à perte
+  // Modale de confirmation vente à perte
   const [showLossWarningModal, setShowLossWarningModal] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [stepErrors, setStepErrors] = useState({});
 
   const numSale = Number(salePrice) || 0;
   const numCost = Number(costPrice) || 0;
@@ -101,14 +110,8 @@ export default function NewProductPage() {
     setBaseUnit(productToEdit.baseUnit ?? 'Unité');
     setIsVisible(productToEdit.isVisible ?? true);
     setIsFavorite(productToEdit.isFavorite ?? false);
-
-    const loadedTiers = productToEdit.priceTiers ?? [];
-    setPriceTiers(loadedTiers);
-    if (loadedTiers.length > 0) setShowTiersAccordion(true);
-
-    const loadedConversions = productToEdit.unitConversions ?? productToEdit.units ?? [];
-    setUnitConversions(loadedConversions);
-    if (loadedConversions.length > 0) setShowConversionsAccordion(true);
+    setPriceTiers(productToEdit.priceTiers ?? []);
+    setUnitConversions(productToEdit.unitConversions ?? productToEdit.units ?? []);
   }, [id, navigate, toastError]);
 
   const handleAddCategory = () => {
@@ -130,26 +133,55 @@ export default function NewProductPage() {
     setCategory(catId);
     setNewCategoryName('');
     setIsCreatingCategory(false);
+    setStepErrors((prev) => ({ ...prev, category: '' }));
   };
 
-  const handleFormSubmit = (event) => {
+  // Validations par étape
+  const validateStep = (stepNumber) => {
+    const errors = {};
+
+    if (stepNumber === 1) {
+      if (!name.trim()) errors.name = 'La désignation du produit est obligatoire.';
+      if (!category) errors.category = 'Sélectionnez ou créez une catégorie.';
+    }
+
+    if (stepNumber === 2) {
+      if (!salePrice || numSale < 0) errors.salePrice = 'Renseignez un prix de vente valide.';
+    }
+
+    if (stepNumber === 3) {
+      if (!baseUnit.trim()) errors.baseUnit = 'L’unité de base est obligatoire (ex: Sac, Pièce).';
+      if (currentStock === '' || Number(currentStock) < 0) {
+        errors.currentStock = 'Renseignez le stock initial disponible (0 ou plus).';
+      }
+    }
+
+    setStepErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const goToNextStep = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep((prev) => Math.min(prev + 1, STEPS.length));
+    }
+  };
+
+  const goToPrevStep = () => {
+    setStepErrors({});
+    setCurrentStep((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleFinalSubmit = (event) => {
     event?.preventDefault();
-    setError('');
 
-    if (!name.trim()) {
-      setError('La désignation du produit est obligatoire.');
-      return;
-    }
-    if (!category) {
-      setError('Veuillez sélectionner ou créer une catégorie.');
-      return;
-    }
-    if (salePrice === '' || numSale < 0) {
-      setError('Veuillez renseigner un prix de vente valide.');
-      return;
+    // Validation complète de toutes les étapes préalables
+    for (let step = 1; step <= 3; step++) {
+      if (!validateStep(step)) {
+        setCurrentStep(step);
+        return;
+      }
     }
 
-    // Interception si vente sous coût d'achat pour confirmation explicite
     if (isLoss && !showLossWarningModal) {
       setShowLossWarningModal(true);
       return;
@@ -223,116 +255,137 @@ export default function NewProductPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="space-y-6">
-        {/* Barre supérieure ergonomique avec Action Rapide Sticky */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs">
-          <div className="flex items-center gap-3">
+    <div className="p-3 sm:p-6 lg:p-8">
+      <div className="mx-auto max-w-2xl space-y-5">
+        {/* En-tête compact avec bouton retour */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
             <Link
               to="/app/products"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-2xs transition hover:bg-slate-50 hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-vendix-brand"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-2xs transition hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-vendix-brand"
               aria-label="Retour au catalogue"
             >
-              <ArrowLeft size={18} />
+              <ArrowLeft size={17} />
             </Link>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
-                  {id ? 'Modifier le produit' : 'Nouveau produit'}
-                </h1>
-                {isFavorite && (
-                  <span className="flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-700">
-                    <Star size={11} className="fill-amber-500 text-amber-500" />
-                    Favori caisse
-                  </span>
-                )}
-                {!isVisible && (
-                  <span className="flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
-                    <EyeOff size={11} />
-                    Masqué
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {id
-                  ? 'Modifiez les informations, tarifs dégressifs et unités de vente.'
-                  : 'Renseignez les données essentielles pour ajouter l’article en caisse.'}
+              <h1 className="text-lg font-bold text-slate-900 sm:text-xl">
+                {id ? 'Modifier le produit' : 'Nouveau produit'}
+              </h1>
+              <p className="text-[11px] text-slate-500">
+                Étape {currentStep} sur {STEPS.length} : {STEPS[currentStep - 1].title}
               </p>
             </div>
           </div>
 
-          {/* Boutons d'action visibles en permanence */}
-          <div className="flex items-center gap-2 self-end sm:self-auto w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={() => navigate('/app/products')}
-              className="w-1/2 sm:w-auto rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-slate-400"
-            >
-              Annuler
-            </button>
-
-            <button
-              type="button"
-              disabled={isSubmitting}
-              onClick={handleFormSubmit}
-              className="w-1/2 sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-vendix-brand px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-vendix-brand-dark disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-vendix-brand"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  <span>Enregistrement...</span>
-                </>
-              ) : (
-                <>
-                  <PackagePlus size={16} />
-                  <span>{id ? 'Mettre à jour' : 'Enregistrer le produit'}</span>
-                </>
-              )}
-            </button>
+          <div className="text-right">
+            <span className="inline-block rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-vendix-brand">
+              {Math.round((currentStep / STEPS.length) * 100)}% complété
+            </span>
           </div>
         </div>
 
-        {error && (
-          <div className="flex items-center gap-2 rounded-xl bg-red-50 p-3 text-xs font-semibold text-red-700 border border-red-200">
-            <AlertTriangle size={15} className="shrink-0" />
-            <span>{error}</span>
+        {/* Stepper visuel à barres de progression adaptées au mobile */}
+        <div className="space-y-1.5 rounded-2xl border border-slate-200 bg-white p-3 sm:p-4 shadow-xs">
+          {/* Barres d'étapes */}
+          <div className="flex h-1.5 w-full gap-1.5">
+            {STEPS.map((step) => (
+              <div
+                key={step.id}
+                className={`h-full flex-1 rounded-full transition-all duration-300 ${
+                  currentStep >= step.id ? 'bg-vendix-brand' : 'bg-slate-100'
+                }`}
+              />
+            ))}
           </div>
-        )}
 
-        {/* Disposition 2 Colonnes ergonomique */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Colonne Principale Gauche : Informations Clés & Tarification (7 colonnes) */}
-          <div className="lg:col-span-7 space-y-6">
-            {/* Informations Générales */}
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 border-b border-slate-100 pb-2.5">
-                1. Identification du produit
-              </h2>
+          {/* Pastilles cliquables sur desktop & tablette */}
+          <div className="hidden sm:grid grid-cols-4 gap-2 pt-2">
+            {STEPS.map((step) => {
+              const Icon = step.icon;
+              const isActive = currentStep === step.id;
+              const isDone = currentStep > step.id;
+
+              return (
+                <button
+                  key={step.id}
+                  type="button"
+                  onClick={() => {
+                    // Autorise la navigation vers les étapes déjà complétées
+                    if (step.id < currentStep || validateStep(currentStep)) {
+                      setCurrentStep(step.id);
+                    }
+                  }}
+                  className={`flex items-center gap-2 rounded-xl p-2 text-left transition ${
+                    isActive
+                      ? 'bg-blue-50/80 text-vendix-brand'
+                      : isDone
+                      ? 'text-emerald-700 hover:bg-slate-50'
+                      : 'text-slate-400 opacity-60'
+                  }`}
+                >
+                  <div
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
+                      isActive
+                        ? 'bg-vendix-brand text-white shadow-2xs'
+                        : isDone
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    {isDone ? <Check size={13} /> : <Icon size={13} />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-bold leading-tight">
+                      {step.title}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Carte de contenu principale pour l'étape active */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xs">
+          {/* ÉTAPE 1 : DÉSIGNATION, CATÉGORIE & PHOTO */}
+          {currentStep === 1 && (
+            <div className="space-y-4">
+              <div className="border-b border-slate-100 pb-3">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">
+                  1. Identification du produit
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Désignation principale et catégorisation de l'article.
+                </p>
+              </div>
 
               <div>
-                <label
-                  htmlFor="name"
-                  className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700"
-                >
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700">
                   Désignation du produit *
                 </label>
                 <input
                   type="text"
-                  id="name"
                   placeholder="Ex : Riz Parfumé Royal 25kg"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-sm font-semibold outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
-                  required
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    if (stepErrors.name) setStepErrors((prev) => ({ ...prev, name: '' }));
+                  }}
+                  className={`w-full rounded-xl border p-2.5 text-sm font-semibold outline-none focus:ring-1 ${
+                    stepErrors.name
+                      ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
+                      : 'border-slate-300 focus:border-vendix-brand focus:ring-vendix-brand'
+                  }`}
+                  autoFocus
                 />
+                {stepErrors.name && (
+                  <p className="mt-1 text-xs font-semibold text-red-600">{stepErrors.name}</p>
+                )}
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label
-                    htmlFor="category"
-                    className="block text-xs font-bold uppercase tracking-wider text-slate-700"
-                  >
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
                     Catégorie *
                   </label>
                   {!isCreatingCategory ? (
@@ -359,7 +412,7 @@ export default function NewProductPage() {
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      placeholder="Nom de la nouvelle catégorie..."
+                      placeholder="Nom de la catégorie..."
                       value={newCategoryName}
                       onChange={(e) => setNewCategoryName(e.target.value)}
                       className="flex-1 rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
@@ -374,11 +427,18 @@ export default function NewProductPage() {
                   </div>
                 ) : (
                   <select
-                    id="category"
                     value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-sm outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
-                    required
+                    onChange={(e) => {
+                      setCategory(e.target.value);
+                      if (stepErrors.category) {
+                        setStepErrors((prev) => ({ ...prev, category: '' }));
+                      }
+                    }}
+                    className={`w-full rounded-xl border bg-white p-2.5 text-sm outline-none focus:ring-1 ${
+                      stepErrors.category
+                        ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
+                        : 'border-slate-300 focus:border-vendix-brand focus:ring-vendix-brand'
+                    }`}
                   >
                     <option value="">Sélectionner une catégorie</option>
                     {categories.map((c) => (
@@ -388,17 +448,16 @@ export default function NewProductPage() {
                     ))}
                   </select>
                 )}
+                {stepErrors.category && (
+                  <p className="mt-1 text-xs font-semibold text-red-600">{stepErrors.category}</p>
+                )}
               </div>
 
               <div>
-                <label
-                  htmlFor="description"
-                  className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700"
-                >
-                  Description (optionnelle)
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700">
+                  Description détaillée (optionnelle)
                 </label>
                 <textarea
-                  id="description"
                   rows={2}
                   placeholder="Détails du produit visibles sur la boutique..."
                   value={description}
@@ -406,56 +465,73 @@ export default function NewProductPage() {
                   className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
                 />
               </div>
-            </section>
 
-            {/* Tarification & Marge */}
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 border-b border-slate-100 pb-2.5">
-                2. Prix et Rentabilité
-              </h2>
+              <ProductImageUpload
+                value={photoUrl}
+                onChange={(newPhoto) => setPhotoUrl(newPhoto)}
+              />
+            </div>
+          )}
+
+          {/* ÉTAPE 2 : PRIX, COÛT D'ACHAT & MARGE */}
+          {currentStep === 2 && (
+            <div className="space-y-4">
+              <div className="border-b border-slate-100 pb-3">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">
+                  2. Tarification & Marge
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Fixez le prix de vente unitaire et évaluez votre rentabilité.
+                </p>
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label
-                    htmlFor="salePrice"
-                    className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700"
-                  >
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700">
                     Prix de vente (FCFA) *
                   </label>
                   <input
                     type="number"
-                    id="salePrice"
                     min="0"
                     placeholder="Ex : 18500"
                     value={salePrice}
-                    onChange={(e) => setSalePrice(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 p-2.5 text-sm font-bold text-slate-900 outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
-                    required
+                    onChange={(e) => {
+                      setSalePrice(e.target.value);
+                      if (stepErrors.salePrice) setStepErrors((prev) => ({ ...prev, salePrice: '' }));
+                    }}
+                    className={`w-full rounded-xl border p-2.5 text-sm font-bold text-slate-900 outline-none focus:ring-1 ${
+                      stepErrors.salePrice
+                        ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
+                        : 'border-slate-300 focus:border-vendix-brand focus:ring-vendix-brand'
+                    }`}
+                    autoFocus
                   />
+                  {stepErrors.salePrice && (
+                    <p className="mt-1 text-xs font-semibold text-red-600">{stepErrors.salePrice}</p>
+                  )}
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="costPrice"
-                    className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700"
-                  >
-                    Coût d'achat (FCFA)
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Coût d'achat fournisseur (FCFA)
                   </label>
                   <input
                     type="number"
-                    id="costPrice"
                     min="0"
                     placeholder="Ex : 16500"
                     value={costPrice}
                     onChange={(e) => setCostPrice(e.target.value)}
                     className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
                   />
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    Sert à calculer automatiquement votre bénéfice.
+                  </p>
                 </div>
               </div>
 
-              {/* Indicateur financier direct */}
+              {/* Bilan financier instantané */}
               <div
-                className={`rounded-xl p-3.5 border transition ${
+                className={`rounded-2xl p-4 border transition ${
                   isLoss
                     ? 'bg-red-50 border-red-200'
                     : margin > 0
@@ -469,7 +545,7 @@ export default function NewProductPage() {
                       Marge commerciale unitaire
                     </p>
                     <p
-                      className={`text-base font-bold ${
+                      className={`text-xl font-black ${
                         isLoss
                           ? 'text-red-700'
                           : margin > 0
@@ -484,243 +560,258 @@ export default function NewProductPage() {
                   {numCost > 0 && numSale > 0 && (
                     <div className="text-right">
                       <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                        Taux de marge
+                        Taux de marque
                       </p>
-                      <p className="text-sm font-bold text-slate-800">
-                        {Math.round((margin / numCost) * 100)}%
+                      <p className="text-base font-bold text-slate-900">
+                        {Math.round((margin / numSale) * 100)}%
                       </p>
                     </div>
                   )}
                 </div>
 
                 {isLoss && (
-                  <div className="mt-2 flex items-center gap-1.5 text-xs font-bold text-red-700">
-                    <AlertTriangle size={14} className="shrink-0" />
-                    <span>Attention : Prix inférieur au coût d'achat (vente à perte).</span>
+                  <div className="mt-2.5 flex items-center gap-1.5 text-xs font-bold text-red-700">
+                    <AlertTriangle size={15} className="shrink-0" />
+                    <span>Avertissement : Vente à perte (prix inférieur au coût d'achat).</span>
                   </div>
                 )}
               </div>
-            </section>
-
-            {/* Accordéon 1 : Tarifs dégressifs par volume (Optionnel) */}
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setShowTiersAccordion(!showTiersAccordion)}
-                className="flex w-full items-center justify-between p-4 text-left transition hover:bg-slate-50 focus-visible:outline-none"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-vendix-brand">
-                    <Layers size={15} />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                        Tarifs selon la quantité (Demi-gros / Gros)
-                      </h3>
-                      {priceTiers.length > 0 && (
-                        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-vendix-brand">
-                          {priceTiers.length} configuré{priceTiers.length > 1 ? 's' : ''}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-slate-500">
-                      Optionnel : définissez des prix dégressifs automatiques.
-                    </p>
-                  </div>
-                </div>
-
-                <ChevronDown
-                  size={16}
-                  className={`text-slate-400 transition-transform duration-200 ${
-                    showTiersAccordion ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-
-              {showTiersAccordion && (
-                <div className="border-t border-slate-100 p-4 bg-slate-50/40">
-                  <PriceTierManager
-                    value={priceTiers}
-                    onChange={(tiers) => setPriceTiers(tiers)}
-                  />
-                </div>
-              )}
             </div>
+          )}
 
-            {/* Accordéon 2 : Unités secondaires & Conversions (Optionnel) */}
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setShowConversionsAccordion(!showConversionsAccordion)}
-                className="flex w-full items-center justify-between p-4 text-left transition hover:bg-slate-50 focus-visible:outline-none"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
-                    <Scale size={15} />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                        Unités de vente secondaires (Carton, Sac...)
-                      </h3>
-                      {unitConversions.length > 0 && (
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                          {unitConversions.length} configurée{unitConversions.length > 1 ? 's' : ''}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-slate-500">
-                      Optionnel : vendez par carton ou paquet avec déduction automatique.
-                    </p>
-                  </div>
-                </div>
-
-                <ChevronDown
-                  size={16}
-                  className={`text-slate-400 transition-transform duration-200 ${
-                    showConversionsAccordion ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-
-              {showConversionsAccordion && (
-                <div className="border-t border-slate-100 p-4 bg-slate-50/40">
-                  <UnitConversionField
-                    baseUnit={baseUnit}
-                    value={unitConversions}
-                    onChange={(conversions) => setUnitConversions(conversions)}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Colonne Latérale Droite : Stock, Visibilité & Photo (5 colonnes) */}
-          <div className="lg:col-span-5 space-y-6">
-            {/* Stock Initial & Unité de Base */}
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 border-b border-slate-100 pb-2.5">
-                3. Stock initial & Unité
-              </h2>
+          {/* ÉTAPE 3 : STOCK INITIAL & UNITÉS */}
+          {currentStep === 3 && (
+            <div className="space-y-4">
+              <div className="border-b border-slate-100 pb-3">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">
+                  3. Gestion du Stock & Unité de Base
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Configurez l'unité physique et les alertes de réapprovisionnement.
+                </p>
+              </div>
 
               <div>
-                <label
-                  htmlFor="baseUnit"
-                  className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700"
-                >
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700">
                   Unité de base *
                 </label>
                 <input
                   type="text"
-                  id="baseUnit"
                   placeholder="Ex : Sac, Carton, Pièce, Bouteille..."
                   value={baseUnit}
-                  onChange={(e) => setBaseUnit(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
-                  required
+                  onChange={(e) => {
+                    setBaseUnit(e.target.value);
+                    if (stepErrors.baseUnit) setStepErrors((prev) => ({ ...prev, baseUnit: '' }));
+                  }}
+                  className={`w-full rounded-xl border p-2.5 text-sm outline-none focus:ring-1 ${
+                    stepErrors.baseUnit
+                      ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
+                      : 'border-slate-300 focus:border-vendix-brand focus:ring-vendix-brand'
+                  }`}
+                  autoFocus
                 />
+                {stepErrors.baseUnit && (
+                  <p className="mt-1 text-xs font-semibold text-red-600">{stepErrors.baseUnit}</p>
+                )}
                 <p className="mt-1 text-[11px] text-slate-400">
                   L'unité de référence pour le décompte physique de votre stock.
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label
-                    htmlFor="currentStock"
-                    className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700"
-                  >
-                    Stock initial *
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Stock initial disponible *
                   </label>
                   <input
                     type="number"
-                    id="currentStock"
                     min="0"
                     placeholder="Ex : 50"
                     value={currentStock}
-                    onChange={(e) => setCurrentStock(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 p-2.5 text-sm font-bold outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
-                    required
+                    onChange={(e) => {
+                      setCurrentStock(e.target.value);
+                      if (stepErrors.currentStock) setStepErrors((prev) => ({ ...prev, currentStock: '' }));
+                    }}
+                    className={`w-full rounded-xl border p-2.5 text-sm font-bold outline-none focus:ring-1 ${
+                      stepErrors.currentStock
+                        ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
+                        : 'border-slate-300 focus:border-vendix-brand focus:ring-vendix-brand'
+                    }`}
                   />
+                  {stepErrors.currentStock && (
+                    <p className="mt-1 text-xs font-semibold text-red-600">{stepErrors.currentStock}</p>
+                  )}
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="alertThreshold"
-                    className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700"
-                  >
-                    Seuil d'alerte
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Seuil d'alerte stock faible
                   </label>
                   <input
                     type="number"
-                    id="alertThreshold"
                     min="0"
                     placeholder="Ex : 5"
                     value={alertThreshold}
                     onChange={(e) => setAlertThreshold(e.target.value)}
                     className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
                   />
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    Vendix vous avertira dès que la quantité atteindra ce seuil.
+                  </p>
                 </div>
               </div>
-            </section>
 
-            {/* Options Métier : Visibilité Boutique et Favori Caisse */}
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-3">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 border-b border-slate-100 pb-2.5">
-                4. Visibilité & Accès Rapide
-              </h2>
+              <UnitConversionField
+                baseUnit={baseUnit}
+                value={unitConversions}
+                onChange={(conversions) => setUnitConversions(conversions)}
+              />
+            </div>
+          )}
 
-              <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition">
-                <div className="flex items-center gap-2.5">
-                  <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${isVisible ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-400'}`}>
-                    {isVisible ? <Eye size={16} /> : <EyeOff size={16} />}
+          {/* ÉTAPE 4 : PALIERS PAR VOLUME & OPTIONS DE VISIBILITÉ */}
+          {currentStep === 4 && (
+            <div className="space-y-5">
+              <div className="border-b border-slate-100 pb-3">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">
+                  4. Tarifs de gros & Options de Visibilité
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Configurez vos prix dégressifs et la visibilité en caisse et sur le web.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <label className="flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
+                  <div className="flex items-center gap-3">
+                    <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${isVisible ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-400'}`}>
+                      {isVisible ? <Eye size={18} /> : <EyeOff size={18} />}
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">
+                        Boutique en ligne (WhatsApp)
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        {isVisible ? 'Visible sur votre catalogue public en ligne' : 'Masqué aux clients sur le web'}
+                      </p>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={isVisible}
+                    onChange={(e) => setIsVisible(e.target.checked)}
+                    className="h-4 w-4 rounded text-vendix-brand focus:ring-vendix-brand"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
+                  <div className="flex items-center gap-3">
+                    <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${isFavorite ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-400'}`}>
+                      <Star size={18} className={isFavorite ? 'fill-amber-500 text-amber-500' : ''} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">
+                        Favori Caisse & Vente
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        Affiché en priorité sur la grille tactile de vente rapide
+                      </p>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={isFavorite}
+                    onChange={(e) => setIsFavorite(e.target.checked)}
+                    className="h-4 w-4 rounded text-vendix-brand focus:ring-vendix-brand"
+                  />
+                </label>
+              </div>
+
+              <PriceTierManager
+                value={priceTiers}
+                onChange={(tiers) => setPriceTiers(tiers)}
+              />
+
+              {/* Récapitulatif global avant finalisation */}
+              <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-4 space-y-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-vendix-brand uppercase tracking-wider">
+                  <CheckCircle2 size={16} />
+                  <span>Récapitulatif de la fiche produit</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs text-slate-700 pt-1">
+                  <div>
+                    <span className="text-slate-400">Désignation :</span>{' '}
+                    <strong className="text-slate-900">{name || 'Non renseigné'}</strong>
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-900">
-                      Boutique en ligne (WhatsApp)
-                    </p>
-                    <p className="text-[11px] text-slate-500">
-                      {isVisible ? 'Visible sur votre catalogue public' : 'Masqué aux clients sur le web'}
-                    </p>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={isVisible}
-                  onChange={(e) => setIsVisible(e.target.checked)}
-                  className="h-4 w-4 rounded text-vendix-brand focus:ring-vendix-brand"
-                />
-              </label>
-
-              <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition">
-                <div className="flex items-center gap-2.5">
-                  <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${isFavorite ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-400'}`}>
-                    <Star size={16} className={isFavorite ? 'fill-amber-500 text-amber-500' : ''} />
+                    <span className="text-slate-400">Prix vente :</span>{' '}
+                    <strong className="text-vendix-brand">{numSale.toLocaleString('fr-FR')} FCFA</strong>
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-900">
-                      Favori Caisse & Vente
-                    </p>
-                    <p className="text-[11px] text-slate-500">
-                      Affiché en priorité sur la grille tactile
-                    </p>
+                    <span className="text-slate-400">Stock initial :</span>{' '}
+                    <strong className="text-slate-900">{currentStock || 0} {baseUnit}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400">Marge brute :</span>{' '}
+                    <strong className={margin >= 0 ? 'text-emerald-700' : 'text-red-700'}>
+                      {margin.toLocaleString('fr-FR')} FCFA
+                    </strong>
                   </div>
                 </div>
-                <input
-                  type="checkbox"
-                  checked={isFavorite}
-                  onChange={(e) => setIsFavorite(e.target.checked)}
-                  className="h-4 w-4 rounded text-vendix-brand focus:ring-vendix-brand"
-                />
-              </label>
-            </section>
+              </div>
+            </div>
+          )}
 
-            {/* Photo du Produit */}
-            <ProductImageUpload
-              value={photoUrl}
-              onChange={(newPhoto) => setPhotoUrl(newPhoto)}
-            />
+          {/* Navigation ergonomique inférieure (Précédent / Suivant / Enregistrer) */}
+          <div className="flex items-center justify-between gap-3 pt-6 border-t border-slate-100 mt-6">
+            {currentStep > 1 ? (
+              <button
+                type="button"
+                onClick={goToPrevStep}
+                className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-slate-400"
+              >
+                <ArrowLeft size={15} />
+                <span>Précédent</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => navigate('/app/products')}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
+              >
+                Annuler
+              </button>
+            )}
+
+            {currentStep < STEPS.length ? (
+              <button
+                type="button"
+                onClick={goToNextStep}
+                className="flex items-center gap-1.5 rounded-xl bg-vendix-brand px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-vendix-brand-dark focus-visible:ring-2 focus-visible:ring-vendix-brand"
+              >
+                <span>Continuer</span>
+                <ArrowRight size={15} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={isSubmitting}
+                onClick={handleFinalSubmit}
+                className="flex items-center gap-2 rounded-xl bg-vendix-brand px-6 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-vendix-brand-dark disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-vendix-brand"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>Enregistrement...</span>
+                  </>
+                ) : (
+                  <>
+                    <PackagePlus size={16} />
+                    <span>{id ? 'Mettre à jour le produit' : 'Enregistrer le produit'}</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
 
