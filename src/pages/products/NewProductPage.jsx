@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, PackagePlus, CheckCircle2 } from "lucide-react";
 import productsData from "../../mocks/modules/products.json";
+import { useToast } from "../../context/ToastContext";
 
 export default function NewProductPage() {
   const navigate = useNavigate();
+  const { success: toastSuccess } = useToast();
   const [name, setName] = useState("");
   const [categoryId, setCategoryId] = useState("cat-1");
   const [salePrice, setSalePrice] = useState("");
@@ -38,9 +40,10 @@ export default function NewProductPage() {
       localStorage.setItem("vendix-custom-products", JSON.stringify([newProduct, ...existing]));
 
       setSuccess(true);
+      toastSuccess(`${newProduct.name} ajouté au catalogue`, "Produit créé");
       setTimeout(() => {
         navigate("/app/sales/new");
-      }, 1000);
+      }, 700);
     } catch (err) {
       setError("Erreur lors de l'enregistrement : " + err.message);
     }

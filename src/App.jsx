@@ -18,6 +18,7 @@ import ExpensesListPage from './pages/expenses/ExpensesListPage.jsx';
 import SupplierListPage from './pages/suppliers/SupplierListPage.jsx';
 import CashClosurePage from './pages/cash/CashClosurePage.jsx';
 import AppLayout from './components/layout/AppLayout.jsx';
+import { ToastProvider } from './context/ToastContext.jsx';
 import { getShopSubdomain } from './utils/subdomainUtils.js';
 
 export default function App() {
@@ -26,19 +27,22 @@ export default function App() {
 
   if (shopSubdomain) {
     return (
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<PublicShopPage shopSlug={shopSubdomain} />} />
-          <Route path="/product/:id" element={<PublicShopPage shopSlug={shopSubdomain} />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
+      <ToastProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<PublicShopPage shopSlug={shopSubdomain} />} />
+            <Route path="/product/:id" element={<PublicShopPage shopSlug={shopSubdomain} />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </ToastProvider>
     );
   }
 
   return (
-    <BrowserRouter>
-      <Routes>
+    <ToastProvider>
+      <BrowserRouter>
+        <Routes>
         {/* Landing publique & Boutique */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/shop/:slug" element={<PublicShopPage />} />
@@ -146,5 +150,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
+  </ToastProvider>
   );
 }

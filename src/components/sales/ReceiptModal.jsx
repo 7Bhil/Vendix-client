@@ -209,10 +209,31 @@ export default function ReceiptModal({
 
       <style>{`
         @media print {
-          @page { margin: 5mm; }
-          body * { visibility: hidden; }
-          #receipt-content, #receipt-content * { visibility: visible; }
-          #receipt-content { position: absolute; left: 0; top: 0; width: 100%; padding: 0; }
+          @page {
+            size: 80mm auto;
+            margin: 0;
+          }
+          body {
+            margin: 0;
+            padding: 0;
+            background: white !important;
+          }
+          body * {
+            visibility: hidden;
+          }
+          #receipt-content, #receipt-content * {
+            visibility: visible;
+          }
+          #receipt-content {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 76mm;
+            max-width: 76mm;
+            padding: 2mm !important;
+            font-size: 11px !important;
+            color: #000 !important;
+          }
         }
       `}</style>
     </div>
