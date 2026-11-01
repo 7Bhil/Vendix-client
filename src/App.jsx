@@ -17,41 +17,29 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Page d'accueil publique */}
+        {/* Public Landing */}
         <Route path="/" element={<LandingPage />} />
 
-        {/* Parcours d'authentification */}
+        {/* Auth Flow */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-        {/* Alias rétrocompatibles */}
-        <Route path="/connexion" element={<Navigate to="/login" replace />} />
-        <Route path="/inscription" element={<Navigate to="/signup" replace />} />
-        <Route path="/demarrage" element={<Navigate to="/onboarding" replace />} />
-        <Route path="/recuperation-compte" element={<Navigate to="/forgot-password" replace />} />
-        <Route path="/reinitialiser-mot-de-passe" element={<Navigate to="/reset-password" replace />} />
-
-        {/* Espace Commerçant après connexion */}
+        {/* Merchant Workspace */}
         <Route path="/app/dashboard" element={<DashboardPage />} />
-        <Route path="/app/tableau-de-bord" element={<Navigate to="/app/dashboard" replace />} />
 
-        {/* Accès rapides vendeur */}
+        {/* Quick Actions */}
         <Route path="/app/sales/new" element={<NewSalePage />} />
-        <Route path="/app/nouvelle-vente" element={<Navigate to="/app/sales/new" replace />} />
-        <Route path="/app/ventes/nouvelle" element={<Navigate to="/app/sales/new" replace />} />
         <Route path="/app/products/new" element={<NewProductPage />} />
         <Route path="/app/customers/new" element={<NewCustomerPage />} />
 
-        {/* Gestion des clients et suivi des dettes */}
-        <Route path="/app/clients" element={<CustomerListPage />} />
-        <Route path="/app/customers" element={<Navigate to="/app/clients" replace />} />
-        <Route path="/app/clients/:id" element={<CustomerDetailPage />} />
+        {/* Customers & Debt Tracking */}
+        <Route path="/app/customers" element={<CustomerListPage />} />
         <Route path="/app/customers/:id" element={<CustomerDetailPage />} />
 
-        {/* Redirection par défaut si route inconnue */}
+        {/* Default fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

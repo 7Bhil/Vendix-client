@@ -28,7 +28,7 @@ export default function CustomerDetailPage() {
         <section className="max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
           <h1 className="text-xl font-bold text-slate-900">Client introuvable</h1>
           <p className="mt-2 text-sm text-slate-600">Ce client n’existe pas dans les données de démonstration.</p>
-          <Link to="/app/clients" className="mt-5 inline-flex font-semibold text-vendix-brand hover:underline">
+          <Link to="/app/customers" className="mt-5 inline-flex font-semibold text-vendix-brand hover:underline">
             Retour à la liste des clients
           </Link>
         </section>
@@ -89,7 +89,7 @@ export default function CustomerDetailPage() {
           <Link to="/" className="text-xl font-extrabold tracking-tight text-vendix-brand">
             Vendix<span className="text-vendix-accent">.</span>
           </Link>
-          <Link to="/app/clients" className="text-sm font-semibold text-slate-600 hover:text-vendix-brand">
+          <Link to="/app/customers" className="text-sm font-semibold text-slate-600 hover:text-vendix-brand">
             Tous les clients
           </Link>
         </div>
@@ -98,7 +98,7 @@ export default function CustomerDetailPage() {
       <div className="mx-auto max-w-5xl px-4 py-7 sm:px-6 sm:py-10">
         <button
           type="button"
-          onClick={() => navigate('/app/clients')}
+          onClick={() => navigate('/app/customers')}
           className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-vendix-brand"
         >
           <ArrowLeft size={17} aria-hidden="true" />
