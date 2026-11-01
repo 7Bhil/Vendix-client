@@ -1,119 +1,147 @@
+import { useEffect, useState } from 'react';
+import { Plus, Trash2, Layers, AlertCircle } from 'lucide-react';
 
-import { useState } from 'react';
+const TIER_OPTIONS = [
+  { value: 'detail', label: 'Détail' },
+  { value: 'demi_gros', label: 'Demi-gros' },
+  { value: 'gros', label: 'Gros' },
+];
 
-export default function PriceTierManager({ onChange }) {
-  const [tiers, setTiers] = useState([]);
+export default function PriceTierManager({ value = [], onChange }) {
+  const [tiers, setTiers] = useState(value);
+
+  useEffect(() => {
+    if (Array.isArray(value)) {
+      setTiers(value);
+    }
+  }, [value]);
 
   const addTier = () => {
     const newTier = {
-      id: Date.now(),
-      type: 'Détail',
-      minQuantity: '',
-      price: ''
+      id: `tier-${Date.now()}`,
+      tier: 'demi_gros',
+      minQuantity: 5,
+      price: '',
     };
 
-    const updatedTiers = [...tiers, newTier];
-    setTiers(updatedTiers);
-    onChange?.(updatedTiers);
+    const updated = [...tiers, newTier];
+    setTiers(updated);
+    onChange?.(updated);
   };
 
-  const updateTier = (id, field, value) => {
-    const updatedTiers = tiers.map((tier) =>
-      tier.id === id ? { ...tier, [field]: value } : tier
+  const updateTier = (id, field, val) => {
+    const updated = tiers.map((tier) =>
+      tier.id === id ? { ...tier, [field]: val } : tier
     );
-
-    setTiers(updatedTiers);
-    onChange?.(updatedTiers);
+    setTiers(updated);
+    onChange?.(updated);
   };
 
   const removeTier = (id) => {
-    const updatedTiers = tiers.filter((tier) => tier.id !== id);
-
-    setTiers(updatedTiers);
-    onChange?.(updatedTiers);
+    const updated = tiers.filter((tier) => tier.id !== id);
+    setTiers(updated);
+    onChange?.(updated);
   };
 
   return (
-    <div className="mt-5 rounded-xl border border-slate-200 p-4">
-      <h3 className="font-semibold text-vendix-ink">
-        Tarifs selon la quantité
-      </h3>
-
-      <p className="mt-1 text-sm text-slate-500">
-        Définissez différents prix selon la quantité achetée par vos clients.
-      </p>
-
-      {tiers.map((tier) => (
-        <div
-          key={tier.id}
-          className="mt-4 grid grid-cols-1 gap-3 rounded-xl bg-slate-50 p-4 sm:grid-cols-3"
-        >
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">
-              Type de tarif
-            </label>
-            <select
-              value={tier.type}
-              onChange={(event) =>
-                updateTier(tier.id, 'type', event.target.value)
-              }
-              className="w-full rounded-xl border border-slate-300 px-4 py-3"
-            >
-              <option value="Détail">Détail</option>
-              <option value="Demi-gros">Demi-gros</option>
-              <option value="Gros">Gros</option>
-            </select>
+    <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-vendix-brand">
+            <Layers size={16} />
           </div>
-
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">
-              Quantité minimale
-            </label>
-            <input
-              type="number"
-              min="1"
-              value={tier.minQuantity}
-              onChange={(event) =>
-                updateTier(tier.id, 'minQuantity', event.target.value)
-              }
-              placeholder="Ex : 12"
-              className="w-full rounded-xl border border-slate-300 px-4 py-3"
-            />
+            <h3 className="text-sm font-bold text-slate-900">
+              Tarification par volume (Demi-gros & Gros)
+            </h3>
+            <p className="text-xs text-slate-500">
+              Applique automatiquement un tarif dégressif selon la quantité commandée.
+            </p>
           </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">
-              Prix unitaire (FCFA)
-            </label>
-            <input
-              type="number"
-              min="0"
-              value={tier.price}
-              onChange={(event) =>
-                updateTier(tier.id, 'price', event.target.value)
-              }
-              placeholder="Ex : 1500"
-              className="w-full rounded-xl border border-slate-300 px-4 py-3"
-            />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => removeTier(tier.id)}
-            className="text-left text-sm font-medium text-red-600 hover:text-red-800"
-          >
-            Supprimer ce tarif
-          </button>
         </div>
-      ))}
 
-      <button
-        type="button"
-        onClick={addTier}
-        className="mt-5 rounded-xl border border-vendix-brand px-4 py-2 font-medium text-vendix-brand hover:bg-slate-50"
-      >
-        Ajouter un tarif
-      </button>
+        <button
+          type="button"
+          onClick={addTier}
+          className="inline-flex items-center justify-center gap-1.5 self-start sm:self-auto rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-vendix-brand shadow-2xs transition hover:bg-slate-50 hover:border-vendix-brand focus-visible:ring-2 focus-visible:ring-vendix-brand"
+        >
+          <Plus size={14} />
+          <span>Ajouter un palier</span>
+        </button>
+      </div>
+
+      {tiers.length === 0 ? (
+        <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-4 text-center">
+          <p className="text-xs text-slate-500">
+            Aucun tarif dégressif configuré. Le prix unitaire standard s'appliquera par défaut.
+          </p>
+        </div>
+      ) : (
+        <div className="mt-4 space-y-3">
+          {tiers.map((tier) => (
+            <div
+              key={tier.id}
+              className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3"
+            >
+              <div className="flex-1">
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700">
+                  Type de palier
+                </label>
+                <select
+                  value={tier.tier || tier.type || 'demi_gros'}
+                  onChange={(e) => updateTier(tier.id, 'tier', e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-sm outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
+                >
+                  {TIER_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="w-full sm:w-40">
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700">
+                  Qté min.
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="Ex : 5"
+                  value={tier.minQuantity ?? ''}
+                  onChange={(e) => updateTier(tier.id, 'minQuantity', e.target.value ? Number(e.target.value) : '')}
+                  className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-sm outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
+                />
+              </div>
+
+              <div className="w-full sm:w-48">
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700">
+                  Prix unitaire (FCFA)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Ex : 17500"
+                  value={tier.price ?? ''}
+                  onChange={(e) => updateTier(tier.id, 'price', e.target.value ? Number(e.target.value) : '')}
+                  className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-sm font-bold outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => removeTier(tier.id)}
+                title="Supprimer ce palier"
+                className="flex h-10 w-full sm:w-10 shrink-0 items-center justify-center rounded-xl border border-red-200 bg-white text-red-600 transition hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-500"
+                aria-label="Supprimer ce palier de prix"
+              >
+                <Trash2 size={16} />
+                <span className="sm:hidden text-xs font-bold ml-1.5">Supprimer ce palier</span>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
