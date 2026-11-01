@@ -13,12 +13,15 @@ import NewCustomerPage from './pages/customers/NewCustomerPage.jsx';
 import CustomerListPage from './pages/customers/CustomerListPage.jsx';
 import CustomerDetailPage from './pages/customers/CustomerDetailPage.jsx';
 import PublicShopPage from './pages/public/PublicShopPage.jsx';
+import StockListPage from './pages/stock/StockListPage.jsx';
+import ExpensesListPage from './pages/expenses/ExpensesListPage.jsx';
+import SupplierListPage from './pages/suppliers/SupplierListPage.jsx';
+import CashClosurePage from './pages/cash/CashClosurePage.jsx';
 import AppLayout from './components/layout/AppLayout.jsx';
 import { getShopSubdomain } from './utils/subdomainUtils.js';
 
 export default function App() {
-  // Détection du sous-domaine pour afficher la boutique du commerçant
-  // Exemple : "alimentation-dossou.vendix.com"
+  // Détection du sous-domaine de boutique publique (ex: "dossou.vendix.com")
   const shopSubdomain = getShopSubdomain();
 
   if (shopSubdomain) {
@@ -36,19 +39,19 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Landing & Vitrines de boutiques */}
+        {/* Landing publique & Boutique */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/shop/:slug" element={<PublicShopPage />} />
         <Route path="/boutique/:slug" element={<PublicShopPage />} />
 
-        {/* Auth Flow */}
+        {/* Authentification */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-        {/* Merchant Workspace avec AppLayout unifié */}
+        {/* Espace Marchand partagé */}
         <Route
           path="/app/dashboard"
           element={
@@ -98,7 +101,48 @@ export default function App() {
           }
         />
 
-        {/* Default fallback */}
+        {/* Routes réservées aux 4 fonctionnalités de la semaine */}
+        {/* 1. Collaborateur 1 : Stock */}
+        <Route
+          path="/app/stock"
+          element={
+            <AppLayout>
+              <StockListPage />
+            </AppLayout>
+          }
+        />
+
+        {/* 2. Collaborateur 2 : Dépenses */}
+        <Route
+          path="/app/expenses"
+          element={
+            <AppLayout>
+              <ExpensesListPage />
+            </AppLayout>
+          }
+        />
+
+        {/* 3. Collaborateur 3 : Fournisseurs */}
+        <Route
+          path="/app/suppliers"
+          element={
+            <AppLayout>
+              <SupplierListPage />
+            </AppLayout>
+          }
+        />
+
+        {/* 4. Collaborateur 4 : Clôture de Caisse */}
+        <Route
+          path="/app/cash-closure"
+          element={
+            <AppLayout>
+              <CashClosurePage />
+            </AppLayout>
+          }
+        />
+
+        {/* Redirection par défaut */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
