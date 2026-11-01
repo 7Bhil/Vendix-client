@@ -10,6 +10,8 @@ import DashboardPage from './pages/dashboard/DashboardPage.jsx';
 import NewSalePage from './pages/sales/NewSalePage.jsx';
 import NewProductPage from './pages/products/NewProductPage.jsx';
 import NewCustomerPage from './pages/customers/NewCustomerPage.jsx';
+import CustomerListPage from './pages/customers/CustomerListPage.jsx';
+import CustomerDetailPage from './pages/customers/CustomerDetailPage.jsx';
 
 export default function App() {
   return (
@@ -42,6 +44,12 @@ export default function App() {
         <Route path="/app/ventes/nouvelle" element={<Navigate to="/app/sales/new" replace />} />
         <Route path="/app/products/new" element={<NewProductPage />} />
         <Route path="/app/customers/new" element={<NewCustomerPage />} />
+
+        {/* Gestion des clients et suivi des dettes */}
+        <Route path="/app/clients" element={<CustomerListPage />} />
+        <Route path="/app/customers" element={<Navigate to="/app/clients" replace />} />
+        <Route path="/app/clients/:id" element={<CustomerDetailPage />} />
+        <Route path="/app/customers/:id" element={<CustomerDetailPage />} />
 
         {/* Redirection par défaut si route inconnue */}
         <Route path="*" element={<Navigate to="/" replace />} />
