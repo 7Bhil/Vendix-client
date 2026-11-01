@@ -33,6 +33,19 @@ export default function PaymentModal({
     }
   }, []);
 
+  const selectedCustomerObj = useMemo(() => {
+    if (!selectedCustomerId) return null;
+    return customers.find((c) => c.id === selectedCustomerId) || null;
+  }, [customers, selectedCustomerId]);
+
+  const debtAgeDays = useMemo(() => {
+    if (!selectedCustomerObj || !selectedCustomerObj.oldestDebtDate) return 0;
+    const debtTime = new Date(selectedCustomerObj.oldestDebtDate).getTime();
+    if (isNaN(debtTime)) return 0;
+    const diffMs = Date.now() - debtTime;
+    return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+  }, [selectedCustomerObj]);
+
   if (!isOpen) return null;
 
   const numericPaid = Number(paidAmount) || 0;
@@ -155,6 +168,30 @@ export default function PaymentModal({
                 <AlertTriangle size={14} />
                 Veuillez désigner un client pour enregistrer une vente à crédit.
               </p>
+            )}
+
+            {/* Alerte Risque d'impayé / Dette ancienne */}
+            {selectedCustomerObj && selectedCustomerObj.currentDebt > 0 && (
+              <div
+                className={`rounded-xl p-3 text-xs border ${
+                  debtAgeDays > 30
+                    ? "bg-red-50 border-red-200 text-red-800"
+                    : "bg-amber-50 border-amber-200 text-amber-800"
+                }`}
+              >
+                <div className="flex items-center gap-1.5 font-bold">
+                  <AlertTriangle size={14} className={debtAgeDays > 30 ? "text-red-600" : "text-amber-600"} />
+                  <span>
+                    {debtAgeDays > 30
+                      ? `Attention : Dette ancienne critique (${debtAgeDays} jours)`
+                      : "Dette en cours"}
+                  </span>
+                </div>
+                <p className="mt-1 leading-snug">
+                  Ce client doit déjà {formatPrice(selectedCustomerObj.currentDebt)}.
+                  {debtAgeDays > 30 && " Une autorisation ou un acompte est fortement recommandé avant d'octroyer un nouveau crédit."}
+                </p>
+              </div>
             )}
           </div>
 

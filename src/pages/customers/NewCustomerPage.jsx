@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, UserPlus, CheckCircle2 } from "lucide-react";
 import { loadCustomers, saveCustomers } from "../../utils/customerDebtUtils";
+import { useToast } from "../../context/ToastContext";
 
 export default function NewCustomerPage() {
   const navigate = useNavigate();
+  const { success: toastSuccess } = useToast();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -37,9 +39,10 @@ export default function NewCustomerPage() {
 
       saveCustomers([newCustomer, ...customers]);
       setSuccess(true);
+      toastSuccess(`Le client ${newCustomer.fullName} a été enregistré avec succès.`, "Client créé");
       setTimeout(() => {
         navigate("/app/customers");
-      }, 1000);
+      }, 700);
     } catch (err) {
       setError("Impossible d'enregistrer le client : " + err.message);
     }

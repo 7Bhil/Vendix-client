@@ -22,6 +22,17 @@
   }
 }
 
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .animate-float-phone {
   animation: float-slow 6s ease-in-out infinite;
 }
@@ -30,3 +41,22 @@
   animation: pulse-subtle 4s ease-in-out infinite;
 }
 
+.animate-fade-in {
+  animation: fade-in-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Micro-interactions SaaS subtiles */
+.btn-press {
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.btn-press:active {
+  transform: scale(0.97);
+}
+
+.card-hover {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+}

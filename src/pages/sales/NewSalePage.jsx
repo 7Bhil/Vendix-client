@@ -10,6 +10,8 @@ import ProductQuickGrid from "../../components/sales/ProductQuickGrid";
 import CartSheet from "../../components/sales/CartSheet";
 import PaymentModal from "../../components/sales/PaymentModal";
 import ReceiptModal from "../../components/sales/ReceiptModal";
+import { getProductTierPrice } from "../../utils/pricingUtils";
+import { useToast } from "../../context/ToastContext";
 
 const formatPrice = (price) =>
   new Intl.NumberFormat("fr-FR").format(Number(price) || 0) + " FCFA";
@@ -19,12 +21,13 @@ export default function NewSalePage() {
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [completedSale, setCompletedSale] = useState(null);
+  const { success } = useToast();
 
   const totalAmount = useMemo(() => {
-    return cart.reduce(
-      (total, item) => total + Number(item.salePrice) * Number(item.quantity),
-      0
-    );
+    return cart.reduce((total, item) => {
+      const { unitPrice } = getProductTierPrice(item, item.quantity);
+      return total + unitPrice * Number(item.quantity);
+    }, 0);
   }, [cart]);
 
   const totalItems = useMemo(() => {
@@ -41,6 +44,7 @@ export default function NewSalePage() {
       }
       return [...prev, { ...product, quantity: 1 }];
     });
+    success(`${product.name} ajouté au panier`, "Panier mis à jour");
   };
 
   const handleUpdateQuantity = (productId, newQuantity) => {
@@ -64,13 +68,17 @@ export default function NewSalePage() {
     const sale = {
       receiptNumber: `VND-${Date.now()}`,
       date: new Date().toISOString(),
-      products: cart.map((item) => ({
-        id: item.id,
-        name: item.name,
-        quantity: item.quantity,
-        price: Number(item.salePrice),
-        subtotal: Number(item.salePrice) * item.quantity,
-      })),
+      products: cart.map((item) => {
+        const { unitPrice, activeTier } = getProductTierPrice(item, item.quantity);
+        return {
+          id: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          price: unitPrice,
+          activeTier,
+          subtotal: unitPrice * item.quantity,
+        };
+      }),
       totalAmount,
       receivedAmount: payment.paidAmount,
       changeAmount: payment.changeAmount,
@@ -84,6 +92,7 @@ export default function NewSalePage() {
     setCompletedSale(sale);
     setIsPaymentOpen(false);
     setIsReceiptOpen(true);
+    success(`Vente enregistrée avec succès (${sale.receiptNumber})`, "Encaissement réussi");
   };
 
   const handleCloseReceipt = () => {
@@ -93,10 +102,9 @@ export default function NewSalePage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-7xl space-y-6">
-        {/* En-tête */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+      {/* En-tête */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <Link
               to="/app/dashboard"
@@ -140,7 +148,6 @@ export default function NewSalePage() {
             />
           </div>
         </div>
-      </div>
 
       {/* Barre flottante mobile d'encaissement rapide */}
       {cart.length > 0 && (
