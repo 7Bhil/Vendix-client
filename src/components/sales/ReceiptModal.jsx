@@ -1,4 +1,4 @@
-
+import { useMemo } from "react";
 import {
   X,
   Store,
@@ -7,9 +7,9 @@ import {
   CheckCircle2,
   CalendarDays,
   Banknote,
+  Share2,
 } from "lucide-react";
 
-// Formater les montants en FCFA
 const formatPrice = (price) =>
   new Intl.NumberFormat("fr-FR").format(Number(price) || 0) + " FCFA";
 
@@ -17,289 +17,202 @@ export default function ReceiptModal({
   isOpen,
   onClose,
   sale = {},
-  shopName = "Ma boutique",
+  shopName = "Ma boutique Vendix",
 }) {
-  // Ne rien afficher si la fenêtre est fermée
-  if (!isOpen) return null;
-
-  // Informations de la vente
-  const products = sale.products || sale.items || [];
+  const products = useMemo(() => sale.products || sale.items || sale.lines || [], [sale]);
   const totalAmount = Number(sale.totalAmount ?? sale.total ?? 0);
-  const receivedAmount = Number(sale.receivedAmount ?? totalAmount);
+  const receivedAmount = Number(sale.receivedAmount ?? sale.paidAmount ?? totalAmount);
   const changeAmount = Number(
     sale.changeAmount ?? Math.max(receivedAmount - totalAmount, 0)
   );
+  const balanceDue = Number(sale.remainingAmount ?? sale.balanceDue ?? 0);
 
-  const receiptNumber =
-    sale.receiptNumber || sale.reference || `VND-${Date.now()}`;
+  const saleDateFormatted = useMemo(() => {
+    const d = sale.date ? new Date(sale.date) : new Date();
+    return {
+      date: d.toLocaleDateString("fr-FR"),
+      time: d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
+    };
+  }, [sale.date]);
 
-  const saleDate = sale.date
-    ? new Date(sale.date)
-    : new Date();
+  if (!isOpen) return null;
 
-  // Imprimer le reçu
   const handlePrint = () => {
     window.print();
   };
 
+  const handleShareWhatsApp = () => {
+    const text = encodeURIComponent(
+      `Reçu ${sale.receiptNumber || "VENDIX"}\nBoutique: ${shopName}\nTotal: ${formatPrice(
+        totalAmount
+      )}\nPayé: ${formatPrice(receivedAmount)}${
+        balanceDue > 0 ? `\nReste dû: ${formatPrice(balanceDue)}` : ""
+      }\nMerci pour votre achat !`
+    );
+    window.open(`https://wa.me/?text=${text}`, "_blank");
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
-
-      {/* Fenêtre du reçu */}
-      <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-2xl">
-
-        {/* Bouton fermer */}
+      <div className="relative max-h-[92vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white shadow-2xl">
         <button
           type="button"
           onClick={onClose}
           aria-label="Fermer le reçu"
-          className="absolute right-4 top-4 rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 print:hidden"
+          className="absolute right-4 top-4 rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-900 print:hidden"
         >
-          <X size={21} />
+          <X size={18} />
         </button>
 
-        {/* Contenu imprimable */}
-        <div id="receipt-content" className="p-6 sm:p-8">
-
+        <div id="receipt-content" className="p-6">
           {/* En-tête */}
           <div className="text-center">
-
-            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-800">
-              <Store size={28} />
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-vendix-brand">
+              <Store size={24} />
             </div>
+            <h2 className="text-xl font-black text-slate-900">{shopName}</h2>
+            <p className="text-xs text-slate-500">Reçu de vente officiel</p>
 
-            <h2 className="text-2xl font-extrabold text-slate-900">
-              {shopName}
-            </h2>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Reçu de vente
-            </p>
-
-            <div className="my-5 flex items-center justify-center gap-2 text-green-600">
-              <CheckCircle2 size={19} />
-              <span className="text-sm font-semibold">
-                Vente enregistrée
+            <div className="my-3 flex items-center justify-center gap-1.5 text-emerald-700">
+              <CheckCircle2 size={16} />
+              <span className="text-xs font-bold uppercase tracking-wider">
+                Vente validée
               </span>
             </div>
           </div>
 
-          <div className="border-t border-dashed border-slate-300 pt-4">
-
-            {/* Informations du reçu */}
-            <div className="mb-5 space-y-2 text-sm">
-
-              <div className="flex justify-between gap-3">
-                <span className="text-slate-500">
-                  N° du reçu
-                </span>
-
-                <span className="font-semibold text-slate-800">
-                  {receiptNumber}
+          <div className="border-t border-dashed border-slate-300 pt-3">
+            {/* Détails méta */}
+            <div className="mb-4 space-y-1.5 text-xs">
+              <div className="flex justify-between">
+                <span className="text-slate-500">N° Référence</span>
+                <span className="font-bold text-slate-900">
+                  {sale.receiptNumber || sale.reference || "VND-LOCAL"}
                 </span>
               </div>
-
-              <div className="flex justify-between gap-3">
-                <span className="flex items-center gap-2 text-slate-500">
-                  <CalendarDays size={15} />
-                  Date
+              <div className="flex justify-between">
+                <span className="flex items-center gap-1 text-slate-500">
+                  <CalendarDays size={13} /> Date & Heure
                 </span>
-
                 <span className="font-medium text-slate-800">
-                  {saleDate.toLocaleDateString("fr-FR")}
+                  {saleDateFormatted.date} à {saleDateFormatted.time}
                 </span>
               </div>
-
-              <div className="flex justify-between gap-3">
-                <span className="text-slate-500">
-                  Heure
-                </span>
-
-                <span className="font-medium text-slate-800">
-                  {saleDate.toLocaleTimeString("fr-FR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              </div>
-
               {sale.customerName && (
-                <div className="flex justify-between gap-3">
-                  <span className="text-slate-500">
-                    Client
-                  </span>
-
-                  <span className="font-medium text-slate-800">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Client</span>
+                  <span className="font-bold text-vendix-brand">
                     {sale.customerName}
                   </span>
                 </div>
               )}
             </div>
 
-            {/* Liste des produits */}
-            <div className="border-t border-slate-200 pt-4">
-
-              <div className="mb-3 flex items-center gap-2">
-                <Receipt size={18} className="text-blue-800" />
-
-                <h3 className="font-bold text-slate-900">
-                  Détails des achats
-                </h3>
+            {/* Articles */}
+            <div className="border-t border-slate-200 pt-3">
+              <div className="mb-2 flex items-center gap-1 text-xs font-bold text-slate-900">
+                <Receipt size={14} className="text-vendix-brand" />
+                <span>Articles achetés</span>
               </div>
 
-              {products.length > 0 ? (
-                <div className="space-y-3">
-
-                  {products.map((product, index) => {
-                    const quantity = Number(product.quantity) || 0;
-
-                    const unitPrice = Number(
-                      product.price ?? product.unitPrice ?? 0
-                    );
-
-                    const subtotal =
-                      Number(product.subtotal) ||
-                      unitPrice * quantity;
-
-                    return (
-                      <div
-                        key={product.id || index}
-                        className="flex justify-between gap-3 text-sm"
-                      >
-                        <div className="min-w-0">
-                          <p className="font-semibold text-slate-800">
-                            {product.name || product.productName || "Produit"}
-                          </p>
-
-                          <p className="text-xs text-slate-500">
-                            {quantity} × {formatPrice(unitPrice)}
-                          </p>
-                        </div>
-
-                        <p className="shrink-0 font-semibold text-slate-800">
-                          {formatPrice(subtotal)}
-                        </p>
-                      </div>
-                    );
-                  })}
-
-                </div>
-              ) : (
-                <p className="py-4 text-center text-sm text-slate-400">
-                  Aucun produit renseigné.
-                </p>
-              )}
+              <div className="space-y-2">
+                {products.map((item, idx) => (
+                  <div key={item.id || idx} className="flex justify-between text-xs">
+                    <div>
+                      <p className="font-bold text-slate-800">{item.name || item.productName}</p>
+                      <p className="text-[11px] text-slate-500">
+                        {item.quantity} × {formatPrice(item.price || item.unitPriceApplied)}
+                      </p>
+                    </div>
+                    <p className="font-bold text-slate-900">
+                      {formatPrice(
+                        Number(item.subtotal || item.total) ||
+                          Number(item.price || item.unitPriceApplied) * Number(item.quantity)
+                      )}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* Résumé du paiement */}
-            <div className="mt-5 space-y-3 border-t border-dashed border-slate-300 pt-4">
-
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">
-                  Total des achats
-                </span>
-
-                <span className="font-bold text-slate-900">
-                  {formatPrice(totalAmount)}
-                </span>
+            {/* Montants */}
+            <div className="mt-4 space-y-1.5 border-t border-dashed border-slate-300 pt-3 text-xs">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Total net</span>
+                <span className="font-bold text-slate-900">{formatPrice(totalAmount)}</span>
               </div>
-
-              <div className="flex justify-between text-sm">
-                <span className="flex items-center gap-2 text-slate-500">
-                  <Banknote size={16} />
-                  Montant reçu
+              <div className="flex justify-between">
+                <span className="flex items-center gap-1 text-slate-500">
+                  <Banknote size={13} /> Montant versé
                 </span>
+                <span className="font-bold text-slate-900">{formatPrice(receivedAmount)}</span>
+              </div>
+              {balanceDue > 0 ? (
+                <div className="flex justify-between text-amber-800">
+                  <span className="font-bold">Solde restant dû</span>
+                  <span className="font-black">{formatPrice(balanceDue)}</span>
+                </div>
+              ) : (
+                <div className="flex justify-between text-emerald-800">
+                  <span className="font-medium">Monnaie rendue</span>
+                  <span className="font-bold">{formatPrice(changeAmount)}</span>
+                </div>
+              )}
 
-                <span className="font-medium text-slate-800">
+              <div className="mt-3 flex items-center justify-between rounded-xl bg-blue-50 p-3">
+                <span className="text-xs font-black uppercase text-vendix-brand">
+                  Total payé
+                </span>
+                <span className="text-lg font-black text-vendix-brand">
                   {formatPrice(receivedAmount)}
                 </span>
               </div>
-
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">
-                  Monnaie rendue
-                </span>
-
-                <span className="font-semibold text-green-700">
-                  {formatPrice(changeAmount)}
-                </span>
-              </div>
-
-              <div className="mt-3 flex items-center justify-between rounded-xl bg-blue-50 p-4">
-                <span className="font-bold text-blue-900">
-                  TOTAL PAYÉ
-                </span>
-
-                <span className="text-xl font-extrabold text-blue-800">
-                  {formatPrice(totalAmount)}
-                </span>
-              </div>
             </div>
-          </div>
 
-          {/* Pied du reçu */}
-          <div className="mt-6 border-t border-dashed border-slate-300 pt-5 text-center">
-
-            <p className="font-semibold text-slate-800">
-              Merci pour votre achat !
-            </p>
-
-            <p className="mt-1 text-xs text-slate-500">
-              Votre satisfaction est notre priorité.
-            </p>
-
-            <p className="mt-4 text-xs font-bold tracking-widest text-blue-800">
-              POWERED BY VENDIX
-            </p>
+            {/* Pied */}
+            <div className="mt-4 border-t border-dashed border-slate-300 pt-3 text-center">
+              <p className="text-xs font-bold text-slate-800">Merci de votre confiance !</p>
+              <p className="mt-2 text-[10px] font-black tracking-widest text-vendix-brand">
+                POWERED BY VENDIX
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Boutons d'action */}
-        <div className="flex gap-3 border-t border-slate-100 bg-slate-50 p-5 print:hidden">
-
+        {/* Boutons d'actions */}
+        <div className="flex gap-2 border-t border-slate-100 bg-slate-50 p-4 print:hidden">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 rounded-xl border border-slate-300 px-4 py-3 font-semibold text-slate-700 transition hover:bg-white"
+            className="flex-1 rounded-xl border border-slate-300 py-2.5 text-xs font-bold text-slate-700 hover:bg-white"
           >
             Fermer
           </button>
-
+          <button
+            type="button"
+            onClick={handleShareWhatsApp}
+            className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100"
+          >
+            <Share2 size={15} />
+            <span className="hidden sm:inline">WhatsApp</span>
+          </button>
           <button
             type="button"
             onClick={handlePrint}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-800 px-4 py-3 font-semibold text-white transition hover:bg-blue-900"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-vendix-brand py-2.5 text-xs font-bold text-white hover:bg-vendix-brand-dark"
           >
-            <Printer size={18} />
-            Imprimer
+            <Printer size={15} />
+            <span>Imprimer</span>
           </button>
-
         </div>
       </div>
 
-      {/* Styles spécifiques à l'impression */}
       <style>{`
         @media print {
-          @page {
-            margin: 10mm;
-          }
-
-          body * {
-            visibility: hidden;
-          }
-
-          #receipt-content,
-          #receipt-content * {
-            visibility: visible;
-          }
-
-          #receipt-content {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            padding: 0;
-          }
+          @page { margin: 5mm; }
+          body * { visibility: hidden; }
+          #receipt-content, #receipt-content * { visibility: visible; }
+          #receipt-content { position: absolute; left: 0; top: 0; width: 100%; padding: 0; }
         }
       `}</style>
     </div>
