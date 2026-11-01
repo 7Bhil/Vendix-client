@@ -29,9 +29,9 @@ const NAVIGATION_ITEMS = [
     icon: Users,
   },
   {
-    name: "Ajout Produit",
+    name: "Catalogue Produits",
     shortName: "Produits",
-    path: "/app/products/new",
+    path: "/app/products",
     icon: Package,
   },
 ];
@@ -43,6 +43,9 @@ export default function AppLayout({ children }) {
   const isCurrent = (path) => {
     if (path === "/app/customers") {
       return location.pathname.startsWith("/app/customers");
+    }
+    if (path === "/app/products") {
+      return location.pathname.startsWith("/app/products");
     }
     return location.pathname === path;
   };

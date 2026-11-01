@@ -1,0 +1,164 @@
+import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Search, Filter, Package } from 'lucide-react';
+import ProductCard from '../../components/products/ProductCard.jsx';
+import productsData from '../../mocks/modules/products.json';
+
+export default function ProductListPage() {
+  const navigate = useNavigate();
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedStockStatus, setSelectedStockStatus] = useState('');
+
+  const products = useMemo(() => {
+    const savedCustom = JSON.parse(
+      localStorage.getItem('vendix-custom-products') || '[]'
+    );
+    const savedLegacy = JSON.parse(
+      localStorage.getItem('vendix_products') || '[]'
+    );
+
+    // Dédoublonnage par ID
+    const customMap = new Map();
+    [...savedLegacy, ...savedCustom].forEach((p) => {
+      customMap.set(String(p.id), p);
+    });
+
+    const customProducts = Array.from(customMap.values());
+    const existingIds = new Set(customProducts.map((p) => String(p.id)));
+
+    const mockProducts = productsData.products.filter(
+      (p) => !existingIds.has(String(p.id))
+    );
+
+    return [...customProducts, ...mockProducts];
+  }, []);
+
+  const categories = productsData.categories;
+
+  const getStockStatus = (product) => {
+    const stock = Number(product.currentStock) || 0;
+    const threshold = Number(product.alertThreshold) || 0;
+
+    if (stock <= 0) return 'Rupture de stock';
+    if (stock <= threshold) return 'Stock faible';
+    return 'Stock normal';
+  };
+
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      const matchesName = (product.name || '')
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+
+      const matchesCategory =
+        selectedCategory === '' ||
+        product.categoryId === selectedCategory ||
+        product.category === selectedCategory ||
+        product.categoryName === selectedCategory;
+
+      const matchesStockStatus =
+        selectedStockStatus === '' ||
+        getStockStatus(product) === selectedStockStatus;
+
+      return matchesName && matchesCategory && matchesStockStatus;
+    });
+  }, [products, searchTerm, selectedCategory, selectedStockStatus]);
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl space-y-6">
+        {/* En-tête */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
+              Catalogue Produits
+            </h1>
+            <p className="text-xs text-slate-500">
+              Gérez vos articles, tarifs de gros et demi-gros, et états de stock.
+            </p>
+          </div>
+
+          <button
+            onClick={() => navigate('/app/products/new')}
+            className="flex items-center justify-center gap-2 rounded-xl bg-vendix-brand px-4 py-2.5 text-xs font-bold text-white transition hover:bg-vendix-brand-dark focus-visible:ring-2 focus-visible:ring-vendix-brand"
+          >
+            <Plus size={16} />
+            <span>Nouveau produit</span>
+          </button>
+        </div>
+
+        {/* Barre de recherche et filtres */}
+        <div className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-3">
+          <div className="relative">
+            <Search
+              size={18}
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+            <input
+              type="text"
+              placeholder="Rechercher un produit..."
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-4 text-xs outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
+            />
+          </div>
+
+          <div className="relative">
+            <Filter
+              size={18}
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+            <select
+              value={selectedCategory}
+              onChange={(event) => setSelectedCategory(event.target.value)}
+              className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-4 text-xs outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand bg-white"
+            >
+              <option value="">Toutes les catégories</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <select
+              value={selectedStockStatus}
+              onChange={(event) => setSelectedStockStatus(event.target.value)}
+              className="w-full rounded-xl border border-slate-300 py-2.5 px-4 text-xs outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand bg-white"
+            >
+              <option value="">Tous les états de stock</option>
+              <option value="Stock normal">Stock normal</option>
+              <option value="Stock faible">Stock faible</option>
+              <option value="Rupture de stock">Rupture de stock</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Grille de produits */}
+        {filteredProducts.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+              <Package size={24} />
+            </div>
+            <h3 className="mt-4 text-sm font-bold text-slate-900">
+              Aucun produit trouvé
+            </h3>
+            <p className="mt-1 text-xs text-slate-500">
+              Essayez de modifier votre recherche ou ajoutez un nouveau produit.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
