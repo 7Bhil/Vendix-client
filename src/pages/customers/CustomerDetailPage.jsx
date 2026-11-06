@@ -274,12 +274,13 @@ export default function CustomerDetailPage() {
         </div>
       </div>
 
-      <PaymentRecordModal
-        isOpen={showPaymentModal}
-        customer={customer}
-        onClose={() => setShowPaymentModal(false)}
-        onSubmit={recordPayment}
-      />
+      {showPaymentModal && (
+  <PaymentRecordModal
+    customer={customer}
+    onClose={() => setShowPaymentModal(false)}
+    onSubmit={recordPayment}
+  />
+)}
     </div>
   );
 }
