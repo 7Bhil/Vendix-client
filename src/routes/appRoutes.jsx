@@ -56,4 +56,9 @@ export const appRoutes = [
 
   // Collaborateur 4 : Clôture de Caisse & Rapports (feature/cash-and-reports)
   <Route key="collab-cash" path="/app/cash-closure" element={withLayout(CashClosurePage)} />,
+  <Route
+    key="collab-reports"
+    path="/app/reports"
+    element={withLayout(() => <CashClosurePage reportsOnly />)}
+  />,
 ];
