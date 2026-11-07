@@ -6,6 +6,7 @@ import {
   Users,
   Package,
   Store,
+  Boxes,
 } from "lucide-react";
 import OfflineSyncBadge from "../dashboard/OfflineSyncBadge";
 
@@ -34,19 +35,31 @@ const NAVIGATION_ITEMS = [
     path: "/app/products",
     icon: Package,
   },
+    {
+    name: "Stock",
+    shortName: "Stock",
+    path: "/app/stock",
+    icon: Boxes,
+  },
 ];
 
 export default function AppLayout({ children }) {
   const location = useLocation();
   const [isHovered, setIsHovered] = useState(false);
 
-  const isCurrent = (path) => {
+   const isCurrent = (path) => {
     if (path === "/app/customers") {
       return location.pathname.startsWith("/app/customers");
     }
+
     if (path === "/app/products") {
       return location.pathname.startsWith("/app/products");
     }
+
+    if (path === "/app/stock") {
+      return location.pathname.startsWith("/app/stock");
+    }
+
     return location.pathname === path;
   };
 
