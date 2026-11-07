@@ -15,6 +15,7 @@ import StockMovementsPage from '../pages/stock/StockMovementsPage.jsx';
 import ExpensesListPage from '../pages/expenses/ExpensesListPage.jsx';
 import SupplierListPage from '../pages/suppliers/SupplierListPage.jsx';
 import CashClosurePage from '../pages/cash/CashClosurePage.jsx';
+import NewExpensePage from '../pages/expenses/NewExpensePage.jsx';
 
 function withLayout(Component) {
   return (
@@ -51,7 +52,11 @@ export const appRoutes = [
   <Route key="collab-stock-movements" path="/app/stock/movements" element={withLayout(StockMovementsPage)} />,
 
   // Collaborateur 2 : Dépenses & Frais (feature/expenses-tracking)
-  <Route key="collab-expenses" path="/app/expenses" element={withLayout(ExpensesListPage)} />,
+<Route
+  key="collab-expenses" path="/app/expenses" element={withLayout(ExpensesListPage)}/>,
+
+<Route
+  key="collab-expenses-new" path="/app/expenses/new" element={withLayout(NewExpensePage)}/>,
 
   // Collaborateur 3 : Fournisseurs & Achats (feature/suppliers-purchases)
   <Route key="collab-suppliers" path="/app/suppliers" element={withLayout(SupplierListPage)} />,
