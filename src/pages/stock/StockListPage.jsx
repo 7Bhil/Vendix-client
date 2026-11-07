@@ -11,6 +11,11 @@ import StockMovementModal from '../../components/stock/StockMovementModal.jsx';
 import productsData from '../../mocks/modules/products.json';
 import { useToast } from '../../context/ToastContext.jsx';
 
+import {
+  getStockProducts,
+  readLocalStorage,
+} from '../../utils/stockStorage.js';
+
 export default function StockListPage() {
   // Notifications de l'application
   const { success, error } = useToast();
@@ -24,70 +29,50 @@ export default function StockListPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
     // Historique des mouvements de stock
-  const [stockMovements, setStockMovements] = useState(() => {
-    try {
-      return JSON.parse(
-        localStorage.getItem('vendix-stock-movements') || '[]'
-      );
-    } catch {
-      return [];
-    }
-  });
+  const [stockMovements, setStockMovements] = useState(() =>
+  readLocalStorage('vendix-stock-movements')
+);
 
   // Récupération des produits enregistrés
-  const products = useMemo(() => {
-    const savedCustom = JSON.parse(
-      localStorage.getItem('vendix-custom-products') || '[]'
-    );
-
-    const savedLegacy = JSON.parse(
-      localStorage.getItem('vendix_products') || '[]'
-    );
-
-    // Éviter les doublons grâce à l'identifiant du produit
-    const productMap = new Map();
-
-    [...savedLegacy, ...savedCustom].forEach((product) => {
-      productMap.set(String(product.id), product);
-    });
-
-    const savedProducts = Array.from(productMap.values());
-
-    const savedIds = new Set(
-      savedProducts.map((product) => String(product.id))
-    );
-
-    // Ajouter les produits de démonstration non enregistrés
-    const mockProducts = productsData.products.filter(
-      (product) => !savedIds.has(String(product.id))
-    );
-
-    return [...savedProducts, ...mockProducts];
-  }, []);
+  const products = useMemo(() => getStockProducts(), []);
 
   // Catégories disponibles
   const categories = productsData.categories;
-
-    // Calculer le stock disponible à partir des mouvements enregistrés
+  // Calculer le stock disponible à partir des mouvements enregistrés
   const productsWithStock = useMemo(() => {
+    // Regrouper les mouvements par identifiant de produit
+    const movementsByProduct = new Map();
+
+    stockMovements.forEach((movement) => {
+      const productId = String(movement.productId);
+      const quantity = Number(movement.signedQuantity) || 0;
+
+      const currentTotal = movementsByProduct.get(productId) || 0;
+
+      movementsByProduct.set(
+        productId,
+        currentTotal + quantity
+      );
+    });
+
+    // Calculer le stock final de chaque produit
     return products.map((product) => {
       const initialStock = Number(product.currentStock) || 0;
 
-      const movementTotal = stockMovements
-        .filter(
-          (movement) => String(movement.productId) === String(product.id)
-        )
-        .reduce(
-          (total, movement) => total + Number(movement.signedQuantity || 0),
-          0
-        );
+      const movementTotal =
+        movementsByProduct.get(String(product.id)) || 0;
+
+      // Arrondir le résultat à trois décimales
+      const finalStock =
+        Math.round((initialStock + movementTotal) * 1000) / 1000;
 
       return {
         ...product,
-        currentStock: initialStock + movementTotal,
+        currentStock: finalStock,
       };
     });
   }, [products, stockMovements]);
+
 
     // Déterminer l'état du stock d'un produit
   const getStockStatus = (product) => {
@@ -346,107 +331,176 @@ export default function StockListPage() {
             </div>
           </div>
 
-          {filteredProducts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-10 text-center">
-              <Package size={32} className="text-slate-300" />
 
-              <h3 className="mt-3 text-sm font-bold text-slate-800">
-                Aucun produit trouvé
-              </h3>
+{filteredProducts.length === 0 ? (
+  <div className="flex flex-col items-center justify-center p-10 text-center">
+    <Package size={32} className="text-slate-300" />
 
-              <p className="mt-1 text-xs text-slate-500">
-                Modifiez votre recherche ou vos filtres.
-              </p>
+    <h3 className="mt-3 text-sm font-bold text-slate-800">
+      Aucun produit trouvé
+    </h3>
+
+    <p className="mt-1 text-xs text-slate-500">
+      Modifiez votre recherche ou vos filtres.
+    </p>
+  </div>
+) : (
+  <>
+    {/* Cartes adaptées aux smartphones */}
+    <div className="divide-y divide-slate-100 sm:hidden">
+      {filteredProducts.map((product) => {
+        const stock = Number(product.currentStock) || 0;
+        const threshold = Number(product.alertThreshold) || 0;
+        const status = getStockStatus(product);
+
+        const statusStyles = {
+          'Stock normal': 'bg-emerald-50 text-emerald-700',
+          'Stock faible': 'bg-amber-50 text-amber-700',
+          'Rupture de stock': 'bg-rose-50 text-rose-700',
+        };
+
+        const category =
+          product.categoryName ||
+          product.category ||
+          categories.find(
+            (category) => category.id === product.categoryId
+          )?.name ||
+          'Non classé';
+
+        return (
+          <article key={product.id} className="space-y-3 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="break-words text-sm font-bold text-slate-800">
+                  {product.name}
+                </h3>
+                <p className="mt-1 text-xs text-slate-500">
+                  {category}
+                </p>
+              </div>
+
+              <span
+                className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${statusStyles[status]}`}
+              >
+                {status}
+              </span>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[650px] text-left">
 
-                <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500">
-                  <tr>
-                    <th className="px-5 py-4">Produit</th>
-                    <th className="px-5 py-4">Catégorie</th>
-                    <th className="px-5 py-4">Quantité disponible</th>
-                    <th className="px-5 py-4">Seuil d'alerte</th>
-                    <th className="px-5 py-4">État</th>
-                  </tr>
-                </thead>
+            <div className="grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-3">
+              <div>
+                <p className="text-xs text-slate-500">
+                  Quantité disponible
+                </p>
+                <p
+                  className={`mt-1 text-lg font-extrabold ${
+                    stock <= 0
+                      ? 'text-rose-600'
+                      : stock <= threshold
+                        ? 'text-amber-600'
+                        : 'text-slate-800'
+                  }`}
+                >
+                  {stock} {product.baseUnit || ''}
+                </p>
+              </div>
 
-                <tbody className="divide-y divide-slate-100">
-                  {filteredProducts.map((product) => {
-                    const stock = Number(product.currentStock) || 0;
-                    const threshold = Number(product.alertThreshold) || 0;
-                    const status = getStockStatus(product);
-
-                    const statusStyles = {
-                      'Stock normal':
-                        'bg-emerald-50 text-emerald-700',
-                      'Stock faible':
-                        'bg-amber-50 text-amber-700',
-                      'Rupture de stock':
-                        'bg-rose-50 text-rose-700',
-                    };
-
-                    return (
-                      <tr
-                        key={product.id}
-                        className="transition hover:bg-slate-50"
-                      >
-                        <td className="px-5 py-4">
-                          <p className="text-sm font-bold text-slate-800">
-                            {product.name}
-                          </p>
-                        </td>
-
-                        <td className="px-5 py-4 text-sm text-slate-500">
-                          {product.categoryName ||
-                            product.category ||
-                            categories.find(
-                              (category) =>
-                                category.id === product.categoryId
-                            )?.name ||
-                            'Non classé'}
-                        </td>
-
-                        <td className="px-5 py-4">
-                          <span
-                            className={`text-sm font-extrabold ${
-                              stock <= 0
-                                ? 'text-rose-600'
-                                : stock <= threshold
-                                  ? 'text-amber-600'
-                                  : 'text-slate-800'
-                            }`}
-                          >
-                            {stock}
-                          </span>
-
-                          <span className="ml-1 text-xs text-slate-500">
-                            {product.baseUnit || ''}
-                          </span>
-                        </td>
-
-                        <td className="px-5 py-4 text-sm text-slate-600">
-                          {threshold} {product.baseUnit || ''}
-                        </td>
-
-                        <td className="px-5 py-4">
-                          <span
-                            className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${
-                              statusStyles[status]
-                            }`}
-                          >
-                            {status}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-
-              </table>
+              <div>
+                <p className="text-xs text-slate-500">
+                  Seuil d'alerte
+                </p>
+                <p className="mt-1 text-lg font-bold text-slate-700">
+                  {threshold} {product.baseUnit || ''}
+                </p>
+              </div>
             </div>
-          )}
+          </article>
+        );
+      })}
+    </div>
+
+    {/* Tableau conservé pour les écrans plus larges */}
+    <div className="hidden overflow-x-auto sm:block">
+      <table className="w-full text-left">
+        <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500">
+          <tr>
+            <th className="px-5 py-4">Produit</th>
+            <th className="px-5 py-4">Catégorie</th>
+            <th className="px-5 py-4">Quantité disponible</th>
+            <th className="px-5 py-4">Seuil d'alerte</th>
+            <th className="px-5 py-4">État</th>
+          </tr>
+        </thead>
+
+        <tbody className="divide-y divide-slate-100">
+          {filteredProducts.map((product) => {
+            const stock = Number(product.currentStock) || 0;
+            const threshold = Number(product.alertThreshold) || 0;
+            const status = getStockStatus(product);
+
+            const statusStyles = {
+              'Stock normal': 'bg-emerald-50 text-emerald-700',
+              'Stock faible': 'bg-amber-50 text-amber-700',
+              'Rupture de stock': 'bg-rose-50 text-rose-700',
+            };
+
+            return (
+              <tr
+                key={product.id}
+                className="transition hover:bg-slate-50"
+              >
+                <td className="px-5 py-4">
+                  <p className="text-sm font-bold text-slate-800">
+                    {product.name}
+                  </p>
+                </td>
+
+                <td className="px-5 py-4 text-sm text-slate-500">
+                  {product.categoryName ||
+                    product.category ||
+                    categories.find(
+                      (category) => category.id === product.categoryId
+                    )?.name ||
+                    'Non classé'}
+                </td>
+
+                <td className="px-5 py-4">
+                  <span
+                    className={`text-sm font-extrabold ${
+                      stock <= 0
+                        ? 'text-rose-600'
+                        : stock <= threshold
+                          ? 'text-amber-600'
+                          : 'text-slate-800'
+                    }`}
+                  >
+                    {stock}
+                  </span>
+                  <span className="ml-1 text-xs text-slate-500">
+                    {product.baseUnit || ''}
+                  </span>
+                </td>
+
+                <td className="px-5 py-4 text-sm text-slate-600">
+                  {threshold} {product.baseUnit || ''}
+                </td>
+
+                <td className="px-5 py-4">
+                  <span
+                    className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${statusStyles[status]}`}
+                  >
+                    {status}
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  </>
+)}
+
+
         </div>
       </div>
 

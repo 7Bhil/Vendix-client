@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { X, ArrowDownToLine, TrendingDown, PackageX } from 'lucide-react';
 
 export default function StockMovementModal({
@@ -25,6 +25,21 @@ export default function StockMovementModal({
 
   // Message d'erreur
   const [error, setError] = useState('');
+
+  // Fermer le modal avec la touche Escape
+useEffect(() => {
+  const handleKeyDown = (event) => {
+    if (event.key === 'Escape') {
+      onClose();
+    }
+  };
+
+  window.addEventListener('keydown', handleKeyDown);
+
+  return () => {
+    window.removeEventListener('keydown', handleKeyDown);
+  };
+}, [onClose]);
 
     // Valider et transmettre le mouvement de stock
   const handleSubmit = (event) => {
