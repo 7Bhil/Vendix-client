@@ -66,13 +66,13 @@ export default function AppLayout({ children }) {
   return (
     <div className="flex min-h-screen bg-slate-50 text-vendix-ink">
       {/* Espace réservé desktop pour compenser la sidebar fixe */}
-      <div className="hidden md:block w-20 shrink-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]" />
+      <div className="hidden md:block w-20 shrink-0 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] print:hidden" />
 
       {/* Barre latérale desktop rétractable / extensible au survol avec transition fluide */}
       <aside
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className={`hidden md:flex fixed top-0 bottom-0 left-0 z-50 flex-col border-r border-slate-200/80 bg-white transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`hidden md:flex fixed top-0 bottom-0 left-0 z-50 flex-col border-r border-slate-200/80 bg-white transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] print:hidden ${
           isHovered ? "w-64 shadow-2xl ring-1 ring-slate-900/5" : "w-20 shadow-sm"
         }`}
       >
@@ -182,7 +182,7 @@ export default function AppLayout({ children }) {
       {/* Contenu principal */}
       <div className="flex flex-1 flex-col pb-20 md:pb-0 min-w-0">
         {/* Barre du haut mobile */}
-        <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 md:hidden">
+        <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 md:hidden print:hidden">
           <Link
             to="/app/dashboard"
             className="flex items-center gap-2 text-base font-extrabold text-vendix-brand"
@@ -200,7 +200,7 @@ export default function AppLayout({ children }) {
       </div>
 
       {/* Barre de navigation basse pour mobile */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-slate-200 bg-white/95 px-2 backdrop-blur-md md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-slate-200 bg-white/95 px-2 backdrop-blur-md md:hidden print:hidden">
         {NAVIGATION_ITEMS.map((item) => {
           const Icon = item.icon;
           const active = isCurrent(item.path);
