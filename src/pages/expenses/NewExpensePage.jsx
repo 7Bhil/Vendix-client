@@ -1,5 +1,7 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import {
   ArrowLeft,
   Receipt,
@@ -10,15 +12,31 @@ import {
   Building2,
   Truck,
   Zap,
+  Users,
+  Package,
+  CircleHelp,
   Banknote,
   Smartphone,
   CreditCard,
   CircleDollarSign,
   CheckCircle2,
   Info,
+  Upload,
+  Image as ImageIcon,
+  X,
 } from "lucide-react";
 
 import expensesData from "../../mocks/modules/expenses.json";
+
+import {
+  formatFCFA,
+  EXPENSE_CATEGORIES,
+  PAYMENT_METHODS,
+} from "../../utils/expenses";
+
+// ============================================
+// DATE DU JOUR
+// ============================================
 
 const getTodayDate = () => {
   const today = new Date();
@@ -30,59 +48,43 @@ const getTodayDate = () => {
   ].join("-");
 };
 
-const formatFCFA = (amount) =>
-  new Intl.NumberFormat("fr-FR", {
-    style: "currency",
-    currency: "XOF",
-    maximumFractionDigits: 0,
-  }).format(Number(amount) || 0);
+// ============================================
+// ICÔNES DES CATÉGORIES
+// ============================================
 
-const categories = [
-  {
-    value: "LOYER",
-    label: "Loyer",
-    description: "Local et location",
-    icon: Building2,
-    style: "border-violet-200 bg-violet-50 text-violet-700",
-  },
-  {
-    value: "TRANSPORT",
-    label: "Transport",
-    description: "Déplacements",
-    icon: Truck,
-    style: "border-amber-200 bg-amber-50 text-amber-700",
-  },
-  {
-    value: "ENERGIE",
-    label: "Énergie",
-    description: "Eau et électricité",
-    icon: Zap,
-    style: "border-sky-200 bg-sky-50 text-sky-700",
-  },
-];
+const categoryIcons = {
+  LOYER: Building2,
+  TRANSPORT: Truck,
+  ENERGIE: Zap,
+  SALAIRES: Users,
+  FOURNITURES: Package,
+  AUTRE: CircleHelp,
+};
 
-const paymentMethods = [
-  {
-    value: "CASH",
-    label: "Espèces",
-    icon: Banknote,
-  },
-  {
-    value: "MOBILE_MONEY",
-    label: "Mobile Money",
-    icon: Smartphone,
-  },
-  {
-    value: "CARD",
-    label: "Carte bancaire",
-    icon: CreditCard,
-  },
-  {
-    value: "OTHER",
-    label: "Autre",
-    icon: CircleDollarSign,
-  },
-];
+// Styles des catégories
+const categoryStyles = {
+  LOYER: "border-violet-200 bg-violet-50 text-violet-700",
+  TRANSPORT: "border-amber-200 bg-amber-50 text-amber-700",
+  ENERGIE: "border-sky-200 bg-sky-50 text-sky-700",
+  SALAIRES: "border-blue-200 bg-blue-50 text-blue-700",
+  FOURNITURES: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  AUTRE: "border-slate-200 bg-slate-50 text-slate-700",
+};
+
+// ============================================
+// ICÔNES DES MOYENS DE PAIEMENT
+// ============================================
+
+const paymentIcons = {
+  CASH: Banknote,
+  MOBILE_MONEY: Smartphone,
+  CARD: CreditCard,
+  OTHER: CircleDollarSign,
+};
+
+// ============================================
+// PAGE NOUVELLE DÉPENSE
+// ============================================
 
 export default function NewExpensePage() {
   const navigate = useNavigate();
@@ -93,11 +95,21 @@ export default function NewExpensePage() {
     paymentMethod: "",
     date: getTodayDate(),
     description: "",
+    receipt: "",
   });
 
   const [error, setError] = useState("");
+  const [isReadingReceipt, setIsReadingReceipt] = useState(false);
 
-  // Mettre à jour les champs du formulaire
+  // Catégorie sélectionnée
+  const selectedCategory = EXPENSE_CATEGORIES.find(
+    (category) => category.value === formData.category
+  );
+
+  // ============================================
+  // MODIFICATION DES CHAMPS
+  // ============================================
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -109,7 +121,100 @@ export default function NewExpensePage() {
     setError("");
   };
 
-  // Enregistrer la dépense
+  // ============================================
+  // SÉLECTION DE LA CATÉGORIE
+  // ============================================
+
+  const handleCategorySelect = (value) => {
+    setFormData((previousData) => ({
+      ...previousData,
+      category: value,
+    }));
+
+    setError("");
+  };
+
+  // ============================================
+  // SÉLECTION DU MOYEN DE PAIEMENT
+  // ============================================
+
+  const handlePaymentSelect = (value) => {
+    setFormData((previousData) => ({
+      ...previousData,
+      paymentMethod: value,
+    }));
+
+    setError("");
+  };
+
+  // ============================================
+  // AJOUT D'UNE PHOTO DE REÇU
+  // ============================================
+
+  const handleReceiptChange = (e) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    // Vérifier le format du fichier
+    if (!file.type.startsWith("image/")) {
+      setError("Veuillez sélectionner une image valide.");
+      e.target.value = "";
+      return;
+    }
+
+    // Limiter la taille à 1,5 Mo
+    if (file.size > 1.5 * 1024 * 1024) {
+      setError(
+        "La photo est trop volumineuse. Choisissez une image de 1,5 Mo maximum."
+      );
+      e.target.value = "";
+      return;
+    }
+
+    setError("");
+    setIsReadingReceipt(true);
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      setFormData((previousData) => ({
+        ...previousData,
+        receipt: reader.result,
+      }));
+
+      setIsReadingReceipt(false);
+    };
+
+    reader.onerror = () => {
+      setError("Impossible de lire cette image. Veuillez réessayer.");
+      setIsReadingReceipt(false);
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  // ============================================
+  // SUPPRESSION DE LA PHOTO
+  // ============================================
+
+  const removeReceipt = () => {
+    setFormData((previousData) => ({
+      ...previousData,
+      receipt: "",
+    }));
+
+    const input = document.getElementById("receipt");
+
+    if (input) {
+      input.value = "";
+    }
+  };
+
+  // ============================================
+  // ENREGISTREMENT DE LA DÉPENSE
+  // ============================================
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -126,6 +231,11 @@ export default function NewExpensePage() {
       return;
     }
 
+    if (isReadingReceipt) {
+      setError("Veuillez patienter pendant le chargement de la photo.");
+      return;
+    }
+
     let expenses = [];
 
     try {
@@ -133,13 +243,14 @@ export default function NewExpensePage() {
 
       expenses = savedExpenses
         ? JSON.parse(savedExpenses)
-        : expensesData.expenses;
+        : expensesData.expenses || [];
 
       if (!Array.isArray(expenses)) {
-        expenses = expensesData.expenses;
+        expenses = expensesData.expenses || [];
       }
-    } catch {
-      expenses = expensesData.expenses;
+    } catch (error) {
+      console.error("Erreur de lecture des dépenses :", error);
+      expenses = expensesData.expenses || [];
     }
 
     const newExpense = {
@@ -150,21 +261,30 @@ export default function NewExpensePage() {
       date: formData.date,
       description:
         formData.description.trim() || "Dépense de la boutique",
+      receipt: formData.receipt || null,
     };
 
     const updatedExpenses = [newExpense, ...expenses];
 
-    localStorage.setItem(
-      "vendix_expenses",
-      JSON.stringify(updatedExpenses)
-    );
+    try {
+      localStorage.setItem(
+        "vendix_expenses",
+        JSON.stringify(updatedExpenses)
+      );
 
-    navigate("/app/expenses");
+      navigate("/app/expenses");
+    } catch (storageError) {
+      console.error("Erreur d'enregistrement :", storageError);
+
+      setError(
+        "Impossible d'enregistrer cette dépense. Le stockage de votre navigateur est peut-être plein. Essayez une photo plus légère."
+      );
+    }
   };
 
-  const selectedCategory = categories.find(
-    (category) => category.value === formData.category
-  );
+  // ============================================
+  // INTERFACE
+  // ============================================
 
   return (
     <div className="min-h-screen bg-slate-50/80 px-4 py-6 md:px-8 md:py-8">
@@ -247,14 +367,16 @@ export default function NewExpensePage() {
             </div>
           </div>
 
-          {/* CATÉGORIE */}
+          {/* CATÉGORIES */}
           <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm md:p-6">
             <div className="mb-5">
               <div className="flex items-center gap-2">
                 <Receipt size={19} className="text-blue-700" />
+
                 <h2 className="font-semibold text-slate-900">
                   Catégorie de dépense
                 </h2>
+
                 <span className="text-red-500">*</span>
               </div>
 
@@ -263,9 +385,11 @@ export default function NewExpensePage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {categories.map((category) => {
-                const Icon = category.icon;
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+              {EXPENSE_CATEGORIES.map((category) => {
+                const Icon =
+                  categoryIcons[category.value] || CircleHelp;
+
                 const isSelected =
                   formData.category === category.value;
 
@@ -273,12 +397,7 @@ export default function NewExpensePage() {
                   <button
                     key={category.value}
                     type="button"
-                    onClick={() =>
-                      setFormData((previousData) => ({
-                        ...previousData,
-                        category: category.value,
-                      }))
-                    }
+                    onClick={() => handleCategorySelect(category.value)}
                     className={`relative flex items-center gap-3 rounded-xl border p-4 text-left transition ${
                       isSelected
                         ? "border-blue-500 bg-blue-50 ring-2 ring-blue-500/10"
@@ -286,7 +405,10 @@ export default function NewExpensePage() {
                     }`}
                   >
                     <div
-                      className={`rounded-xl border p-2.5 ${category.style}`}
+                      className={`rounded-xl border p-2.5 ${
+                        categoryStyles[category.value] ||
+                        categoryStyles.AUTRE
+                      }`}
                     >
                       <Icon size={21} />
                     </div>
@@ -295,8 +417,25 @@ export default function NewExpensePage() {
                       <p className="text-sm font-semibold text-slate-800">
                         {category.label}
                       </p>
+
                       <p className="mt-1 text-xs text-slate-400">
-                        {category.description}
+                        {category.value === "LOYER" &&
+                          "Local et location"}
+
+                        {category.value === "TRANSPORT" &&
+                          "Déplacements"}
+
+                        {category.value === "ENERGIE" &&
+                          "Eau et électricité"}
+
+                        {category.value === "SALAIRES" &&
+                          "Rémunération du personnel"}
+
+                        {category.value === "FOURNITURES" &&
+                          "Emballages et matériel"}
+
+                        {category.value === "AUTRE" &&
+                          "Autres dépenses"}
                       </p>
                     </div>
 
@@ -317,9 +456,11 @@ export default function NewExpensePage() {
             <div className="mb-5">
               <div className="flex items-center gap-2">
                 <CreditCard size={19} className="text-blue-700" />
+
                 <h2 className="font-semibold text-slate-900">
                   Moyen de paiement
                 </h2>
+
                 <span className="text-red-500">*</span>
               </div>
 
@@ -329,8 +470,10 @@ export default function NewExpensePage() {
             </div>
 
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              {paymentMethods.map((method) => {
-                const Icon = method.icon;
+              {PAYMENT_METHODS.map((method) => {
+                const Icon =
+                  paymentIcons[method.value] || CircleDollarSign;
+
                 const isSelected =
                   formData.paymentMethod === method.value;
 
@@ -338,12 +481,7 @@ export default function NewExpensePage() {
                   <button
                     key={method.value}
                     type="button"
-                    onClick={() =>
-                      setFormData((previousData) => ({
-                        ...previousData,
-                        paymentMethod: method.value,
-                      }))
-                    }
+                    onClick={() => handlePaymentSelect(method.value)}
                     className={`flex flex-col items-center gap-3 rounded-xl border p-4 text-center transition ${
                       isSelected
                         ? "border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-500/10"
@@ -351,6 +489,7 @@ export default function NewExpensePage() {
                     }`}
                   >
                     <Icon size={24} />
+
                     <span className="text-xs font-semibold">
                       {method.label}
                     </span>
@@ -367,12 +506,15 @@ export default function NewExpensePage() {
             </h2>
 
             <div className="space-y-5">
+
+              {/* DATE */}
               <div>
                 <label
                   htmlFor="date"
                   className="mb-2 block text-sm font-medium text-slate-700"
                 >
-                  Date de la dépense <span className="text-red-500">*</span>
+                  Date de la dépense{" "}
+                  <span className="text-red-500">*</span>
                 </label>
 
                 <div className="relative">
@@ -393,12 +535,14 @@ export default function NewExpensePage() {
                 </div>
               </div>
 
+              {/* DESCRIPTION */}
               <div>
                 <label
                   htmlFor="description"
                   className="mb-2 block text-sm font-medium text-slate-700"
                 >
                   Description
+
                   <span className="ml-1 font-normal text-slate-400">
                     (facultatif)
                   </span>
@@ -429,10 +573,88 @@ export default function NewExpensePage() {
             </div>
           </div>
 
+          {/* PHOTO DU REÇU */}
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm md:p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <ImageIcon size={20} className="text-blue-700" />
+
+              <h2 className="font-semibold text-slate-900">
+                Justificatif de dépense
+              </h2>
+
+              <span className="text-xs text-slate-400">
+                (facultatif)
+              </span>
+            </div>
+
+            <p className="mb-4 text-sm text-slate-500">
+              Ajoutez une photo de votre facture ou de votre reçu de caisse.
+            </p>
+
+            {!formData.receipt ? (
+              <label
+                htmlFor="receipt"
+                className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-7 text-center transition hover:border-blue-400 hover:bg-blue-50/50"
+              >
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+                  <Upload size={23} />
+                </div>
+
+                <span className="text-sm font-semibold text-slate-700">
+                  {isReadingReceipt
+                    ? "Chargement de la photo..."
+                    : "Joindre une photo"}
+                </span>
+
+                <span className="mt-1 text-xs text-slate-400">
+                  JPG, PNG ou autre image (1,5 Mo maximum)
+                </span>
+
+                <input
+                  id="receipt"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleReceiptChange}
+                  className="hidden"
+                />
+              </label>
+            ) : (
+              <div className="overflow-hidden rounded-xl border border-slate-200">
+                <div className="flex items-center justify-between bg-slate-50 px-4 py-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <CheckCircle2
+                      size={17}
+                      className="text-emerald-600"
+                    />
+                    Photo ajoutée
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={removeReceipt}
+                    className="flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                  >
+                    <X size={15} />
+                    Retirer
+                  </button>
+                </div>
+
+                <img
+                  src={formData.receipt}
+                  alt="Aperçu du justificatif de dépense"
+                  className="max-h-72 w-full bg-slate-100 object-contain"
+                />
+              </div>
+            )}
+          </div>
+
           {/* RÉCAPITULATIF */}
           <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-5 md:p-6">
             <div className="flex items-start gap-3">
-              <Info size={19} className="mt-0.5 shrink-0 text-blue-700" />
+              <Info
+                size={19}
+                className="mt-0.5 shrink-0 text-blue-700"
+              />
 
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-blue-900">
@@ -446,25 +668,34 @@ export default function NewExpensePage() {
                         ? selectedCategory.label
                         : "Catégorie non sélectionnée"}
                     </p>
+
                     <p className="mt-1 text-2xl font-bold text-blue-950">
                       {formatFCFA(formData.amount)}
                     </p>
                   </div>
 
                   <span className="rounded-lg bg-white px-3 py-2 text-xs font-semibold text-blue-700">
-                    {formData.paymentMethod
-                      ? paymentMethods.find(
-                          (method) =>
-                            method.value === formData.paymentMethod
-                        )?.label
-                      : "Paiement non sélectionné"}
+                    {PAYMENT_METHODS.find(
+                      (method) =>
+                        method.value === formData.paymentMethod
+                    )?.label || "Paiement non sélectionné"}
                   </span>
                 </div>
+
+                {formData.receipt && (
+                  <p className="mt-3 text-xs font-medium text-emerald-700">
+                    <CheckCircle2
+                      size={14}
+                      className="mr-1 inline"
+                    />
+                    Un justificatif sera enregistré.
+                  </p>
+                )}
               </div>
             </div>
           </div>
 
-          {/* ERREUR */}
+          {/* MESSAGE D'ERREUR */}
           {error && (
             <div
               role="alert"
@@ -474,7 +705,7 @@ export default function NewExpensePage() {
             </div>
           )}
 
-          {/* ACTIONS */}
+          {/* BOUTONS */}
           <div className="flex flex-col-reverse justify-end gap-3 border-t border-slate-200 pt-5 sm:flex-row">
             <button
               type="button"
@@ -486,7 +717,8 @@ export default function NewExpensePage() {
 
             <button
               type="submit"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-700/20 transition hover:-translate-y-0.5 hover:bg-blue-800"
+              disabled={isReadingReceipt}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-700/20 transition hover:-translate-y-0.5 hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Save size={18} />
               Enregistrer la dépense
