@@ -11,6 +11,7 @@ import NewCustomerPage from '../pages/customers/NewCustomerPage.jsx';
 
 // Modules réservés aux 4 collaborateurs de l'équipe
 import StockListPage from '../pages/stock/StockListPage.jsx';
+import StockMovementsPage from '../pages/stock/StockMovementsPage.jsx';
 import ExpensesListPage from '../pages/expenses/ExpensesListPage.jsx';
 import SupplierListPage from '../pages/suppliers/SupplierListPage.jsx';
 import CashClosurePage from '../pages/cash/CashClosurePage.jsx';
@@ -47,6 +48,7 @@ export const appRoutes = [
   // =========================================================================
   // Collaborateur 1 : Stock & Mouvements (feature/stock-management)
   <Route key="collab-stock" path="/app/stock" element={withLayout(StockListPage)} />,
+  <Route key="collab-stock-movements" path="/app/stock/movements" element={withLayout(StockMovementsPage)} />,
 
   // Collaborateur 2 : Dépenses & Frais (feature/expenses-tracking)
   <Route key="collab-expenses" path="/app/expenses" element={withLayout(ExpensesListPage)} />,
