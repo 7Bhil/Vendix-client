@@ -1,0 +1,37 @@
+
+{
+  "expenses": [
+    {
+      "id": 1,
+      "amount": 15000,
+      "category": "LOYER",
+      "paymentMethod": "CASH",
+      "description": "Loyer de la boutique",
+      "date": "2026-11-01"
+    },
+    {
+      "id": 2,
+      "amount": 3000,
+      "category": "TRANSPORT",
+      "paymentMethod": "MOBILE_MONEY",
+      "description": "Transport des marchandises",
+      "date": "2026-11-02"
+    },
+    {
+      "id": 3,
+      "amount": 5000,
+      "category": "ENERGIE",
+      "paymentMethod": "CASH",
+      "description": "Facture d'électricité",
+      "date": "2026-11-03"
+    },
+    {
+      "id": 4,
+      "amount": 2500,
+      "category": "TRANSPORT",
+      "paymentMethod": "CASH",
+      "description": "Déplacement pour achat",
+      "date": "2026-11-05"
+    }
+  ]
+}
