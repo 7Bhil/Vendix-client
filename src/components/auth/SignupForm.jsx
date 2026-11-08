@@ -41,9 +41,10 @@ export default function SignupForm() {
   // Validation spécifique à l'étape 1
   function validateStep1() {
     const stepErrors = {}
+    const cleanPhone = formData.phone.replace(/[\s.-]/g, '')
 
-    if (!/^01\d{8}$/.test(formData.phone)) {
-      stepErrors.phone = 'Saisissez un numéro valide de 10 chiffres commençant par 01.'
+    if (!/^(01\d{8}|\d{8})$/.test(cleanPhone)) {
+      stepErrors.phone = 'Saisissez un numéro valide de 8 ou 10 chiffres (ex: 53633667 ou 0153633667).'
     }
 
     if (formData.password.length < 8) {
@@ -213,7 +214,7 @@ export default function SignupForm() {
           {/* Bouton vers Étape 2 */}
           <button
             type="submit"
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-vendix-brand px-4 text-sm font-bold text-white shadow-md transition hover:bg-vendix-brand-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand focus-visible:ring-offset-2"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-vendix-brand px-4 text-sm font-bold text-white shadow-md transition-all duration-150 ease-in-out hover:bg-vendix-brand-dark hover:shadow-lg active:scale-[0.98] active:bg-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand focus-visible:ring-offset-2"
           >
             <span>Continuer vers la boutique</span>
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -404,7 +405,7 @@ export default function SignupForm() {
           <button
             type="submit"
             disabled={isSubmitting || !formData.acceptTerms || formData.shopName.trim().length < 3}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-vendix-brand px-4 text-sm font-bold text-white shadow-md transition hover:bg-vendix-brand-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-vendix-brand px-4 text-sm font-bold text-white shadow-md transition-all duration-150 ease-in-out hover:bg-vendix-brand-dark hover:shadow-lg active:scale-[0.98] active:bg-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
           >
             <span>
               {isSubmitting ? 'Création de votre boutique…' : 'Créer ma boutique gratuitement'}

@@ -35,10 +35,12 @@ export default function LoginForm() {
 
     const newErrors = {}
 
-    if (!formData.phone.trim()) {
+    const cleanPhone = formData.phone.replace(/[\s.-]/g, '')
+
+    if (!cleanPhone) {
       newErrors.phone = 'Veuillez saisir votre numéro de téléphone.'
-    } else if (!/^01\d{8}$/.test(formData.phone)) {
-      newErrors.phone = 'Le numéro doit commencer par 01 et contenir 10 chiffres.'
+    } else if (!/^(01\d{8}|\d{8})$/.test(cleanPhone)) {
+      newErrors.phone = 'Le numéro doit contenir 8 chiffres ou 10 chiffres (avec le 01).'
     }
 
     if (!formData.password) {
@@ -149,7 +151,7 @@ export default function LoginForm() {
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full rounded-xl bg-teal-700 px-4 py-3 font-semibold text-white transition hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:opacity-60"
+        className="w-full rounded-xl bg-teal-700 px-4 py-3 font-semibold text-white shadow-md transition-all duration-150 ease-in-out hover:bg-teal-800 hover:shadow-lg active:scale-[0.98] active:bg-teal-900 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:opacity-60 disabled:pointer-events-none"
       >
         {isLoading ? 'Connexion en cours...' : 'Se connecter'}
       </button>
