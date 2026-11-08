@@ -108,7 +108,7 @@ export default function SignupForm() {
       })
 
       const createdUser = {
-        id: result?.user?.id || 'usr_' + Date.now(),
+        id: result?.user?.id,
         phone: result?.user?.phone || formData.phone,
         shopName: result?.user?.commerce?.name || formData.shopName.trim(),
         email: formData.email.trim() || null,
@@ -121,17 +121,9 @@ export default function SignupForm() {
         state: { user: createdUser },
       })
     } catch (err) {
-      // Fallback local fluide si l'API n'est pas encore joignable
-      const mockCreatedUser = {
-        id: 'usr_' + Date.now(),
-        phone: formData.phone,
-        shopName: formData.shopName.trim(),
-        email: formData.email.trim() || null,
-        activityType: formData.activityType,
-      }
-      localStorage.setItem('vendix_active_user', JSON.stringify(mockCreatedUser))
-      navigate('/onboarding', {
-        state: { user: mockCreatedUser },
+      console.error("Échec de l'inscription API :", err);
+      setErrors({
+        form: err?.message || "Impossible de créer le compte. Vérifiez que le serveur est bien démarré ou que ce numéro n'est pas déjà enregistré.",
       })
     } finally {
       setIsSubmitting(false)
