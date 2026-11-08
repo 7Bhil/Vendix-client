@@ -31,6 +31,7 @@ export default function NewSalePage() {
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [completedSale, setCompletedSale] = useState(null);
+  const [discountAmount, setDiscountAmount] = useState(0);
   const { success } = useToast();
 
   // Persistance du panier local
@@ -46,12 +47,20 @@ export default function NewSalePage() {
     }
   }, [cart]);
 
-  const totalAmount = useMemo(() => {
+  const rawTotalAmount = useMemo(() => {
     return cart.reduce((total, item) => {
       const { unitPrice } = getProductTierPrice(item, item.quantity);
       return total + unitPrice * Number(item.quantity);
     }, 0);
   }, [cart]);
+
+  const effectiveDiscount = useMemo(() => {
+    return Math.min(Math.max(0, Number(discountAmount) || 0), rawTotalAmount);
+  }, [discountAmount, rawTotalAmount]);
+
+  const totalAmount = useMemo(() => {
+    return Math.max(0, rawTotalAmount - effectiveDiscount);
+  }, [rawTotalAmount, effectiveDiscount]);
 
   const totalItems = useMemo(() => {
     return cart.reduce((total, item) => total + Number(item.quantity), 0);
@@ -109,21 +118,39 @@ export default function NewSalePage() {
     // Clé d'idempotence stricte UUID v4
     const clientOpUuid = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `op-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
+    // Si un marchandage/rabais est consenti, on répartit proportionnellement la remise
+    // sur les lignes tout en garantissant des entiers FCFA stricts et une somme exacte.
+    const discountFactor = rawTotalAmount > 0 ? (totalAmount / rawTotalAmount) : 1;
+    let runningAdjustedSum = 0;
+
+    const computedLines = cart.map((item, index) => {
+      const { unitPrice, activeTier } = getProductTierPrice(item, item.quantity);
+      let adjustedUnitPrice = Math.round(Number(unitPrice) * discountFactor);
+      
+      // Ajustement sur la dernière ligne pour combler l'écart d'arrondi
+      if (index === cart.length - 1) {
+        const remainingTarget = totalAmount - runningAdjustedSum;
+        const lastLineQty = Number(item.quantity) || 1;
+        adjustedUnitPrice = Math.max(0, Math.round(remainingTarget / lastLineQty));
+      } else {
+        runningAdjustedSum += adjustedUnitPrice * Number(item.quantity);
+      }
+
+      return {
+        product_id: item.id,
+        quantity: Number(item.quantity),
+        unit_label: activeTier?.unit || item.unit || 'Pièce',
+        conversion_factor: Number(activeTier?.conversionFactor) || 1,
+        unit_price: adjustedUnitPrice,
+      };
+    });
+
     const salePayload = {
       amount_paid: Number(payment.paidAmount) || 0,
       payment_method: mappedPaymentMethod,
       customer_id: payment.customerId || undefined,
       client_op_uuid: clientOpUuid,
-      lines: cart.map((item) => {
-        const { unitPrice, activeTier } = getProductTierPrice(item, item.quantity);
-        return {
-          product_id: item.id,
-          quantity: Number(item.quantity),
-          unit_label: activeTier?.unit || item.unit || 'Pièce',
-          conversion_factor: Number(activeTier?.conversionFactor) || 1,
-          unit_price: Math.round(Number(unitPrice)),
-        };
-      }),
+      lines: computedLines,
     };
 
     let serverSale = null;
@@ -225,6 +252,8 @@ export default function NewSalePage() {
           <div className="hidden lg:block space-y-5 lg:sticky lg:top-6">
             <CartSheet
               cart={cart}
+              discount={effectiveDiscount}
+              onUpdateDiscount={(amount) => setDiscountAmount(amount)}
               onUpdateQuantity={handleUpdateQuantity}
               onRemoveProduct={handleRemoveProduct}
               onClearCart={handleClearCart}

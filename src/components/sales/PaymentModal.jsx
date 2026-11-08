@@ -25,6 +25,8 @@ export default function PaymentModal({
   const [paymentMethod, setPaymentMethod] = useState("CASH");
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [customCustomerName, setCustomCustomerName] = useState("");
+  const [customerSearchQuery, setCustomerSearchQuery] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customers, setCustomers] = useState([]);
 
@@ -62,6 +64,16 @@ export default function PaymentModal({
     if (!selectedCustomerId) return null;
     return customers.find((c) => c.id === selectedCustomerId) || null;
   }, [customers, selectedCustomerId]);
+
+  const filteredCustomers = useMemo(() => {
+    const q = customerSearchQuery.trim().toLowerCase();
+    if (!q) return customers.slice(0, 8);
+    return customers.filter(
+      (c) =>
+        (c.fullName && c.fullName.toLowerCase().includes(q)) ||
+        (c.phone && c.phone.includes(q))
+    ).slice(0, 8);
+  }, [customers, customerSearchQuery]);
 
   const debtAgeDays = useMemo(() => {
     if (!selectedCustomerObj || !selectedCustomerObj.oldestDebtDate) return 0;
@@ -161,37 +173,95 @@ export default function PaymentModal({
             </span>
           </div>
 
-          {/* Sélection du client */}
+          {/* Sélection du client avec autocomplétion intelligente */}
           <div className="space-y-2">
-            <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-700">
-              <User size={15} className="text-vendix-brand" />
-              <span>Client associé {isCreditSale && <span className="text-red-500">*</span>}</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-700">
+                <User size={15} className="text-vendix-brand" />
+                <span>Client associé {isCreditSale && <span className="text-red-500">*</span>}</span>
+              </label>
+              {selectedCustomerObj && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCustomerId("");
+                    setCustomerSearchQuery("");
+                  }}
+                  className="text-[11px] font-semibold text-slate-400 hover:text-red-600 underline"
+                >
+                  Changer
+                </button>
+              )}
+            </div>
 
-            <select
-              value={selectedCustomerId}
-              onChange={(e) => {
-                setSelectedCustomerId(e.target.value);
-                if (e.target.value) setCustomCustomerName("");
-              }}
-              className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
-            >
-              <option value="">Sélectionner un client existant (ou saisir ci-dessous)</option>
-              {customers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.fullName} ({c.phone}) {c.currentDebt > 0 ? `· Dette: ${formatPrice(c.currentDebt)}` : ""}
-                </option>
-              ))}
-            </select>
+            {selectedCustomerObj ? (
+              <div className="flex items-center justify-between rounded-xl border border-blue-200 bg-blue-50/60 p-3">
+                <div>
+                  <p className="text-sm font-bold text-slate-900">{selectedCustomerObj.fullName}</p>
+                  <p className="text-xs text-slate-500">{selectedCustomerObj.phone || "Sans téléphone"}</p>
+                </div>
+                {selectedCustomerObj.currentDebt > 0 && (
+                  <span className="rounded-lg bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-900">
+                    Dette : {formatPrice(selectedCustomerObj.currentDebt)}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Rechercher par nom ou téléphone (ou saisir un nouveau client)..."
+                  value={customerSearchQuery}
+                  onFocus={() => setIsDropdownOpen(true)}
+                  onChange={(e) => {
+                    setCustomerSearchQuery(e.target.value);
+                    setCustomCustomerName(e.target.value);
+                    setIsDropdownOpen(true);
+                  }}
+                  className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
+                />
 
-            {!selectedCustomerId && (
-              <input
-                type="text"
-                placeholder="Ou nom du client comptoir / nouveau client"
-                value={customCustomerName}
-                onChange={(e) => setCustomCustomerName(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
-              />
+                {isDropdownOpen && (
+                  <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-xl">
+                    {filteredCustomers.length > 0 ? (
+                      <div className="divide-y divide-slate-100">
+                        {filteredCustomers.map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedCustomerId(c.id);
+                              setCustomerSearchQuery(c.fullName);
+                              setCustomCustomerName("");
+                              setIsDropdownOpen(false);
+                            }}
+                            className="flex w-full items-center justify-between p-2.5 text-left transition hover:bg-blue-50/70"
+                          >
+                            <div>
+                              <p className="text-xs font-bold text-slate-900">{c.fullName}</p>
+                              <p className="text-[11px] text-slate-400">{c.phone}</p>
+                            </div>
+                            {c.currentDebt > 0 ? (
+                              <span className="text-[11px] font-bold text-amber-700">
+                                Dû : {formatPrice(c.currentDebt)}
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-emerald-600 font-semibold">À jour</span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-3 text-center text-xs text-slate-500">
+                        Aucun client existant pour &quot;{customerSearchQuery}&quot;.
+                        <p className="mt-1 font-bold text-vendix-brand">
+                          Sera enregistré sous ce nom.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
 
             {isCreditSale && !isCustomerProvided && (
