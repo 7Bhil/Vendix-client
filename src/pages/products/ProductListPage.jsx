@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Filter, Package } from 'lucide-react';
+import { Plus, Search, Filter, Package, AlertCircle } from 'lucide-react';
 import ProductCard from '../../components/products/ProductCard.jsx';
 import productsData from '../../mocks/modules/products.json';
+import { productsService, categoriesService } from '../../api/services.js';
 
 export default function ProductListPage() {
   const navigate = useNavigate();
@@ -11,31 +12,78 @@ export default function ProductListPage() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedStockStatus, setSelectedStockStatus] = useState('');
 
-  const products = useMemo(() => {
-    const savedCustom = JSON.parse(
-      localStorage.getItem('vendix-custom-products') || '[]'
-    );
-    const savedLegacy = JSON.parse(
-      localStorage.getItem('vendix_products') || '[]'
-    );
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState(productsData.categories);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
-    // Dédoublonnage par ID
-    const customMap = new Map();
-    [...savedLegacy, ...savedCustom].forEach((p) => {
-      customMap.set(String(p.id), p);
-    });
+  useEffect(() => {
+    let isMounted = true;
 
-    const customProducts = Array.from(customMap.values());
-    const existingIds = new Set(customProducts.map((p) => String(p.id)));
+    async function loadData() {
+      setIsLoading(true);
+      setError('');
 
-    const mockProducts = productsData.products.filter(
-      (p) => !existingIds.has(String(p.id))
-    );
+      try {
+        const [apiProducts, apiCategories] = await Promise.allSettled([
+          productsService.getAll(),
+          categoriesService.getAll(),
+        ]);
 
-    return [...customProducts, ...mockProducts];
+        if (isMounted) {
+          if (apiCategories.status === 'fulfilled' && Array.isArray(apiCategories.value) && apiCategories.value.length > 0) {
+            setCategories(apiCategories.value);
+          }
+
+          if (apiProducts.status === 'fulfilled' && Array.isArray(apiProducts.value) && apiProducts.value.length > 0) {
+            // Mapping du format NestJS vers les props attendues par ProductCard
+            const mapped = apiProducts.value.map((p) => ({
+              id: p.id,
+              name: p.name,
+              categoryId: p.category_id,
+              categoryName: p.category?.name || 'Général',
+              currentStock: p.current_stock ?? 0,
+              alertThreshold: p.alert_threshold ?? 5,
+              photoUrl: p.image_url,
+              product_units: p.product_units || [],
+              priceTiers: (p.product_units || []).map((u) => ({
+                id: u.id,
+                name: u.label,
+                unit: u.label,
+                salePrice: u.sale_price,
+                conversionFactor: Number(u.conversion_factor) || 1,
+              })),
+            }));
+            setProducts(mapped);
+          } else {
+            // Fallback fluide sur local/mock si la base serveur est encore vide
+            const savedCustom = JSON.parse(localStorage.getItem('vendix-custom-products') || '[]');
+            const savedLegacy = JSON.parse(localStorage.getItem('vendix_products') || '[]');
+            const customMap = new Map();
+            [...savedLegacy, ...savedCustom].forEach((p) => customMap.set(String(p.id), p));
+            const customProducts = Array.from(customMap.values());
+            const existingIds = new Set(customProducts.map((p) => String(p.id)));
+            const mockProducts = productsData.products.filter((p) => !existingIds.has(String(p.id)));
+            setProducts([...customProducts, ...mockProducts]);
+          }
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError('Erreur lors du chargement des produits.');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
-
-  const categories = productsData.categories;
 
   const getStockStatus = (product) => {
     const stock = Number(product.currentStock) || 0;
@@ -89,6 +137,13 @@ export default function ProductListPage() {
           </button>
         </div>
 
+        {error && (
+          <div className="flex items-center gap-2 rounded-xl bg-amber-50 p-3.5 text-xs font-semibold text-amber-800 border border-amber-200">
+            <AlertCircle size={16} className="shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
         {/* Barre de recherche et filtres */}
         <div className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-3">
           <div className="relative">
@@ -138,8 +193,14 @@ export default function ProductListPage() {
           </div>
         </div>
 
-        {/* Grille de produits */}
-        {filteredProducts.length === 0 ? (
+        {/* Grille de produits ou Squelette de chargement */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="h-56 animate-pulse rounded-2xl bg-slate-100 border border-slate-200/60" />
+            ))}
+          </div>
+        ) : filteredProducts.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
               <Package size={24} />

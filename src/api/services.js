@@ -59,7 +59,7 @@ export const authService = {
     }
   },
 
-  async getMe() {
+  getMe() {
     return api.get('/auth/me');
   },
 };
@@ -77,9 +77,8 @@ export const categoriesService = {
     return api.patch(`/categories/${id}`, { name });
   },
 
-  delete(id, reassignCategoryId = null) {
-    const query = reassignCategoryId ? `?reassignCategoryId=${reassignCategoryId}` : '';
-    return api.delete(`/categories/${id}${query}`);
+  delete(id) {
+    return api.delete(`/categories/${id}`);
   },
 };
 
@@ -110,6 +109,37 @@ export const productsService = {
 
   restore(id) {
     return api.post(`/products/${id}/restore`);
+  },
+};
+
+export const stockService = {
+  getStockState(params = {}) {
+    const query = new URLSearchParams();
+    if (params.level) query.append('level', params.level);
+    if (params.categoryId) query.append('categoryId', params.categoryId);
+    if (params.search) query.append('search', params.search);
+    if (params.threshold !== undefined) query.append('threshold', String(params.threshold));
+    const qs = query.toString();
+    return api.get(`/stock${qs ? `?${qs}` : ''}`);
+  },
+
+  recordMovement(payload) {
+    return api.post('/stock/movements', payload);
+  },
+
+  getMovementsHistory(params = {}) {
+    const query = new URLSearchParams();
+    if (params.productId) query.append('productId', params.productId);
+    if (params.type) query.append('type', params.type);
+    if (params.page) query.append('page', String(params.page));
+    if (params.limit) query.append('limit', String(params.limit));
+    const qs = query.toString();
+    return api.get(`/stock/movements${qs ? `?${qs}` : ''}`);
+  },
+
+  getAlerts(threshold) {
+    const qs = threshold !== undefined ? `?threshold=${threshold}` : '';
+    return api.get(`/stock/alerts${qs}`);
   },
 };
 
@@ -173,5 +203,81 @@ export const customersService = {
 
   getWhatsAppReminder(id) {
     return api.get(`/customers/${id}/whatsapp-reminder`);
+  },
+};
+
+export const suppliersService = {
+  getAll() {
+    return api.get('/suppliers');
+  },
+
+  getById(id) {
+    return api.get(`/suppliers/${id}`);
+  },
+
+  create(supplierData) {
+    return api.post('/suppliers', supplierData);
+  },
+
+  recordPayment(id, { amount, paymentMethod = 'CASH', notes = '' }) {
+    return api.post(`/suppliers/${id}/payments`, {
+      amount: Math.round(Number(amount)),
+      payment_method: paymentMethod,
+      ...(notes ? { notes } : {}),
+    });
+  },
+};
+
+export const purchasesService = {
+  getAll() {
+    return api.get('/purchases');
+  },
+
+  create(purchasePayload) {
+    return api.post('/purchases', purchasePayload);
+  },
+};
+
+export const expensesService = {
+  getAll(params = {}) {
+    const query = new URLSearchParams();
+    if (params.category) query.append('category', params.category);
+    if (params.payment_method) query.append('payment_method', params.payment_method);
+    const qs = query.toString();
+    return api.get(`/expenses${qs ? `?${qs}` : ''}`);
+  },
+
+  create(expensePayload) {
+    return api.post('/expenses', expensePayload);
+  },
+};
+
+export const cashService = {
+  getDailyState(date) {
+    const qs = date ? `?date=${date}` : '';
+    return api.get(`/cash/daily${qs}`);
+  },
+
+  closeSession(payload) {
+    return api.post('/cash/close', payload);
+  },
+};
+
+export const publicShopService = {
+  getShop(slug) {
+    return api.get(`/public-shop/${slug}`);
+  },
+
+  getProducts(slug, params = {}) {
+    const query = new URLSearchParams();
+    if (params.limit) query.append('limit', String(params.limit));
+    if (params.offset) query.append('offset', String(params.offset));
+    if (params.search) query.append('search', params.search);
+    const qs = query.toString();
+    return api.get(`/public-shop/${slug}/products${qs ? `?${qs}` : ''}`);
+  },
+
+  trackVisit(slug) {
+    return api.post(`/public-shop/${slug}/visit`, {});
   },
 };

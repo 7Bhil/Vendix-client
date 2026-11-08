@@ -12,6 +12,7 @@ import PaymentModal from "../../components/sales/PaymentModal";
 import ReceiptModal from "../../components/sales/ReceiptModal";
 import { getProductTierPrice } from "../../utils/pricingUtils";
 import { useToast } from "../../context/ToastContext";
+import { salesService } from "../../api/services.js";
 
 const formatPrice = (price) =>
   new Intl.NumberFormat("fr-FR").format(Number(price) || 0) + " FCFA";
@@ -64,9 +65,35 @@ export default function NewSalePage() {
     setCart([]);
   };
 
-  const handleConfirmPayment = (payment) => {
+  const handleConfirmPayment = async (payment) => {
+    const salePayload = {
+      amount_paid: Number(payment.paidAmount) || 0,
+      payment_method: payment.paymentMethod === 'MOMO' ? 'MOMO' : 'CASH',
+      customer_id: payment.customerId || undefined,
+      lines: cart.map((item) => {
+        const { unitPrice, activeTier } = getProductTierPrice(item, item.quantity);
+        return {
+          product_id: item.id,
+          quantity: Number(item.quantity),
+          unit_label: activeTier?.unit || item.unit || 'Pièce',
+          conversion_factor: Number(activeTier?.conversionFactor) || 1,
+          unit_price: Math.round(Number(unitPrice)),
+        };
+      }),
+    };
+
+    let serverSale = null;
+    try {
+      serverSale = await salesService.create(salePayload);
+    } catch (err) {
+      console.warn('Vente enregistrée en local (mode dégradé):', err?.message);
+    }
+
+    const receiptNumber = serverSale?.reference || `VND-${Date.now()}`;
+
     const sale = {
-      receiptNumber: `VND-${Date.now()}`,
+      id: serverSale?.id || `sale_${Date.now()}`,
+      receiptNumber,
       date: new Date().toISOString(),
       products: cart.map((item) => {
         const { unitPrice, activeTier } = getProductTierPrice(item, item.quantity);
@@ -88,6 +115,13 @@ export default function NewSalePage() {
       customerName: payment.customerName,
       status: payment.status,
     };
+
+    try {
+      const existingSales = JSON.parse(localStorage.getItem('vendix-custom-sales') || '[]');
+      localStorage.setItem('vendix-custom-sales', JSON.stringify([sale, ...existingSales]));
+    } catch {
+      // Ignoré si indisponible
+    }
 
     setCompletedSale(sale);
     setIsPaymentOpen(false);

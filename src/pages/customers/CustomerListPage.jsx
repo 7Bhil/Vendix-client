@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowDownRight,
@@ -9,34 +9,79 @@ import {
   Phone,
   Clock,
   ChevronRight,
+  AlertCircle,
 } from 'lucide-react';
 import { loadCustomers, formatCurrency, getDebtAge } from '../../utils/customerDebtUtils.js';
 import WhatsAppReminderButton from '../../components/customers/WhatsAppReminderButton.jsx';
+import { customersService } from '../../api/services.js';
 
 export default function CustomerListPage() {
-  const [customers] = useState(loadCustomers);
+  const [customers, setCustomers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [filterMode, setFilterMode] = useState('ALL'); // 'ALL' | 'DEBTORS' | 'UP_TO_DATE'
+  const [error, setError] = useState('');
 
-  const debtors = customers.filter((customer) => customer.currentDebt > 0);
-  const totalDebt = debtors.reduce((total, customer) => total + customer.currentDebt, 0);
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchCustomers() {
+      setIsLoading(true);
+      setError('');
+      try {
+        const result = await customersService.getAll();
+        if (isMounted) {
+          if (Array.isArray(result) && result.length > 0) {
+            const mapped = result.map((c) => ({
+              id: c.id,
+              fullName: c.full_name,
+              phone: c.phone,
+              currentDebt: c.outstanding_debt || 0,
+              oldestDebtDate: c.sales?.[0]?.created_at || null,
+              statement: c.repayments || [],
+            }));
+            setCustomers(mapped);
+          } else {
+            setCustomers(loadCustomers());
+          }
+        }
+      } catch (err) {
+        if (isMounted) {
+          setCustomers(loadCustomers());
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    fetchCustomers();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const debtors = customers.filter((customer) => (customer.currentDebt || 0) > 0);
+  const totalDebt = debtors.reduce((total, customer) => total + (customer.currentDebt || 0), 0);
   const normalizedQuery = query.trim().toLocaleLowerCase('fr');
 
   const filteredCustomers = customers.filter((customer) => {
-    const matchesSearch = `${customer.fullName} ${customer.phone}`
+    const matchesSearch = `${customer.fullName || ''} ${customer.phone || ''}`
       .toLocaleLowerCase('fr')
       .includes(normalizedQuery);
 
     if (!matchesSearch) return false;
 
-    if (filterMode === 'DEBTORS') return customer.currentDebt > 0;
-    if (filterMode === 'UP_TO_DATE') return customer.currentDebt === 0;
+    if (filterMode === 'DEBTORS') return (customer.currentDebt || 0) > 0;
+    if (filterMode === 'UP_TO_DATE') return (customer.currentDebt || 0) === 0;
     return true;
   });
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-      {/* En-tête de page intégré (sans header doublon) */}
+      {/* En-tête de page */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
@@ -49,73 +94,67 @@ export default function CustomerListPage() {
 
         <Link
           to="/app/customers/new"
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-vendix-brand px-4 text-xs font-bold text-white shadow-sm transition hover:bg-vendix-brand-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand"
+          className="flex min-h-10 items-center justify-center gap-2 rounded-xl bg-vendix-brand px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-vendix-brand-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand focus-visible:ring-offset-2"
         >
           <UserPlus size={16} />
           <span>Nouveau client</span>
         </Link>
       </div>
 
-      {/* Cartes métriques compactes */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider">Total des créances</span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
-              <Wallet size={18} />
-            </div>
-          </div>
-          <p className="mt-2 text-2xl font-black tracking-tight text-slate-900">
-            {formatCurrency(totalDebt)} <span className="text-xs font-bold text-slate-500">FCFA</span>
-          </p>
-          <p className="mt-1 text-xs text-amber-700 font-medium">
-            {debtors.length} client{debtors.length > 1 ? 's' : ''} en attente de règlement
-          </p>
+      {error && (
+        <div className="flex items-center gap-2 rounded-xl bg-amber-50 p-3 text-xs font-semibold text-amber-800 border border-amber-200">
+          <AlertCircle size={15} />
+          <span>{error}</span>
         </div>
+      )}
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider">Clients enregistrés</span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-vendix-brand">
-              <Users size={18} />
-            </div>
+      {/* Cartes métriques */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-slate-500">Total des créances clients</p>
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-800">
+              <Wallet size={16} />
+            </span>
           </div>
-          <p className="mt-2 text-2xl font-black tracking-tight text-slate-900">
+          <p className="mt-2 text-xl font-black text-amber-800 sm:text-2xl">
+            {formatCurrency(totalDebt)} <span className="text-xs font-bold text-slate-400">FCFA</span>
+          </p>
+          <p className="mt-1 text-[11px] text-slate-500">
+            {debtors.length} client(s) ont un reste à payer
+          </p>
+        </article>
+
+        <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-slate-500">Répertoire clients</p>
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-vendix-brand">
+              <Users size={16} />
+            </span>
+          </div>
+          <p className="mt-2 text-xl font-black text-slate-900 sm:text-2xl">
             {customers.length}
           </p>
-          <p className="mt-1 text-xs text-slate-500 font-medium">
-            Portefeuille actif de la boutique
+          <p className="mt-1 text-[11px] text-slate-500">
+            {customers.length - debtors.length} client(s) sont totalement à jour
           </p>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs font-bold uppercase tracking-wider">Taux de recouvrement</span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-              <ArrowDownRight size={18} />
-            </div>
-          </div>
-          <p className="mt-2 text-2xl font-black tracking-tight text-emerald-700">
-            {customers.length > 0 ? Math.round(((customers.length - debtors.length) / customers.length) * 100) : 100}%
-          </p>
-          <p className="mt-1 text-xs text-slate-500 font-medium">
-            Clients entièrement à jour
-          </p>
-        </div>
+        </article>
       </div>
 
-      {/* Zone de tableau et filtrage pro */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        {/* Barre d'outils : recherche & onglets */}
-        <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative flex-1 max-w-md">
-            <Search size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+      {/* Recherche et filtres */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative flex-1">
+            <Search
+              size={16}
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+            />
             <input
-              type="search"
+              type="text"
+              placeholder="Rechercher par nom ou numéro de téléphone..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Rechercher par nom ou téléphone..."
-              className="h-10 w-full rounded-xl border border-slate-200 pl-9 pr-4 text-xs font-medium outline-none transition focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
+              className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-4 text-xs text-slate-900 outline-none transition focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
             />
           </div>
 
@@ -149,67 +188,57 @@ export default function CustomerListPage() {
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Liste des clients au format liste pro */}
-        {filteredCustomers.length > 0 ? (
+      {/* Liste des clients */}
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        {isLoading ? (
+          <div className="p-8 space-y-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-16 animate-pulse rounded-xl bg-slate-50 border border-slate-100" />
+            ))}
+          </div>
+        ) : filteredCustomers.length === 0 ? (
+          <div className="p-12 text-center">
+            <Users size={36} className="mx-auto text-slate-300" />
+            <p className="mt-3 text-sm font-bold text-slate-800">Aucun client trouvé</p>
+            <p className="mt-1 text-xs text-slate-500">
+              Modifiez vos critères de recherche ou enregistrez un nouveau client.
+            </p>
+          </div>
+        ) : (
           <div className="divide-y divide-slate-100">
             {filteredCustomers.map((customer) => {
-              const hasDebt = customer.currentDebt > 0;
+              const hasDebt = (customer.currentDebt || 0) > 0;
               const age = getDebtAge(customer.oldestDebtDate);
-              const initials = customer.fullName
-                .split(' ')
-                .map((part) => part[0])
-                .slice(0, 2)
-                .join('');
 
               return (
                 <div
                   key={customer.id}
                   className="flex flex-col gap-4 p-4 transition hover:bg-slate-50/80 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  {/* Identité client */}
                   <Link
                     to={`/app/customers/${customer.id}`}
-                    className="flex min-w-0 flex-1 items-center gap-3.5 group"
+                    className="flex items-center gap-3 min-w-0"
                   >
                     <div
-                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xs font-black transition ${
-                        hasDebt
-                          ? 'bg-amber-100 text-amber-800 group-hover:bg-amber-200'
-                          : 'bg-emerald-50 text-emerald-700 group-hover:bg-emerald-100'
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-extrabold text-sm ${
+                        hasDebt ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-900'
                       }`}
                     >
-                      {initials}
+                      {(customer.fullName || 'C')[0]?.toUpperCase()}
                     </div>
-
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="truncate text-sm font-bold text-slate-900 group-hover:text-vendix-brand">
-                          {customer.fullName}
-                        </h3>
-                        {hasDebt && (
-                          <span className="hidden sm:inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800">
-                            Dette en cours
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="mt-0.5 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                        <span className="flex items-center gap-1 font-medium">
-                          <Phone size={12} className="text-slate-400" />
-                          {customer.phone}
-                        </span>
-                        {customer.address && (
-                          <>
-                            <span>•</span>
-                            <span className="truncate max-w-[200px]">{customer.address}</span>
-                          </>
-                        )}
-                      </div>
+                      <p className="truncate text-sm font-bold text-slate-900 hover:text-vendix-brand hover:underline">
+                        {customer.fullName}
+                      </p>
+                      <p className="flex items-center gap-1.5 text-xs text-slate-500">
+                        <Phone size={11} className="text-slate-400" />
+                        <span>{customer.phone}</span>
+                      </p>
                     </div>
                   </Link>
 
-                  {/* Données financières */}
                   <div className="flex items-center justify-between gap-6 sm:justify-end">
                     <div className="text-left sm:text-right">
                       <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
@@ -234,7 +263,6 @@ export default function CustomerListPage() {
                       </p>
                     </div>
 
-                    {/* Actions directes */}
                     <div className="flex items-center gap-2">
                       {hasDebt && <WhatsAppReminderButton customer={customer} />}
                       <Link
@@ -249,23 +277,6 @@ export default function CustomerListPage() {
                 </div>
               );
             })}
-          </div>
-        ) : (
-          <div className="p-10 text-center">
-            <Users size={32} className="mx-auto mb-2 text-slate-300" />
-            <p className="text-sm font-bold text-slate-800">Aucun client trouvé</p>
-            <p className="mt-1 text-xs text-slate-500">
-              Aucun dossier ne correspond à vos filtres actuels.
-            </p>
-            {query && (
-              <button
-                type="button"
-                onClick={() => setQuery('')}
-                className="mt-3 text-xs font-bold text-vendix-brand hover:underline"
-              >
-                Réinitialiser la recherche
-              </button>
-            )}
           </div>
         )}
       </div>
