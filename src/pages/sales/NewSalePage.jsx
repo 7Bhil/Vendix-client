@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ShoppingCart,
@@ -14,15 +14,37 @@ import { getProductTierPrice } from "../../utils/pricingUtils";
 import { useToast } from "../../context/ToastContext";
 import { salesService } from "../../api/services.js";
 
+const CART_STORAGE_KEY = "vendix_pos_active_cart";
+
 const formatPrice = (price) =>
   new Intl.NumberFormat("fr-FR").format(Number(price) || 0) + " FCFA";
 
 export default function NewSalePage() {
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState(() => {
+    try {
+      const saved = localStorage.getItem(CART_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [completedSale, setCompletedSale] = useState(null);
   const { success } = useToast();
+
+  // Persistance du panier local
+  useEffect(() => {
+    try {
+      if (cart.length > 0) {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+      } else {
+        localStorage.removeItem(CART_STORAGE_KEY);
+      }
+    } catch {
+      // Ignoré si indisponible
+    }
+  }, [cart]);
 
   const totalAmount = useMemo(() => {
     return cart.reduce((total, item) => {
@@ -63,13 +85,35 @@ export default function NewSalePage() {
 
   const handleClearCart = () => {
     setCart([]);
+    try {
+      localStorage.removeItem(CART_STORAGE_KEY);
+    } catch {
+      // Ignoré
+    }
   };
 
   const handleConfirmPayment = async (payment) => {
+    // Mapping strict selon le contrat Prisma / Backend (PaymentMethod: CASH, MOMO, CREDIT, SPLIT)
+    let mappedPaymentMethod = 'CASH';
+    const methodUpper = String(payment.paymentMethod || '').toUpperCase();
+    if (methodUpper === 'MOMO' || methodUpper === 'MOBILE_MONEY') {
+      mappedPaymentMethod = 'MOMO';
+    } else if (methodUpper === 'CREDIT') {
+      mappedPaymentMethod = 'CREDIT';
+    } else if (methodUpper === 'SPLIT') {
+      mappedPaymentMethod = 'SPLIT';
+    } else {
+      mappedPaymentMethod = 'CASH';
+    }
+
+    // Clé d'idempotence stricte UUID v4
+    const clientOpUuid = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `op-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
     const salePayload = {
       amount_paid: Number(payment.paidAmount) || 0,
-      payment_method: payment.paymentMethod === 'MOMO' ? 'MOMO' : 'CASH',
+      payment_method: mappedPaymentMethod,
       customer_id: payment.customerId || undefined,
+      client_op_uuid: clientOpUuid,
       lines: cart.map((item) => {
         const { unitPrice, activeTier } = getProductTierPrice(item, item.quantity);
         return {
@@ -94,6 +138,7 @@ export default function NewSalePage() {
     const sale = {
       id: serverSale?.id || `sale_${Date.now()}`,
       receiptNumber,
+      client_op_uuid: clientOpUuid,
       date: new Date().toISOString(),
       products: cart.map((item) => {
         const { unitPrice, activeTier } = getProductTierPrice(item, item.quantity);
@@ -110,7 +155,7 @@ export default function NewSalePage() {
       receivedAmount: payment.paidAmount,
       changeAmount: payment.changeAmount,
       remainingAmount: payment.remainingAmount,
-      paymentMethod: payment.paymentMethod,
+      paymentMethod: mappedPaymentMethod,
       customerId: payment.customerId,
       customerName: payment.customerName,
       status: payment.status,
@@ -133,6 +178,11 @@ export default function NewSalePage() {
     setIsReceiptOpen(false);
     setCompletedSale(null);
     setCart([]);
+    try {
+      localStorage.removeItem(CART_STORAGE_KEY);
+    } catch {
+      // Ignoré
+    }
   };
 
   return (

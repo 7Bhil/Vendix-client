@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowDownRight,
   Search,
   Users,
   Wallet,
@@ -10,6 +9,7 @@ import {
   Clock,
   ChevronRight,
   AlertCircle,
+  ArrowUpDown,
 } from 'lucide-react';
 import { loadCustomers, formatCurrency, getDebtAge } from '../../utils/customerDebtUtils.js';
 import WhatsAppReminderButton from '../../components/customers/WhatsAppReminderButton.jsx';
@@ -20,6 +20,7 @@ export default function CustomerListPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [filterMode, setFilterMode] = useState('ALL'); // 'ALL' | 'DEBTORS' | 'UP_TO_DATE'
+  const [sortBy, setSortBy] = useState('DEBT_DESC'); // 'DEBT_DESC' | 'NAME_ASC' | 'DEBT_ASC'
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -67,17 +68,36 @@ export default function CustomerListPage() {
   const totalDebt = debtors.reduce((total, customer) => total + (customer.currentDebt || 0), 0);
   const normalizedQuery = query.trim().toLocaleLowerCase('fr');
 
-  const filteredCustomers = customers.filter((customer) => {
-    const matchesSearch = `${customer.fullName || ''} ${customer.phone || ''}`
-      .toLocaleLowerCase('fr')
-      .includes(normalizedQuery);
+  const filteredCustomers = useMemo(() => {
+    const list = customers.filter((customer) => {
+      const matchesSearch = `${customer.fullName || ''} ${customer.phone || ''}`
+        .toLocaleLowerCase('fr')
+        .includes(normalizedQuery);
 
-    if (!matchesSearch) return false;
+      if (!matchesSearch) return false;
 
-    if (filterMode === 'DEBTORS') return (customer.currentDebt || 0) > 0;
-    if (filterMode === 'UP_TO_DATE') return (customer.currentDebt || 0) === 0;
-    return true;
-  });
+      if (filterMode === 'DEBTORS') return (customer.currentDebt || 0) > 0;
+      if (filterMode === 'UP_TO_DATE') return (customer.currentDebt || 0) === 0;
+      return true;
+    });
+
+    return list.sort((a, b) => {
+      if (sortBy === 'DEBT_DESC') {
+        const debtDiff = (b.currentDebt || 0) - (a.currentDebt || 0);
+        if (debtDiff !== 0) return debtDiff;
+        return (a.fullName || '').localeCompare(b.fullName || '', 'fr');
+      }
+      if (sortBy === 'DEBT_ASC') {
+        const debtDiff = (a.currentDebt || 0) - (b.currentDebt || 0);
+        if (debtDiff !== 0) return debtDiff;
+        return (a.fullName || '').localeCompare(b.fullName || '', 'fr');
+      }
+      if (sortBy === 'NAME_ASC') {
+        return (a.fullName || '').localeCompare(b.fullName || '', 'fr');
+      }
+      return 0;
+    });
+  }, [customers, normalizedQuery, filterMode, sortBy]);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
@@ -158,34 +178,53 @@ export default function CustomerListPage() {
             />
           </div>
 
-          <div className="flex gap-1 rounded-xl bg-slate-100 p-1 text-xs font-bold">
-            <button
-              type="button"
-              onClick={() => setFilterMode('ALL')}
-              className={`rounded-lg px-3 py-1.5 transition ${
-                filterMode === 'ALL' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Tous ({customers.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterMode('DEBTORS')}
-              className={`rounded-lg px-3 py-1.5 transition ${
-                filterMode === 'DEBTORS' ? 'bg-white text-amber-800 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Débiteurs ({debtors.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterMode('UP_TO_DATE')}
-              className={`rounded-lg px-3 py-1.5 transition ${
-                filterMode === 'UP_TO_DATE' ? 'bg-white text-emerald-800 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              À jour ({customers.length - debtors.length})
-            </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600">
+              <ArrowUpDown size={14} className="text-slate-400" />
+              <label htmlFor="customer-sort-select" className="text-[11px] font-semibold text-slate-500">
+                Trier :
+              </label>
+              <select
+                id="customer-sort-select"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer"
+              >
+                <option value="DEBT_DESC">Dette décroissante (Recommandé)</option>
+                <option value="NAME_ASC">Nom (A-Z)</option>
+                <option value="DEBT_ASC">Dette croissante</option>
+              </select>
+            </div>
+
+            <div className="flex gap-1 rounded-xl bg-slate-100 p-1 text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => setFilterMode('ALL')}
+                className={`rounded-lg px-3 py-1.5 transition ${
+                  filterMode === 'ALL' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Tous ({customers.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterMode('DEBTORS')}
+                className={`rounded-lg px-3 py-1.5 transition ${
+                  filterMode === 'DEBTORS' ? 'bg-white text-amber-800 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Débiteurs ({debtors.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterMode('UP_TO_DATE')}
+                className={`rounded-lg px-3 py-1.5 transition ${
+                  filterMode === 'UP_TO_DATE' ? 'bg-white text-emerald-800 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                À jour ({customers.length - debtors.length})
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -232,10 +271,16 @@ export default function CustomerListPage() {
                       <p className="truncate text-sm font-bold text-slate-900 hover:text-vendix-brand hover:underline">
                         {customer.fullName}
                       </p>
-                      <p className="flex items-center gap-1.5 text-xs text-slate-500">
-                        <Phone size={11} className="text-slate-400" />
-                        <span>{customer.phone}</span>
-                      </p>
+                      {customer.phone && (
+                        <a
+                          href={`tel:${customer.phone}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-vendix-brand hover:underline"
+                        >
+                          <Phone size={11} className="text-slate-400" />
+                          <span>{customer.phone}</span>
+                        </a>
+                      )}
                     </div>
                   </Link>
 

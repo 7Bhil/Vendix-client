@@ -54,6 +54,57 @@ export default function ProductQuickGrid({
       if (apiProds.status === "fulfilled" && Array.isArray(apiProds.value)) {
         const mapped = apiProds.value.map((p) => {
           const baseUnitObj = (p.product_units || []).find((u) => u.is_base_unit) || (p.product_units || [])[0];
+          const baseRetailPrice = Number(baseUnitObj?.retail_price ?? 0);
+          
+          // Construction unifiée des priceTiers :
+          // 1. Remise de gros configurée sur l'unité de base si wholesale_price existe
+          // 2. Unités secondaires avec leur minQuantity dérivé du facteur de conversion et leur prix unitaire
+          const tiers = [];
+          
+          (p.product_units || []).forEach((u) => {
+            const factor = Math.max(1, Math.round(Number(u.conversion_factor) || 1));
+            const retailP = Number(u.retail_price ?? baseRetailPrice);
+            const unitEquivalentPrice = factor > 1 ? Math.round(retailP / factor) : retailP;
+
+            // Si c'est l'unité de base avec un wholesale_price avantageux
+            if (u.is_base_unit && u.wholesale_price && Number(u.wholesale_price) < baseRetailPrice) {
+              tiers.push({
+                id: `${u.id}-wholesale`,
+                tier: 'gros',
+                name: `Gros (${u.label})`,
+                unit: u.label,
+                minQuantity: 10,
+                price: Number(u.wholesale_price),
+                conversionFactor: 1,
+              });
+            }
+
+            // Si unité de conditionnement supérieure (carton, pack, sac...)
+            if (factor > 1 && unitEquivalentPrice < baseRetailPrice) {
+              tiers.push({
+                id: u.id,
+                tier: factor >= 10 ? 'gros' : 'demi_gros',
+                name: u.label,
+                unit: u.label,
+                minQuantity: factor,
+                price: unitEquivalentPrice,
+                salePrice: retailP,
+                conversionFactor: factor,
+              });
+            } else {
+              tiers.push({
+                id: u.id,
+                tier: factor >= 10 ? 'gros' : factor >= 2 ? 'demi_gros' : 'detail',
+                name: u.label,
+                unit: u.label,
+                minQuantity: factor,
+                price: unitEquivalentPrice,
+                salePrice: retailP,
+                conversionFactor: factor,
+              });
+            }
+          });
+
           return {
             id: p.id,
             name: p.name,
@@ -62,16 +113,10 @@ export default function ProductQuickGrid({
             currentStock: p.current_stock ?? 0,
             alertThreshold: p.alert_threshold ?? 5,
             photoUrl: p.image_url,
-            salePrice: baseUnitObj?.retail_price ?? 0,
+            salePrice: baseRetailPrice,
             baseUnit: baseUnitObj?.label || "Unité",
             isFavorite: p.is_favorite ?? false,
-            priceTiers: (p.product_units || []).map((u) => ({
-              id: u.id,
-              name: u.label,
-              unit: u.label,
-              salePrice: u.retail_price,
-              conversionFactor: Number(u.conversion_factor) || 1,
-            })),
+            priceTiers: tiers,
           };
         });
         setInternalProducts(mapped);
