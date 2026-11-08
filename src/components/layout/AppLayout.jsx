@@ -259,64 +259,35 @@ export default function AppLayout({ children }) {
             const Icon = item.icon;
             const active = isCurrent(item.path);
 
-            if (item.isPrimary) {
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className="relative -top-2 flex flex-col items-center group active:scale-95 transition-transform"
-                >
-                  <div
-                    className={`flex h-12 w-12 items-center justify-center rounded-2xl transition-all duration-200 ${
-                      active
-                        ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/40 ring-4 ring-emerald-100 scale-105"
-                        : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800"
-                    }`}
-                  >
-                    <Icon size={20} />
-                  </div>
-                  <span
-                    className={`mt-1 text-[10px] tracking-tight transition-colors ${
-                      active ? "text-emerald-700 font-black" : "text-slate-500 font-semibold"
-                    }`}
-                  >
-                    {item.shortName}
-                  </span>
-                  {active && (
-                    <span className="absolute -bottom-1 h-1 w-3 rounded-full bg-emerald-600 animate-fade-in" />
-                  )}
-                </Link>
-              );
-            }
-
             return (
               <Link
                 key={item.path}
                 to={item.path}
-                className={`relative flex flex-col items-center justify-center gap-1 rounded-xl px-2.5 py-1.5 transition-all duration-200 active:scale-90 ${
+                className={`relative flex flex-col items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
                   active
-                    ? "text-vendix-brand font-bold"
-                    : "text-slate-400 hover:text-slate-600"
-                }`}
+                    ? "-translate-y-2 scale-105"
+                    : "translate-y-0 scale-100 hover:text-slate-600"
+                } active:scale-95`}
               >
                 <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200 ${
+                  className={`flex items-center justify-center rounded-2xl transition-all duration-300 ${
                     active
-                      ? "bg-blue-50 text-vendix-brand scale-110 shadow-2xs ring-1 ring-blue-100"
-                      : "text-slate-400"
+                      ? "h-11 w-11 bg-vendix-brand text-white shadow-lg shadow-blue-900/25 ring-4 ring-blue-50"
+                      : "h-9 w-9 text-slate-400 hover:text-slate-600"
                   }`}
                 >
-                  <Icon size={18} />
+                  <Icon size={active ? 20 : 18} />
                 </div>
+
                 <span
-                  className={`text-[10px] leading-none transition-colors ${
-                    active ? "font-black text-vendix-brand" : "font-semibold text-slate-500"
+                  className={`mt-0.5 text-[10px] tracking-tight transition-colors ${
+                    active ? "font-black text-vendix-brand" : "font-medium text-slate-400"
                   }`}
                 >
                   {item.shortName}
                 </span>
 
-                {/* Micro-indicateur d'état actif (pastille lumineuse sous le texte) */}
+                {/* Pastille dynamique uniquement sous l'onglet actif */}
                 {active && (
                   <span className="absolute -bottom-1 h-1 w-3 rounded-full bg-vendix-brand animate-fade-in" />
                 )}
