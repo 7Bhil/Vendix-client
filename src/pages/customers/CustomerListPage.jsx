@@ -32,7 +32,7 @@ export default function CustomerListPage() {
       try {
         const result = await customersService.getAll();
         if (isMounted) {
-          if (Array.isArray(result) && result.length > 0) {
+          if (Array.isArray(result)) {
             const mapped = result.map((c) => ({
               id: c.id,
               fullName: c.full_name,
@@ -43,12 +43,14 @@ export default function CustomerListPage() {
             }));
             setCustomers(mapped);
           } else {
-            setCustomers(loadCustomers());
+            setCustomers([]);
           }
         }
       } catch (err) {
         if (isMounted) {
-          setCustomers(loadCustomers());
+          console.error('Erreur chargement clients API:', err);
+          setError(err?.message || 'Erreur lors de la récupération des clients depuis le serveur.');
+          setCustomers([]);
         }
       } finally {
         if (isMounted) {

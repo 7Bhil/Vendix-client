@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   X,
   Banknote,
@@ -9,7 +9,7 @@ import {
   AlertTriangle,
   User,
 } from "lucide-react";
-import { loadCustomers } from "../../utils/customerDebtUtils";
+import { customersService } from "../../api/services.js";
 import MoneyDisplay from "../ui/MoneyDisplay";
 
 const formatPrice = (price) =>
@@ -26,14 +26,37 @@ export default function PaymentModal({
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [customCustomerName, setCustomCustomerName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [customers, setCustomers] = useState([]);
 
-  const customers = useMemo(() => {
-    try {
-      return loadCustomers();
-    } catch {
-      return [];
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchCustomers() {
+      try {
+        const result = await customersService.getAll();
+        if (isMounted && Array.isArray(result)) {
+          setCustomers(result.map((c) => ({
+            id: c.id,
+            fullName: c.full_name,
+            phone: c.phone,
+            currentDebt: c.outstanding_debt || 0,
+            oldestDebtDate: c.sales?.[0]?.created_at || null,
+          })));
+        }
+      } catch (err) {
+        if (isMounted) {
+          setCustomers([]);
+        }
+      }
     }
-  }, []);
+
+    if (isOpen) {
+      fetchCustomers();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen]);
 
   const selectedCustomerObj = useMemo(() => {
     if (!selectedCustomerId) return null;

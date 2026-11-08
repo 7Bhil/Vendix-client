@@ -106,14 +106,11 @@ export default function CustomerDetailPage() {
           return;
         }
       } catch (err) {
-        console.warn('customersService.getById a échoué, repli sur le cache local:', err);
+        console.error('customersService.getById a échoué:', err);
       }
 
-      // Repli sur le stockage local (mocks ou localStorage)
       if (isMounted) {
-        const localCustomers = loadCustomers();
-        const found = localCustomers.find((entry) => entry.id === id);
-        setCustomer(found || null);
+        setCustomer(null);
         setIsLoading(false);
       }
     }
