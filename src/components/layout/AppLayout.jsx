@@ -24,6 +24,7 @@ const NAVIGATION_ITEMS = [
     shortName: "Caisse",
     path: "/app/sales/new",
     icon: ShoppingCart,
+    isPrimary: true,
   },
   {
     name: "Clients & Dettes",
@@ -219,15 +220,15 @@ export default function AppLayout({ children }) {
         </div>
       </aside>
 
-      {/* Contenu principal */}
-      <div className="flex flex-1 flex-col pb-20 md:pb-0 min-w-0">
+      {/* Contenu principal avec transition fluide de page */}
+      <div className="flex flex-1 flex-col pb-24 md:pb-0 min-w-0">
         {/* Barre du haut mobile */}
-        <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 md:hidden print:hidden">
+        <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white/90 backdrop-blur-md px-4 sticky top-0 z-30 md:hidden print:hidden">
           <Link
             to="/app/dashboard"
             className="flex items-center gap-2 text-base font-extrabold text-vendix-brand"
           >
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-vendix-brand text-white">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-vendix-brand text-white shadow-2xs">
               <Store size={15} />
             </div>
             <span>Vendix<span className="text-vendix-accent">.</span></span>
@@ -248,41 +249,79 @@ export default function AppLayout({ children }) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-x-hidden animate-fade-in">{children}</main>
+        <main key={location.pathname} className="flex-1 overflow-x-hidden animate-fade-in">{children}</main>
       </div>
 
-      {/* Barre de navigation basse pour mobile */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-slate-200 bg-white/95 px-2 backdrop-blur-md md:hidden print:hidden">
-        {NAVIGATION_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const active = isCurrent(item.path);
+      {/* Barre de navigation basse flottante pour mobile (Floating Pill Nav) */}
+      <div className="fixed bottom-3 left-0 right-0 z-40 px-3 md:hidden print:hidden pointer-events-none">
+        <nav className="mx-auto max-w-md pointer-events-auto flex h-16 items-center justify-around rounded-2xl border border-slate-200/80 bg-white/95 px-2 shadow-xl shadow-slate-900/10 backdrop-blur-xl">
+          {NAVIGATION_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const active = isCurrent(item.path);
 
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex flex-col items-center justify-center gap-1 rounded-xl px-2.5 py-1.5 transition active:scale-95 ${
-                active ? "text-vendix-brand font-bold" : "text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              <Icon size={19} className={active ? "text-vendix-brand" : "text-slate-400"} />
-              <span className="text-[11px] font-medium leading-tight">{item.shortName}</span>
-            </Link>
-          );
-        })}
+            if (item.isPrimary) {
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className="relative -top-2 flex flex-col items-center group active:scale-95 transition-transform"
+                >
+                  <div
+                    className={`flex h-12 w-12 items-center justify-center rounded-2xl shadow-lg transition-all duration-200 ${
+                      active
+                        ? "bg-emerald-600 text-white shadow-emerald-600/30 ring-4 ring-emerald-100 scale-105"
+                        : "bg-vendix-brand text-white shadow-blue-900/20 group-hover:bg-vendix-brand-dark"
+                    }`}
+                  >
+                    <Icon size={20} />
+                  </div>
+                  <span
+                    className={`mt-1 text-[10px] font-black tracking-tight ${
+                      active ? "text-emerald-700" : "text-slate-600 font-bold"
+                    }`}
+                  >
+                    {item.shortName}
+                  </span>
+                </Link>
+              );
+            }
 
-        {/* Action déconnexion intégrée en mobile */}
-        <button
-          type="button"
-          onClick={handleLogout}
-          disabled={isLoggingOut}
-          aria-label="Déconnexion"
-          className="flex flex-col items-center justify-center gap-1 rounded-xl px-2.5 py-1.5 text-slate-500 transition hover:text-rose-600 active:scale-95 disabled:opacity-50"
-        >
-          <LogOut size={19} className="text-slate-400 hover:text-rose-600" />
-          <span className="text-[11px] font-medium leading-tight">Quitter</span>
-        </button>
-      </nav>
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`relative flex flex-col items-center justify-center gap-1 rounded-xl px-2.5 py-1.5 transition-all duration-200 active:scale-90 ${
+                  active
+                    ? "text-vendix-brand font-bold"
+                    : "text-slate-400 hover:text-slate-600"
+                }`}
+              >
+                <div
+                  className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200 ${
+                    active
+                      ? "bg-blue-50 text-vendix-brand scale-110 shadow-2xs ring-1 ring-blue-100"
+                      : "text-slate-400"
+                  }`}
+                >
+                  <Icon size={18} />
+                </div>
+                <span
+                  className={`text-[10px] leading-none transition-colors ${
+                    active ? "font-black text-vendix-brand" : "font-semibold text-slate-500"
+                  }`}
+                >
+                  {item.shortName}
+                </span>
+
+                {/* Micro-indicateur d'état actif (pastille lumineuse sous le texte) */}
+                {active && (
+                  <span className="absolute -bottom-1 h-1 w-3 rounded-full bg-vendix-brand animate-fade-in" />
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
     </div>
   );
 }
