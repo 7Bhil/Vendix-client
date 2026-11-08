@@ -5,10 +5,7 @@ import {
   Truck,
   Plus,
   Trash2,
-  DollarSign,
   AlertCircle,
-  CheckCircle2,
-  Package,
 } from 'lucide-react';
 import {
   loadSuppliers,
@@ -18,7 +15,7 @@ import {
 
 export default function NewPurchasePage() {
   const navigate = useNavigate();
-  const [suppliers, setSuppliers] = useState(loadSuppliers);
+  const [suppliers] = useState(loadSuppliers);
 
   // Formulaire Achat
   const [supplierId, setSupplierId] = useState(suppliers[0]?.id || '');
@@ -34,7 +31,7 @@ export default function NewPurchasePage() {
   // Données de paiement
   const [amountPaid, setAmountPaid] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('ESPECE');
-  const [reference, setReference] = useState(`CMD-${Date.now().toString().slice(-4)}`);
+  const [reference, setReference] = useState(() => `CMD-${Date.now().toString().slice(-4)}`);
   const [error, setError] = useState('');
 
   // Calcul du coût total
@@ -247,7 +244,7 @@ export default function NewPurchasePage() {
           </div>
 
           <div className="space-y-3">
-            {items.map((item, index) => (
+            {items.map((item) => (
               <div key={item.id} className="flex flex-col sm:flex-row gap-3 items-end bg-slate-50 p-3 rounded-xl border border-slate-200/60">
                 <div className="flex-1 w-full">
                   <label className="block text-[11px] font-bold text-slate-600">Désignation du produit *</label>
