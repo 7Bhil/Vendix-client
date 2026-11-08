@@ -115,8 +115,22 @@ export default function SupplierListPage() {
         </div>
       </div>
 
-      {/* Cartes métriques */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {/* Barre de synthèse mobile et métriques */}
+      <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs sm:hidden">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-semibold text-slate-500">Dette totale due :</span>
+          <span className="font-extrabold text-amber-800">
+            {formatCurrency(stats.totalDebt)} FCFA
+          </span>
+        </div>
+        <div className="flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-100 pt-1.5">
+          <span>{stats.suppliersWithDebt} en attente de règlement</span>
+          <span>{stats.totalSuppliers} fournisseurs actifs</span>
+        </div>
+      </div>
+
+      {/* Cartes métriques desktop */}
+      <div className="hidden sm:grid sm:grid-cols-3 gap-3">
         <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold text-slate-500">Dette totale due</p>
@@ -233,14 +247,14 @@ export default function SupplierListPage() {
               return (
                 <div
                   key={supplier.id}
-                  className="flex flex-col gap-3 p-4 transition hover:bg-slate-50/80 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
+                  className="flex flex-col gap-2.5 p-3.5 transition hover:bg-slate-50/80 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:p-4"
                 >
                   {/* Identité */}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <Link
                         to={`/app/suppliers/${supplier.id}`}
-                        className="truncate text-sm font-bold text-slate-900 hover:text-vendix-brand hover:underline"
+                        className="truncate text-xs sm:text-sm font-bold text-slate-900 hover:text-vendix-brand hover:underline"
                       >
                         {supplier.fullName}
                       </Link>
@@ -251,7 +265,7 @@ export default function SupplierListPage() {
                       )}
                     </div>
 
-                    <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                       <span className="flex items-center gap-1">
                         <Phone size={12} className="text-slate-400" />
                         <a href={`tel:${supplier.phone}`} className="hover:underline">
@@ -259,61 +273,47 @@ export default function SupplierListPage() {
                         </a>
                       </span>
                       {supplier.address && (
-                        <span className="flex items-center gap-1">
-                          <MapPin size={12} className="text-slate-400" />
-                          <span>{supplier.address}</span>
+                        <span className="flex items-center gap-1 truncate max-w-[180px]">
+                          <MapPin size={12} className="text-slate-400 shrink-0" />
+                          <span className="truncate">{supplier.address}</span>
                         </span>
                       )}
                     </div>
                   </div>
 
                   {/* Situation financière & Actions */}
-                  <div className="flex w-full min-w-0 flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-end sm:gap-6">
-                    <div className="order-2 flex items-center justify-between gap-6 sm:order-1 sm:text-right">
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                          Dette due
-                        </p>
-                        <p
-                          className={`text-sm font-black ${
-                            hasDebt ? 'text-amber-800' : 'text-emerald-700'
-                          }`}
-                        >
-                          {formatCurrency(supplier.currentDebt)}{' '}
-                          <span className="text-[10px] font-semibold text-slate-400">FCFA</span>
-                        </p>
-                      </div>
-
-                      <div className="sm:hidden">
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                            hasDebt
-                              ? 'bg-amber-50 text-amber-800'
-                              : 'bg-emerald-50 text-emerald-700'
-                          }`}
-                        >
-                          {hasDebt ? 'Dette' : 'À jour'}
-                        </span>
-                      </div>
+                  <div className="flex items-center justify-between border-t border-slate-100 pt-2 sm:border-0 sm:pt-0 sm:gap-6">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        Dette due
+                      </p>
+                      <p
+                        className={`text-xs sm:text-sm font-black ${
+                          hasDebt ? 'text-amber-800' : 'text-emerald-700'
+                        }`}
+                      >
+                        {formatCurrency(supplier.currentDebt)}{' '}
+                        <span className="text-[10px] font-semibold text-slate-400">FCFA</span>
+                      </p>
                     </div>
 
-                    <div className="order-1 flex w-full items-center gap-2 sm:order-2 sm:w-auto sm:shrink-0">
+                    <div className="flex items-center gap-2">
                       {hasDebt && (
                         <button
                           type="button"
                           onClick={() => setActivePaymentSupplier(supplier)}
-                          className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 text-xs font-bold text-amber-900 transition hover:bg-amber-100"
+                          className="flex h-8 items-center justify-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 text-xs font-bold text-amber-900 transition hover:bg-amber-100 active:scale-95"
                         >
-                          <CreditCard size={14} />
+                          <CreditCard size={13} />
                           <span>Régler</span>
                         </button>
                       )}
                       <Link
                         to={`/app/suppliers/${supplier.id}`}
-                        className="ml-auto flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition hover:bg-slate-100 hover:text-slate-900 sm:ml-0"
+                        className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition hover:bg-slate-100 hover:text-slate-900 active:scale-95"
                         aria-label={`Voir la fiche de ${supplier.fullName}`}
                       >
-                        <ChevronRight size={17} />
+                        <ChevronRight size={16} />
                       </Link>
                     </div>
                   </div>

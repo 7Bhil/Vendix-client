@@ -27,7 +27,6 @@ import {
   Loader2,
 } from "lucide-react";
 
-import expensesData from "../../mocks/modules/expenses.json";
 import { expensesService } from "../../api/services.js";
 import { compressImageFile } from "../../utils/imageCompression.js";
 
@@ -295,17 +294,14 @@ export default function NewExpensePage() {
 
     try {
       const savedExpenses = localStorage.getItem("vendix_expenses");
-
-      expenses = savedExpenses
-        ? JSON.parse(savedExpenses)
-        : expensesData.expenses || [];
+      expenses = savedExpenses ? JSON.parse(savedExpenses) : [];
 
       if (!Array.isArray(expenses)) {
-        expenses = expensesData.expenses || [];
+        expenses = [];
       }
     } catch (readError) {
       console.error("Erreur de lecture des dépenses :", readError);
-      expenses = expensesData.expenses || [];
+      expenses = [];
     }
 
     const newExpense = {

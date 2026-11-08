@@ -149,8 +149,8 @@ export default function ProductListPage() {
           </div>
         )}
 
-        {/* Barre de recherche et filtres */}
-        <div className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-3">
+        {/* Barre de recherche et filtres condensés */}
+        <div className="space-y-3">
           <div className="relative">
             <Search
               size={18}
@@ -161,40 +161,66 @@ export default function ProductListPage() {
               placeholder="Rechercher un produit..."
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-4 text-xs outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
+              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-xs font-medium text-slate-800 placeholder-slate-400 shadow-sm outline-none transition focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
             />
           </div>
 
-          <div className="relative">
-            <Filter
-              size={18}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-            <select
-              value={selectedCategory}
-              onChange={(event) => setSelectedCategory(event.target.value)}
-              className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-4 text-xs outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand bg-white"
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs no-scrollbar">
+            <button
+              type="button"
+              onClick={() => setSelectedCategory('')}
+              className={`shrink-0 rounded-xl px-3 py-1.5 font-bold transition active:scale-95 ${
+                selectedCategory === ''
+                  ? 'bg-vendix-brand text-white shadow-xs'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              }`}
             >
-              <option value="">Toutes les catégories</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </div>
+              Toutes ({products.length})
+            </button>
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() => setSelectedCategory(category.id === selectedCategory ? '' : category.id)}
+                className={`shrink-0 rounded-xl px-3 py-1.5 font-bold transition active:scale-95 ${
+                  selectedCategory === category.id
+                    ? 'bg-vendix-brand text-white shadow-xs'
+                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                {category.name}
+              </button>
+            ))}
 
-          <div>
-            <select
-              value={selectedStockStatus}
-              onChange={(event) => setSelectedStockStatus(event.target.value)}
-              className="w-full rounded-xl border border-slate-300 py-2.5 px-4 text-xs outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand bg-white"
+            <span className="h-4 w-px bg-slate-200 shrink-0 mx-1" />
+
+            <button
+              type="button"
+              onClick={() =>
+                setSelectedStockStatus((prev) => (prev === 'Stock faible' ? '' : 'Stock faible'))
+              }
+              className={`shrink-0 rounded-xl px-3 py-1.5 font-bold transition active:scale-95 ${
+                selectedStockStatus === 'Stock faible'
+                  ? 'bg-amber-500 text-white shadow-xs'
+                  : 'bg-white text-amber-700 border border-amber-200 hover:bg-amber-50'
+              }`}
             >
-              <option value="">Tous les états de stock</option>
-              <option value="Stock normal">Stock normal</option>
-              <option value="Stock faible">Stock faible</option>
-              <option value="Rupture de stock">Rupture de stock</option>
-            </select>
+              Stock faible
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                setSelectedStockStatus((prev) => (prev === 'Rupture de stock' ? '' : 'Rupture de stock'))
+              }
+              className={`shrink-0 rounded-xl px-3 py-1.5 font-bold transition active:scale-95 ${
+                selectedStockStatus === 'Rupture de stock'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'bg-white text-rose-700 border border-rose-200 hover:bg-rose-50'
+              }`}
+            >
+              Rupture
+            </button>
           </div>
         </div>
 

@@ -13,8 +13,6 @@ import {
   TrendingDown,
   Wallet,
 } from "lucide-react";
-import salesData from "../../mocks/modules/sales.json";
-import expensesData from "../../mocks/modules/expenses.json";
 import DailyReportCard from "../../components/cash/DailyReportCard.jsx";
 import { cashService, expensesService } from "../../api/services.js";
 
@@ -46,41 +44,28 @@ const getPaymentCategory = (method) => {
   return "other";
 };
 
-// Récupère toutes les ventes : mock initial + ventes créées localement dans localStorage
+// Récupère toutes les ventes créées localement dans localStorage
 const getAllSales = () => {
-  const baseSales = Array.isArray(salesData.sales) ? salesData.sales : [];
   try {
     const customSalesRaw =
       localStorage.getItem("vendix-custom-sales") ||
       localStorage.getItem("vendix_sales") ||
       "[]";
     const customSales = JSON.parse(customSalesRaw);
-    if (!Array.isArray(customSales) || customSales.length === 0) {
-      return baseSales;
-    }
-
-    const baseIds = new Set(baseSales.map((s) => String(s.id)));
-    const uniqueCustom = customSales.filter((s) => !baseIds.has(String(s.id)));
-    return [...baseSales, ...uniqueCustom];
+    return Array.isArray(customSales) ? customSales : [];
   } catch {
-    return baseSales;
+    return [];
   }
 };
 
 // Récupère les dépenses locales
 const getAllExpenses = () => {
-  const baseExpenses = Array.isArray(expensesData.expenses) ? expensesData.expenses : [];
   try {
     const raw = localStorage.getItem("vendix_expenses") || "[]";
     const customExpenses = JSON.parse(raw);
-    if (!Array.isArray(customExpenses) || customExpenses.length === 0) {
-      return baseExpenses;
-    }
-    const baseIds = new Set(baseExpenses.map((e) => String(e.id)));
-    const uniqueCustom = customExpenses.filter((e) => !baseIds.has(String(e.id)));
-    return [...baseExpenses, ...uniqueCustom];
+    return Array.isArray(customExpenses) ? customExpenses : [];
   } catch {
-    return baseExpenses;
+    return [];
   }
 };
 

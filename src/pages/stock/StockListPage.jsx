@@ -231,8 +231,24 @@ export default function StockListPage() {
           </div>
         </div>
 
-        {/* Indicateurs de stock */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {/* Synthèse mobile */}
+        <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs sm:hidden">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold text-slate-500">Total références :</span>
+            <span className="font-extrabold text-slate-900">{stockStats.total}</span>
+          </div>
+          <div className="flex items-center justify-between text-[11px] border-t border-slate-100 pt-1.5">
+            <span className="font-semibold text-amber-600">
+              {stockStats.lowStock} stock faible
+            </span>
+            <span className="font-semibold text-rose-600">
+              {stockStats.outOfStock} rupture
+            </span>
+          </div>
+        </div>
+
+        {/* Indicateurs de stock desktop */}
+        <div className="hidden sm:grid sm:grid-cols-3 gap-4">
           {/* Total des produits */}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between">

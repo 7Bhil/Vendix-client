@@ -24,7 +24,6 @@ import {
   Loader2,
 } from "lucide-react";
 
-import expensesData from "../../mocks/modules/expenses.json";
 import { expensesService } from "../../api/services.js";
 
 import {
@@ -103,11 +102,9 @@ export default function ExpensesListPage() {
       const savedExpenses = localStorage.getItem("vendix_expenses");
       if (savedExpenses) {
         localExpenses = JSON.parse(savedExpenses);
-      } else {
-        localExpenses = expensesData.expenses || [];
       }
     } catch {
-      localExpenses = expensesData.expenses || [];
+      localExpenses = [];
     }
 
     try {
