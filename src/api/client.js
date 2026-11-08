@@ -79,6 +79,14 @@ class ApiClient {
       }
     }
 
+    // Si 401 et qu'on n'a pas pu rafraîchir le jeton, purge de session et notification
+    if (response.status === 401 && options._retry) {
+      this.clearTokens();
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/connexion') && !window.location.pathname.startsWith('/login')) {
+        window.location.href = '/connexion?session_expired=1';
+      }
+    }
+
     return this.handleResponse(response);
   }
 

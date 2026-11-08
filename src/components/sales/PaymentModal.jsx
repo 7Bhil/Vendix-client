@@ -48,6 +48,8 @@ export default function PaymentModal({
 
   if (!isOpen) return null;
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const numericPaid = Number(paidAmount) || 0;
   const remainingAmount = Math.max(totalAmount - numericPaid, 0);
   const changeAmount = Math.max(numericPaid - totalAmount, 0);
@@ -56,7 +58,7 @@ export default function PaymentModal({
   const isCreditSale = remainingAmount > 0;
   const isCustomerProvided =
     selectedCustomerId !== "" || customCustomerName.trim().length > 0;
-  const isValid = !isCreditSale || isCustomerProvided;
+  const isValid = !isSubmitting && (!isCreditSale || isCustomerProvided);
 
   const paymentMethods = [
     { id: "CASH", label: "Espèces", icon: Banknote },
@@ -65,8 +67,10 @@ export default function PaymentModal({
     { id: "CREDIT", label: "Crédit", icon: Wallet },
   ];
 
-  const handleConfirm = () => {
-    if (!isValid) return;
+  const handleConfirm = async () => {
+    if (!isValid || isSubmitting) return;
+
+    setIsSubmitting(true);
 
     let customerName = "Client Comptoir";
     let customerId = null;
@@ -81,20 +85,24 @@ export default function PaymentModal({
       customerName = customCustomerName.trim();
     }
 
-    onConfirm?.({
-      paidAmount: numericPaid,
-      paymentMethod,
-      remainingAmount,
-      changeAmount,
-      customerId,
-      customerName,
-      status:
-        numericPaid === 0
-          ? "NON_PAYEE"
-          : remainingAmount > 0
-          ? "PARTIELLEMENT_PAYEE"
-          : "PAYEE",
-    });
+    try {
+      await onConfirm?.({
+        paidAmount: numericPaid,
+        paymentMethod,
+        remainingAmount,
+        changeAmount,
+        customerId,
+        customerName,
+        status:
+          numericPaid === 0
+            ? "NON_PAYEE"
+            : remainingAmount > 0
+            ? "PARTIELLEMENT_PAYEE"
+            : "PAYEE",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -296,10 +304,10 @@ export default function PaymentModal({
           <button
             type="button"
             onClick={handleConfirm}
-            disabled={!isValid}
+            disabled={!isValid || isSubmitting}
             className="flex-1 rounded-xl bg-vendix-brand py-2.5 text-xs font-bold text-white transition hover:bg-vendix-brand-dark disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand"
           >
-            Valider et imprimer le reçu
+            {isSubmitting ? "Enregistrement..." : "Valider et imprimer le reçu"}
           </button>
         </div>
       </div>
