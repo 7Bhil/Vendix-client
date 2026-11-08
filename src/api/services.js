@@ -17,12 +17,11 @@ export const phoneUtils = {
 };
 
 export const authService = {
-  async register({ phone, password, shopName, emailRecovery, role = 'COMMERCANT' }) {
+  async register({ phone, password, shopName, emailRecovery }) {
     const formattedPhone = phoneUtils.toE164(phone);
     const payload = {
       phone: formattedPhone,
       password,
-      role,
       ...(shopName ? { commerce_name: shopName } : {}),
       ...(emailRecovery ? { email_recovery: emailRecovery } : {}),
     };

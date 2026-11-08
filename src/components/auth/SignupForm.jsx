@@ -104,7 +104,6 @@ export default function SignupForm() {
         password: formData.password,
         shopName: formData.shopName.trim(),
         emailRecovery: formData.email.trim() || undefined,
-        role: 'COMMERCANT',
       })
 
       const createdUser = {
