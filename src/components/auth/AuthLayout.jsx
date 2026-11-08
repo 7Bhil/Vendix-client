@@ -1,12 +1,29 @@
 
+import { Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
+
 export default function AuthLayout({ children, title, subtitle }) {
   return (
     <main className="flex min-h-screen items-center justify-center bg-vendix-surface px-4 py-8 sm:py-10">
       <div className="w-full max-w-md">
+        <div className="mb-4">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-white hover:text-slate-900 hover:shadow-sm"
+          >
+            <ArrowLeft size={16} />
+            <span>Retour à l&apos;accueil</span>
+          </Link>
+        </div>
+
         <header className="mb-8 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-vendix-brand text-2xl font-bold text-white shadow-lg shadow-blue-900/20">
+          <Link
+            to="/"
+            className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-vendix-brand text-2xl font-bold text-white shadow-lg shadow-blue-900/20 transition hover:opacity-90"
+            aria-label="Accueil Vendix"
+          >
             V
-          </div>
+          </Link>
 
           <h1 className="mt-4 text-3xl font-bold tracking-tight text-vendix-ink">
             Vendix

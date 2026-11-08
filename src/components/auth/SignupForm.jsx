@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import PhoneInput from './PhoneInput.jsx'
 import PasswordInput from './PasswordInput.jsx'
 import PasswordStrengthMeter from './PasswordStrengthMeter.jsx'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+import { authService } from '../../api/services.js'
 
 const initialFormData = {
   phone: '',
@@ -42,9 +41,10 @@ export default function SignupForm() {
   // Validation spécifique à l'étape 1
   function validateStep1() {
     const stepErrors = {}
+    const cleanPhone = formData.phone.replace(/[\s.-]/g, '')
 
-    if (!/^01\d{8}$/.test(formData.phone)) {
-      stepErrors.phone = 'Saisissez un numéro valide de 10 chiffres commençant par 01.'
+    if (!/^(01\d{8}|\d{8})$/.test(cleanPhone)) {
+      stepErrors.phone = 'Saisissez un numéro valide de 8 ou 10 chiffres (ex: 53633667 ou 0153633667).'
     }
 
     if (formData.password.length < 8) {
@@ -98,28 +98,36 @@ export default function SignupForm() {
     setIsSubmitting(true)
     setErrors({})
 
-    // Simulation front-end autonome (sans appel backend)
-    const mockCreatedUser = {
-      id: 'usr_' + Date.now(),
-      phone: formData.phone,
-      shopName: formData.shopName.trim(),
-      email: formData.email.trim() || null,
-      activityType: formData.activityType,
-    }
-
     try {
-      localStorage.setItem('vendix_active_user', JSON.stringify(mockCreatedUser))
-    } catch {
-      // Pas de blocage si localStorage indisponible
-    }
-
-    // Petite temporisation pour simuler la création fluide de compte
-    setTimeout(() => {
-      setIsSubmitting(false)
-      navigate('/onboarding', {
-        state: { user: mockCreatedUser },
+      // Inscription réelle via l'API NestJS
+      const result = await authService.register({
+        phone: formData.phone,
+        password: formData.password,
+        shopName: formData.shopName.trim(),
+        emailRecovery: formData.email.trim() || undefined,
       })
-    }, 350)
+
+      const createdUser = {
+        id: result?.user?.id,
+        phone: result?.user?.phone || formData.phone,
+        shopName: result?.user?.commerce?.name || formData.shopName.trim(),
+        email: formData.email.trim() || null,
+        activityType: formData.activityType,
+      }
+
+      localStorage.setItem('vendix_active_user', JSON.stringify(createdUser))
+
+      navigate('/onboarding', {
+        state: { user: createdUser },
+      })
+    } catch (err) {
+      console.error("Échec de l'inscription API :", err);
+      setErrors({
+        form: err?.message || "Impossible de créer le compte. Vérifiez que le serveur est bien démarré ou que ce numéro n'est pas déjà enregistré.",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -206,7 +214,7 @@ export default function SignupForm() {
           {/* Bouton vers Étape 2 */}
           <button
             type="submit"
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-vendix-brand px-4 text-sm font-bold text-white shadow-md transition hover:bg-vendix-brand-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand focus-visible:ring-offset-2"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-vendix-brand px-4 text-sm font-bold text-white shadow-md transition-all duration-150 ease-in-out hover:bg-vendix-brand-dark hover:shadow-lg active:scale-[0.98] active:bg-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand focus-visible:ring-offset-2"
           >
             <span>Continuer vers la boutique</span>
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -397,7 +405,7 @@ export default function SignupForm() {
           <button
             type="submit"
             disabled={isSubmitting || !formData.acceptTerms || formData.shopName.trim().length < 3}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-vendix-brand px-4 text-sm font-bold text-white shadow-md transition hover:bg-vendix-brand-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-vendix-brand px-4 text-sm font-bold text-white shadow-md transition-all duration-150 ease-in-out hover:bg-vendix-brand-dark hover:shadow-lg active:scale-[0.98] active:bg-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
           >
             <span>
               {isSubmitting ? 'Création de votre boutique…' : 'Créer ma boutique gratuitement'}

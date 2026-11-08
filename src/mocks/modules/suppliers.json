@@ -1,0 +1,76 @@
+{
+  "suppliers": [
+    {
+      "id": "sup-01",
+      "fullName": "Établissements Albarika & Fils",
+      "companyName": "Albarika Import-Export",
+      "phone": "+22997010203",
+      "address": "Zone Portuaire, Cotonou",
+      "currentDebt": 125000,
+      "totalPurchases": 1850000,
+      "totalPaid": 1725000,
+      "notes": "Grossiste principal riz et sucre. Accorde un crédit à 15 jours.",
+      "statement": [
+        {
+          "id": "ach-01",
+          "date": "2026-10-15T09:30:00Z",
+          "type": "ACHAT_STOCK",
+          "ref": "CMD-2026-0042",
+          "totalCost": 325000,
+          "amountPaid": 200000,
+          "debtAmount": 125000,
+          "status": "COMPLETED",
+          "paymentMethod": "ESPECE"
+        }
+      ]
+    },
+    {
+      "id": "sup-02",
+      "fullName": "Centrale de Distribution SOBEBRA",
+      "companyName": "SOBEBRA Bénin",
+      "phone": "+22995202122",
+      "address": "Carrefour PK3, Cotonou",
+      "currentDebt": 0,
+      "totalPurchases": 980000,
+      "totalPaid": 980000,
+      "notes": "Boissons et jus locaux. Paiement comptant à la livraison.",
+      "statement": [
+        {
+          "id": "ach-02",
+          "date": "2026-10-22T11:00:00Z",
+          "type": "ACHAT_STOCK",
+          "ref": "CMD-2026-0055",
+          "totalCost": 150000,
+          "amountPaid": 150000,
+          "debtAmount": 0,
+          "status": "COMPLETED",
+          "paymentMethod": "MOBILE_MONEY"
+        }
+      ]
+    },
+    {
+      "id": "sup-03",
+      "fullName": "Coopérative Maraîchère du Sud",
+      "companyName": "CMS Agriculture",
+      "phone": "+22996334455",
+      "address": "Ouidah Centre",
+      "currentDebt": 45000,
+      "totalPurchases": 420000,
+      "totalPaid": 375000,
+      "notes": "Huile de palme et produits vivriers frais.",
+      "statement": [
+        {
+          "id": "ach-03",
+          "date": "2026-10-28T14:15:00Z",
+          "type": "ACHAT_STOCK",
+          "ref": "CMD-2026-0061",
+          "totalCost": 95000,
+          "amountPaid": 50000,
+          "debtAmount": 45000,
+          "status": "COMPLETED",
+          "paymentMethod": "ESPECE"
+        }
+      ]
+    }
+  ]
+}

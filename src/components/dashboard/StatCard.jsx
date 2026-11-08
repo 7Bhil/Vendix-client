@@ -4,6 +4,7 @@ export default function StatCard({
   icon: Icon,
   description,
   loading = false,
+  featured = false,
 }) {
   if (loading) {
     return (
@@ -19,29 +20,38 @@ export default function StatCard({
     );
   }
 
+  if (featured) {
+    return (
+      <article className="col-span-2 sm:col-span-1 min-w-0 rounded-2xl bg-slate-900 p-3.5 sm:p-5 text-white shadow-2xs transition-all duration-150">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" />
+            <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-300 truncate">
+              {title}
+            </h2>
+          </div>
+          {Icon ? <Icon size={16} className="text-emerald-400 shrink-0" /> : null}
+        </div>
+
+        <p className="mt-1.5 font-money text-lg sm:text-2xl font-black tracking-tight text-white">
+          {value}
+        </p>
+      </article>
+    );
+  }
+
   return (
-    <article className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 transition hover:shadow-md">
-      <div className="flex items-start justify-between gap-2.5">
-        <div className="min-w-0 flex-1">
-          <h2 className="text-xs font-semibold text-slate-500 sm:text-sm">
-            {title}
-          </h2>
-
-          <p className="mt-2 break-words text-xl font-black tracking-tight text-vendix-ink sm:text-2xl lg:text-3xl">
-            {value}
-          </p>
-        </div>
-
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-vendix-brand sm:h-11 sm:w-11">
-          {Icon ? <Icon size={20} aria-hidden="true" /> : null}
-        </div>
+    <article className="min-w-0 rounded-2xl border border-slate-100 bg-white p-3.5 sm:p-5 shadow-2xs transition-all duration-150">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">
+          {title}
+        </h2>
+        {Icon ? <Icon size={16} className="text-slate-400 shrink-0" /> : null}
       </div>
 
-      {description ? (
-        <p className="mt-2 text-xs text-slate-500 line-clamp-1">
-          {description}
-        </p>
-      ) : null}
+      <p className="mt-1.5 font-money text-base sm:text-2xl font-black tracking-tight text-slate-900 truncate">
+        {value}
+      </p>
     </article>
   );
 }

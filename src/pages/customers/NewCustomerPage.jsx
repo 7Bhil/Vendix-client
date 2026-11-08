@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, UserPlus, CheckCircle2 } from "lucide-react";
 import { loadCustomers, saveCustomers } from "../../utils/customerDebtUtils";
 import { useToast } from "../../context/ToastContext";
+import { customersService } from "../../api/services";
 
 export default function NewCustomerPage() {
   const navigate = useNavigate();
@@ -11,22 +12,42 @@ export default function NewCustomerPage() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!fullName.trim() || !phone.trim()) {
       setError("Le nom complet et le numéro de téléphone sont requis.");
       return;
     }
 
+    setIsSubmitting(true);
+    setError("");
+
     try {
+      let createdCustomer = null;
+      try {
+        createdCustomer = await customersService.create({
+          fullName: fullName.trim(),
+          phone: phone.trim(),
+        });
+      } catch (apiErr) {
+        // En cas d'erreur de conflit (ex: téléphone déjà pris) on propage l'erreur
+        if (apiErr?.status === 409 || apiErr?.message?.includes("existe déjà")) {
+          throw apiErr;
+        }
+        // Sinon fallback pour fonctionnement offline / local
+        console.warn("Échec API customersService.create, repli local:", apiErr);
+      }
+
+      // Synchroniser également le localStorage pour l'affichage cohérent
       const customers = loadCustomers();
       const newCustomer = {
-        id: `c-${Date.now()}`,
-        fullName: fullName.trim(),
-        phone: phone.trim(),
+        id: createdCustomer?.id || `c-${Date.now()}`,
+        fullName: createdCustomer?.full_name || fullName.trim(),
+        phone: createdCustomer?.phone || phone.trim(),
         address: address.trim(),
         notes: notes.trim(),
         currentDebt: 0,
@@ -37,14 +58,16 @@ export default function NewCustomerPage() {
         paymentHistory: [],
       };
 
-      saveCustomers([newCustomer, ...customers]);
+      saveCustomers([newCustomer, ...customers.filter((c) => c.id !== newCustomer.id)]);
       setSuccess(true);
       toastSuccess(`Le client ${newCustomer.fullName} a été enregistré avec succès.`, "Client créé");
       setTimeout(() => {
         navigate("/app/customers");
       }, 700);
     } catch (err) {
-      setError("Impossible d'enregistrer le client : " + err.message);
+      setError("Impossible d'enregistrer le client : " + (err.message || "Erreur inattendue"));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -142,11 +165,11 @@ export default function NewCustomerPage() {
 
           <button
             type="submit"
-            disabled={success}
+            disabled={success || isSubmitting}
             className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-vendix-brand px-4 text-xs font-bold text-white transition hover:bg-vendix-brand-dark disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-vendix-brand"
           >
             <UserPlus size={16} />
-            <span>Enregistrer le client</span>
+            <span>{isSubmitting ? "Enregistrement en cours..." : "Enregistrer le client"}</span>
           </button>
         </form>
       </div>

@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Minus, Plus, Trash2, ShoppingBasket, Sparkles } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingBasket, Sparkles, Tag, Check } from "lucide-react";
 import { getProductTierPrice, getTierLabel } from "../../utils/pricingUtils";
+import MoneyDisplay from "../ui/MoneyDisplay";
 
 const formatPrice = (price) =>
   new Intl.NumberFormat("fr-FR").format(Number(price) || 0) + " FCFA";
@@ -11,13 +12,20 @@ export default function CartSheet({
   onRemoveProduct,
   onClearCart,
   onContinue,
+  discount = 0,
+  onUpdateDiscount,
 }) {
   const [confirmClear, setConfirmClear] = useState(false);
+  const [isEditingDiscount, setIsEditingDiscount] = useState(false);
+  const [negotiatedAmountInput, setNegotiatedAmountInput] = useState("");
 
-  const totalAmount = cart.reduce((total, item) => {
+  const rawTotalAmount = cart.reduce((total, item) => {
     const { unitPrice } = getProductTierPrice(item, item.quantity);
     return total + unitPrice * Number(item.quantity);
   }, 0);
+
+  const effectiveDiscount = Math.min(Math.max(0, Number(discount) || 0), rawTotalAmount);
+  const netTotalAmount = Math.max(0, rawTotalAmount - effectiveDiscount);
 
   const totalItems = cart.reduce(
     (total, item) => total + Number(item.quantity),
@@ -32,6 +40,23 @@ export default function CartSheet({
     }
     setConfirmClear(false);
     onClearCart?.();
+  };
+
+  const handleApplyNegotiatedTotal = (e) => {
+    e.preventDefault();
+    const parsedNegotiated = parseInt(negotiatedAmountInput, 10);
+    if (!isNaN(parsedNegotiated) && parsedNegotiated >= 0 && parsedNegotiated <= rawTotalAmount) {
+      const calculatedDiscount = rawTotalAmount - parsedNegotiated;
+      onUpdateDiscount?.(calculatedDiscount);
+    }
+    setIsEditingDiscount(false);
+    setNegotiatedAmountInput("");
+  };
+
+  const handleRemoveDiscount = () => {
+    onUpdateDiscount?.(0);
+    setIsEditingDiscount(false);
+    setNegotiatedAmountInput("");
   };
 
   return (
@@ -145,16 +170,14 @@ export default function CartSheet({
                       <button
                         type="button"
                         onClick={() => onUpdateQuantity(item.id, Number(item.quantity) + 1)}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+                        className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 btn-press"
                         aria-label="Augmenter la quantité"
                       >
                         <Plus size={13} />
                       </button>
                     </div>
 
-                    <p className="text-xs font-extrabold text-slate-900 sm:text-sm">
-                      {formatPrice(lineSubtotal)}
-                    </p>
+                    <MoneyDisplay amount={lineSubtotal} size="sm" className="text-slate-900 font-extrabold" />
                   </div>
                 </div>
               </div>
@@ -163,20 +186,98 @@ export default function CartSheet({
         )}
       </div>
 
-      {/* Pied du panier */}
-      <div className="border-t border-slate-100 p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <span className="text-xs font-bold text-slate-600">Total à payer</span>
-          <span className="text-lg font-black text-vendix-brand">
-            {formatPrice(totalAmount)}
-          </span>
+      {/* Pied du panier avec Marchandage / Remise globale */}
+      <div className="border-t border-slate-100 p-4 bg-slate-50/50 space-y-3">
+        {/* Ligne Sous-total catalogue si réduction */}
+        {effectiveDiscount > 0 && (
+          <div className="flex items-center justify-between text-xs text-slate-500">
+            <span>Prix catalogue théorique</span>
+            <span className="line-through">{formatPrice(rawTotalAmount)}</span>
+          </div>
+        )}
+
+        {/* Bloc Marchandage / Remise globale */}
+        {cart.length > 0 && (
+          <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/60 p-2.5">
+            {!isEditingDiscount && effectiveDiscount === 0 && (
+              <button
+                type="button"
+                onClick={() => setIsEditingDiscount(true)}
+                className="flex items-center justify-between w-full text-xs font-semibold text-amber-800 hover:text-amber-900"
+              >
+                <span className="flex items-center gap-1.5">
+                  <Tag size={13} className="text-amber-600" />
+                  Prix négocié / Marchandage ?
+                </span>
+                <span className="text-[11px] font-bold underline">Appliquer</span>
+              </button>
+            )}
+
+            {!isEditingDiscount && effectiveDiscount > 0 && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="flex items-center gap-1 font-bold text-amber-900">
+                  <Tag size={13} className="text-amber-600" />
+                  Rabais accordé : -{formatPrice(effectiveDiscount)}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleRemoveDiscount}
+                  className="text-[11px] font-semibold text-slate-500 hover:text-red-600 underline"
+                >
+                  Annuler
+                </button>
+              </div>
+            )}
+
+            {isEditingDiscount && (
+              <form onSubmit={handleApplyNegotiatedTotal} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="negotiatedInput" className="text-[11px] font-bold text-amber-900">
+                    Montant total convenu avec le client :
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingDiscount(false)}
+                    className="text-[10px] text-slate-400 hover:text-slate-600"
+                  >
+                    Fermer
+                  </button>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    id="negotiatedInput"
+                    type="number"
+                    min="0"
+                    max={rawTotalAmount}
+                    autoFocus
+                    placeholder={String(rawTotalAmount)}
+                    value={negotiatedAmountInput}
+                    onChange={(e) => setNegotiatedAmountInput(e.target.value)}
+                    className="h-8 flex-1 rounded-lg border border-amber-300 bg-white px-2 text-xs font-bold text-slate-900 outline-none focus:ring-1 focus:ring-amber-500"
+                  />
+                  <button
+                    type="submit"
+                    className="flex items-center gap-1 rounded-lg bg-amber-600 px-3 text-xs font-bold text-white hover:bg-amber-700 active:scale-95"
+                  >
+                    <Check size={12} />
+                    Valider
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">Total net à payer</span>
+          <MoneyDisplay amount={netTotalAmount} size="lg" className="text-emerald-700 font-black" />
         </div>
 
         <button
           type="button"
           onClick={onContinue}
           disabled={cart.length === 0}
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-vendix-brand px-4 text-xs font-bold text-white transition hover:bg-vendix-brand-dark disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand"
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-bold text-white shadow-sm transition-all duration-150 ease-in-out hover:bg-emerald-700 active:scale-[0.98] active:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
         >
           Encaisser la vente
         </button>

@@ -1,17 +1,19 @@
-
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import PasswordInput from './PasswordInput.jsx'
+import { useAuth } from '../../context/AuthContext.jsx'
 
 export default function LoginForm() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { login } = useAuth()
   const [formData, setFormData] = useState({
     phone: '',
     password: '',
   })
 
   const [errors, setErrors] = useState({})
-  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   function handleChange(event) {
     const { name, value } = event.target
@@ -28,15 +30,17 @@ export default function LoginForm() {
     }))
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
 
     const newErrors = {}
 
-    if (!formData.phone.trim()) {
+    const cleanPhone = formData.phone.replace(/[\s.-]/g, '')
+
+    if (!cleanPhone) {
       newErrors.phone = 'Veuillez saisir votre numéro de téléphone.'
-    } else if (!/^01\d{8}$/.test(formData.phone)) {
-      newErrors.phone = 'Le numéro doit commencer par 01 et contenir 10 chiffres.'
+    } else if (!/^(01\d{8}|\d{8})$/.test(cleanPhone)) {
+      newErrors.phone = 'Le numéro doit contenir 8 chiffres ou 10 chiffres (avec le 01).'
     }
 
     if (!formData.password) {
@@ -49,27 +53,28 @@ export default function LoginForm() {
       return
     }
 
-    // Identifiants de test / Démo autorisés
-    const isDemoUser =
-      formData.phone === '0197000001' && formData.password === 'Vendix@2026'
+    setIsLoading(true)
 
-    if (isDemoUser) {
-      // Connexion réussie : un utilisateur existant va TOUJOURS au dashboard
-      navigate('/app/dashboard', {
-        state: {
-          user: {
-            phone: formData.phone,
-            shopName: 'Boutique Le Progrès',
-            role: 'MERCHANT',
-          },
-        },
+    try {
+      const { user } = await login({
+        phone: formData.phone,
+        password: formData.password,
       })
-      return
-    }
 
-    setErrors({
-      form: 'Numéro de téléphone ou mot de passe incorrect. Pour tester : 0197000001 / Vendix@2026',
-    })
+      const destination = location.state?.from?.pathname || '/app/dashboard'
+      navigate(destination, {
+        replace: true,
+        state: { user },
+      })
+    } catch (err) {
+      const errorMessage =
+        err?.message ||
+        'Numéro de téléphone ou mot de passe incorrect. Vérifiez vos identifiants.'
+
+      setErrors({ form: errorMessage })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -145,9 +150,10 @@ export default function LoginForm() {
 
       <button
         type="submit"
-        className="w-full rounded-xl bg-teal-700 px-4 py-3 font-semibold text-white transition hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
+        disabled={isLoading}
+        className="w-full rounded-xl bg-teal-700 px-4 py-3 font-semibold text-white shadow-md transition-all duration-150 ease-in-out hover:bg-teal-800 hover:shadow-lg active:scale-[0.98] active:bg-teal-900 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:opacity-60 disabled:pointer-events-none"
       >
-        Se connecter
+        {isLoading ? 'Connexion en cours...' : 'Se connecter'}
       </button>
 
       <p className="mt-6 text-center text-sm text-slate-600">

@@ -1,11 +1,8 @@
-import customersMock from '../mocks/modules/customers.json';
-import commerceMock from '../mocks/modules/commerce.json';
-
 const STORAGE_KEY = 'vendix.customer-debts';
 
 export function loadCustomers() {
   const savedCustomers = window.localStorage.getItem(STORAGE_KEY);
-  return savedCustomers ? JSON.parse(savedCustomers) : customersMock.customers;
+  return savedCustomers ? JSON.parse(savedCustomers) : [];
 }
 
 export function saveCustomers(customers) {
@@ -35,7 +32,14 @@ export function getDebtAge(date) {
 }
 
 export function getStoreName() {
-  return commerceMock.commerce.name;
+  try {
+    const raw = localStorage.getItem('vendix_store');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.name) return parsed.name;
+    }
+  } catch {}
+  return 'Boutique Vendix';
 }
 
 export function getInitialPaymentHistory(customer) {
