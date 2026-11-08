@@ -119,11 +119,11 @@ export default function CustomerListPage() {
             />
           </div>
 
-          <div className="flex gap-1 rounded-xl bg-slate-100 p-1 text-xs font-bold">
+          <div className="grid w-full grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1 text-[11px] font-bold sm:w-auto sm:flex sm:text-xs">
             <button
               type="button"
               onClick={() => setFilterMode('ALL')}
-              className={`rounded-lg px-3 py-1.5 transition ${
+              className={`whitespace-nowrap rounded-lg px-1.5 py-2 transition sm:px-3 sm:py-1.5 ${
                 filterMode === 'ALL' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -132,7 +132,7 @@ export default function CustomerListPage() {
             <button
               type="button"
               onClick={() => setFilterMode('DEBTORS')}
-              className={`rounded-lg px-3 py-1.5 transition ${
+              className={`whitespace-nowrap rounded-lg px-1.5 py-2 transition sm:px-3 sm:py-1.5 ${
                 filterMode === 'DEBTORS' ? 'bg-white text-amber-800 shadow-sm' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -141,7 +141,7 @@ export default function CustomerListPage() {
             <button
               type="button"
               onClick={() => setFilterMode('UP_TO_DATE')}
-              className={`rounded-lg px-3 py-1.5 transition ${
+              className={`whitespace-nowrap rounded-lg px-1.5 py-2 transition sm:px-3 sm:py-1.5 ${
                 filterMode === 'UP_TO_DATE' ? 'bg-white text-emerald-800 shadow-sm' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -165,7 +165,7 @@ export default function CustomerListPage() {
               return (
                 <div
                   key={customer.id}
-                  className="flex flex-col gap-4 p-4 transition hover:bg-slate-50/80 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 p-4 transition hover:bg-slate-50/80 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
                 >
                   {/* Identité client */}
                   <Link
@@ -210,40 +210,47 @@ export default function CustomerListPage() {
                   </Link>
 
                   {/* Données financières */}
-                  <div className="flex items-center justify-between gap-6 sm:justify-end">
-                    <div className="text-left sm:text-right">
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                        Solde dû
-                      </p>
-                      <p
-                        className={`text-sm font-black ${
-                          hasDebt ? 'text-amber-800' : 'text-emerald-700'
-                        }`}
-                      >
-                        {formatCurrency(customer.currentDebt)} <span className="text-[11px] font-semibold text-slate-400">FCFA</span>
-                      </p>
-                    </div>
-
-                    <div className="text-left sm:text-right min-w-[90px]">
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                        Ancienneté
-                      </p>
-                      <p className="flex items-center gap-1 text-xs font-bold text-slate-700 sm:justify-end">
-                        <Clock size={12} className="text-slate-400" />
-                        <span>{hasDebt ? `${age} j` : '0 j'}</span>
-                      </p>
-                    </div>
-
-                    {/* Actions directes */}
-                    <div className="flex items-center gap-2">
-                      {hasDebt && <WhatsAppReminderButton customer={customer} />}
+                  <div className="flex w-full min-w-0 flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-end sm:gap-6">
+                    {/* Garder l'action visible avant les indicateurs sur petit écran. */}
+                    <div className="order-1 flex w-full items-center gap-2 sm:order-1 sm:w-auto sm:shrink-0">
+                      {hasDebt && (
+                        <WhatsAppReminderButton
+                          customer={customer}
+                          className="h-10 min-w-0 flex-1 whitespace-nowrap px-3 py-2 text-center text-xs sm:flex-none sm:px-4 sm:text-sm"
+                        />
+                      )}
                       <Link
                         to={`/app/customers/${customer.id}`}
-                        className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition hover:bg-slate-100 hover:text-slate-900"
+                        className="ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition hover:bg-slate-100 hover:text-slate-900 sm:ml-0"
                         aria-label={`Voir la fiche de ${customer.fullName}`}
                       >
                         <ChevronRight size={17} />
                       </Link>
+                    </div>
+
+                    <div className="order-2 grid grid-cols-2 gap-4 sm:order-2 sm:flex sm:items-center sm:gap-6">
+                      <div className="text-left sm:text-right">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                          Solde dû
+                        </p>
+                        <p
+                          className={`text-sm font-black ${
+                            hasDebt ? 'text-amber-800' : 'text-emerald-700'
+                          }`}
+                        >
+                          {formatCurrency(customer.currentDebt)} <span className="text-[11px] font-semibold text-slate-400">FCFA</span>
+                        </p>
+                      </div>
+
+                      <div className="min-w-0 text-left sm:min-w-[90px] sm:text-right">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                          Ancienneté
+                        </p>
+                        <p className="flex items-center gap-1 text-xs font-bold text-slate-700 sm:justify-end">
+                          <Clock size={12} className="text-slate-400" />
+                          <span>{hasDebt ? `${age} j` : '0 j'}</span>
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
