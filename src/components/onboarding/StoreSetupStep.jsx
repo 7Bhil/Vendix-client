@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Store, MessageCircle, Palette, Check, ArrowRight } from "lucide-react";
+import { Store, MessageCircle, Palette, Check, ArrowRight, CheckCircle2 } from "lucide-react";
 
 const PRESET_PALETTES = [
   { name: "Bleu Vendix & Ambre", primary: "#1e40af", secondary: "#f59e0b" },
@@ -10,7 +10,7 @@ const PRESET_PALETTES = [
   { name: "Indigo & Ciel", primary: "#3730a3", secondary: "#0284c7" },
 ];
 
-export default function StoreSetupStep({ initialData, onNext }) {
+export default function StoreSetupStep({ initialData, onNext, onCompleteDirect, isSubmitting = false }) {
   const [shopName, setShopName] = useState(initialData?.shopName || "");
   const [whatsappPhone, setWhatsappPhone] = useState(initialData?.whatsappPhone || "");
   const [primaryColor, setPrimaryColor] = useState(initialData?.primaryColor || PRESET_PALETTES[0].primary);
@@ -35,31 +35,52 @@ export default function StoreSetupStep({ initialData, onNext }) {
     document.documentElement.style.setProperty("--shop-secondary", color);
   }
 
-  function handleSubmit(e) {
-    e.preventDefault();
-    setError("");
-
+  function validate() {
     if (!shopName.trim()) {
       setError("Veuillez renseigner le nom de votre commerce.");
-      return;
+      return false;
     }
 
     if (!whatsappPhone.trim()) {
       setError("Veuillez renseigner votre numéro WhatsApp professionnel.");
-      return;
+      return false;
     }
 
-    // Sauvegarde et passage à l'étape suivante
-    onNext({
+    return true;
+  }
+
+  function getFormData() {
+    return {
       shopName: shopName.trim(),
       whatsappPhone: whatsappPhone.trim(),
       primaryColor,
       secondaryColor,
-    });
+    };
+  }
+
+  function handleFinalizeDirect(e) {
+    e.preventDefault();
+    setError("");
+
+    if (!validate()) return;
+
+    if (onCompleteDirect) {
+      onCompleteDirect(getFormData());
+    }
+  }
+
+  function handleAddProductStep(e) {
+    e.preventDefault();
+    setError("");
+
+    if (!validate()) return;
+
+    // Sauvegarde et passage à l'étape suivante (ajout d'article)
+    onNext(getFormData());
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form className="space-y-6">
       {error && (
         <div
           role="alert"
@@ -163,7 +184,7 @@ export default function StoreSetupStep({ initialData, onNext }) {
           <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2">
             <span className="text-xs font-semibold text-slate-700">Couleur Principale</span>
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs text-slate-500 uppercase">{primaryColor}</span>
+              <span className="font-mono text-xs uppercase text-slate-500">{primaryColor}</span>
               <input
                 type="color"
                 value={primaryColor}
@@ -176,7 +197,7 @@ export default function StoreSetupStep({ initialData, onNext }) {
           <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2">
             <span className="text-xs font-semibold text-slate-700">Couleur Secondaire</span>
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs text-slate-500 uppercase">{secondaryColor}</span>
+              <span className="font-mono text-xs uppercase text-slate-500">{secondaryColor}</span>
               <input
                 type="color"
                 value={secondaryColor}
@@ -213,14 +234,30 @@ export default function StoreSetupStep({ initialData, onNext }) {
         </div>
       </div>
 
-      {/* Bouton Suivant */}
-      <button
-        type="submit"
-        className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-vendix-brand px-6 text-sm font-bold text-white shadow-sm transition hover:bg-vendix-brand-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand focus-visible:ring-offset-2"
-      >
-        <span>Continuer vers le premier produit</span>
-        <ArrowRight size={18} aria-hidden="true" />
-      </button>
+      {/* Actions de validation : Choix entre finalisation directe ou ajout de produit */}
+      <div className="space-y-3 pt-2">
+        {/* Bouton principal : Finaliser & Accéder à la boutique */}
+        <button
+          type="button"
+          onClick={handleFinalizeDirect}
+          disabled={isSubmitting}
+          className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-vendix-brand px-6 text-sm font-bold text-white shadow-sm transition hover:bg-vendix-brand-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <CheckCircle2 size={18} aria-hidden="true" />
+          <span>{isSubmitting ? "Création en cours..." : "Finaliser & Accéder à ma boutique"}</span>
+        </button>
+
+        {/* Bouton secondaire : Ajouter un premier article (optionnel) */}
+        <button
+          type="button"
+          onClick={handleAddProductStep}
+          disabled={isSubmitting}
+          className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-6 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <span>Ajouter un premier article (optionnel)</span>
+          <ArrowRight size={18} aria-hidden="true" />
+        </button>
+      </div>
     </form>
   );
 }

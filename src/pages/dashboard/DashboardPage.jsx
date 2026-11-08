@@ -206,7 +206,7 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => navigate("/app/sales/new")}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-vendix-brand px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-vendix-brand-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 active:bg-emerald-800 btn-press focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
             >
               <Plus size={18} aria-hidden="true" />
               <span>Nouvelle vente</span>
@@ -323,10 +323,10 @@ export default function DashboardPage() {
                       key={period.id}
                       type="button"
                       onClick={() => setSelectedPeriod(period.id)}
-                      className={`min-h-12 rounded-lg px-4 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand ${
+                      className={`min-h-11 rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all btn-press focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                         selectedPeriod === period.id
-                          ? "bg-vendix-brand text-white shadow-sm"
-                          : "text-slate-600 hover:text-vendix-ink"
+                          ? "bg-slate-900 text-white shadow-xs"
+                          : "text-slate-600 hover:text-slate-900"
                       }`}
                     >
                       {period.label}
@@ -336,11 +336,12 @@ export default function DashboardPage() {
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {stats.map((stat) => (
+                {stats.map((stat, idx) => (
                   <StatCard
                     key={stat.title}
                     {...stat}
                     loading={loading}
+                    featured={idx === 0}
                   />
                 ))}
               </div>

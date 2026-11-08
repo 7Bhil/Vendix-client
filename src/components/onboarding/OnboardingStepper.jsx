@@ -1,7 +1,7 @@
 export default function OnboardingStepper({ currentStep, totalSteps = 2, onSkip }) {
   const steps = [
     { number: 1, label: "Identité de la boutique" },
-    { number: 2, label: "Premier produit" },
+    { number: 2, label: "Premier produit (optionnel)" },
   ];
 
   return (

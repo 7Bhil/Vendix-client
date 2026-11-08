@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, Package, AlertCircle } from 'lucide-react';
 import ProductCard from '../../components/products/ProductCard.jsx';
-import productsData from '../../mocks/modules/products.json';
 import { productsService, categoriesService } from '../../api/services.js';
 
 export default function ProductListPage() {
@@ -13,7 +12,7 @@ export default function ProductListPage() {
   const [selectedStockStatus, setSelectedStockStatus] = useState('');
 
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState(productsData.categories);
+  const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -31,40 +30,46 @@ export default function ProductListPage() {
         ]);
 
         if (isMounted) {
-          if (apiCategories.status === 'fulfilled' && Array.isArray(apiCategories.value) && apiCategories.value.length > 0) {
+          if (apiCategories.status === 'fulfilled' && Array.isArray(apiCategories.value)) {
             setCategories(apiCategories.value);
           }
 
-          if (apiProducts.status === 'fulfilled' && Array.isArray(apiProducts.value) && apiProducts.value.length > 0) {
+          if (apiProducts.status === 'fulfilled' && Array.isArray(apiProducts.value)) {
             // Mapping du format NestJS vers les props attendues par ProductCard
-            const mapped = apiProducts.value.map((p) => ({
-              id: p.id,
-              name: p.name,
-              categoryId: p.category_id,
-              categoryName: p.category?.name || 'Général',
-              currentStock: p.current_stock ?? 0,
-              alertThreshold: p.alert_threshold ?? 5,
-              photoUrl: p.image_url,
-              product_units: p.product_units || [],
-              priceTiers: (p.product_units || []).map((u) => ({
-                id: u.id,
-                name: u.label,
-                unit: u.label,
-                salePrice: u.sale_price,
-                conversionFactor: Number(u.conversion_factor) || 1,
-              })),
-            }));
+            const mapped = apiProducts.value.map((p) => {
+              const baseUnitObj = (p.product_units || []).find((u) => u.is_base_unit) || (p.product_units || [])[0];
+              const salePrice = baseUnitObj?.retail_price ?? 0;
+              const costPrice = p.default_cost_price ?? 0;
+
+              return {
+                id: p.id,
+                name: p.name,
+                categoryId: p.category_id,
+                categoryName: p.category?.name || 'Général',
+                currentStock: p.current_stock ?? 0,
+                alertThreshold: p.alert_threshold ?? 5,
+                photoUrl: p.image_url,
+                costPrice,
+                salePrice,
+                baseUnit: baseUnitObj?.label || 'Unité',
+                product_units: p.product_units || [],
+                priceTiers: (p.product_units || []).map((u) => ({
+                  id: u.id,
+                  name: u.label,
+                  unit: u.label,
+                  salePrice: u.retail_price,
+                  conversionFactor: Number(u.conversion_factor) || 1,
+                })),
+              };
+            });
             setProducts(mapped);
           } else {
-            // Fallback fluide sur local/mock si la base serveur est encore vide
+            // En cas d'échec serveur ou mode déconnecté : repli sur le localStorage
             const savedCustom = JSON.parse(localStorage.getItem('vendix-custom-products') || '[]');
             const savedLegacy = JSON.parse(localStorage.getItem('vendix_products') || '[]');
             const customMap = new Map();
             [...savedLegacy, ...savedCustom].forEach((p) => customMap.set(String(p.id), p));
-            const customProducts = Array.from(customMap.values());
-            const existingIds = new Set(customProducts.map((p) => String(p.id)));
-            const mockProducts = productsData.products.filter((p) => !existingIds.has(String(p.id)));
-            setProducts([...customProducts, ...mockProducts]);
+            setProducts(Array.from(customMap.values()));
           }
         }
       } catch (err) {
@@ -200,6 +205,25 @@ export default function ProductListPage() {
               <div key={i} className="h-56 animate-pulse rounded-2xl bg-slate-100 border border-slate-200/60" />
             ))}
           </div>
+        ) : products.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+              <Package size={24} />
+            </div>
+            <h3 className="mt-4 text-sm font-bold text-slate-900">
+              Aucun produit dans votre boutique
+            </h3>
+            <p className="mt-1 text-xs text-slate-500 max-w-sm">
+              Aucun produit dans votre boutique. Cliquez sur 'Nouveau produit' pour commencer.
+            </p>
+            <button
+              onClick={() => navigate('/app/products/new')}
+              className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-vendix-brand px-4 py-2 text-xs font-bold text-white transition hover:bg-vendix-brand-dark"
+            >
+              <Plus size={15} />
+              <span>Nouveau produit</span>
+            </button>
+          </div>
         ) : filteredProducts.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
@@ -209,7 +233,7 @@ export default function ProductListPage() {
               Aucun produit trouvé
             </h3>
             <p className="mt-1 text-xs text-slate-500">
-              Essayez de modifier votre recherche ou ajoutez un nouveau produit.
+              Aucun produit ne correspond à vos filtres actuels.
             </p>
           </div>
         ) : (

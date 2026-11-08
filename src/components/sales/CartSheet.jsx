@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Minus, Plus, Trash2, ShoppingBasket, Sparkles } from "lucide-react";
 import { getProductTierPrice, getTierLabel } from "../../utils/pricingUtils";
+import MoneyDisplay from "../ui/MoneyDisplay";
 
 const formatPrice = (price) =>
   new Intl.NumberFormat("fr-FR").format(Number(price) || 0) + " FCFA";
@@ -145,16 +146,14 @@ export default function CartSheet({
                       <button
                         type="button"
                         onClick={() => onUpdateQuantity(item.id, Number(item.quantity) + 1)}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+                        className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 btn-press"
                         aria-label="Augmenter la quantité"
                       >
                         <Plus size={13} />
                       </button>
                     </div>
 
-                    <p className="text-xs font-extrabold text-slate-900 sm:text-sm">
-                      {formatPrice(lineSubtotal)}
-                    </p>
+                    <MoneyDisplay amount={lineSubtotal} size="sm" className="text-slate-900 font-extrabold" />
                   </div>
                 </div>
               </div>
@@ -164,19 +163,17 @@ export default function CartSheet({
       </div>
 
       {/* Pied du panier */}
-      <div className="border-t border-slate-100 p-4">
+      <div className="border-t border-slate-100 p-4 bg-slate-50/50">
         <div className="mb-3 flex items-center justify-between">
-          <span className="text-xs font-bold text-slate-600">Total à payer</span>
-          <span className="text-lg font-black text-vendix-brand">
-            {formatPrice(totalAmount)}
-          </span>
+          <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">Total à payer</span>
+          <MoneyDisplay amount={totalAmount} size="lg" className="text-emerald-700 font-black" />
         </div>
 
         <button
           type="button"
           onClick={onContinue}
           disabled={cart.length === 0}
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-vendix-brand px-4 text-xs font-bold text-white transition hover:bg-vendix-brand-dark disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand"
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 active:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-40 btn-press focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
         >
           Encaisser la vente
         </button>

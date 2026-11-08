@@ -28,13 +28,40 @@ export default function OnboardingPage() {
     navigate("/app/dashboard");
   }
 
-  // Étape 1 validée
+  // Étape 1 validée -> passage optionnel à l'étape 2
   function handleStoreNext(data) {
     setStoreData(data);
+    // Application immédiate des couleurs dans le DOM
+    document.documentElement.style.setProperty("--shop-primary", data.primaryColor);
+    document.documentElement.style.setProperty("--shop-secondary", data.secondaryColor);
     setStep(2);
   }
 
-  // Étape 2 validée -> finalisation
+  // Étape 1 finalisée directement sans article
+  function handleStoreDirectComplete(data) {
+    setStoreData(data);
+    setIsSubmitting(true);
+
+    try {
+      const vendixProfile = {
+        store: data,
+        firstProduct: null,
+        setupCompletedAt: new Date().toISOString(),
+      };
+      localStorage.setItem("vendix_store_config", JSON.stringify(vendixProfile));
+      document.documentElement.style.setProperty("--shop-primary", data.primaryColor);
+      document.documentElement.style.setProperty("--shop-secondary", data.secondaryColor);
+    } catch {
+      // Pas de blocage si localStorage indisponible
+    }
+
+    setTimeout(() => {
+      setIsSubmitting(false);
+      navigate("/app/dashboard");
+    }, 400);
+  }
+
+  // Étape 2 validée -> finalisation avec produit
   function handleProductSubmit(data) {
     setProductData(data);
     setIsSubmitting(true);
@@ -73,7 +100,7 @@ export default function OnboardingPage() {
           <p className="mt-1.5 text-xs text-slate-600 sm:text-sm">
             {step === 1
               ? "Préparez votre identité visuelle et votre numéro de contact en 1 minute."
-              : "Ajoutez un article pour effectuer votre première simulation de vente."}
+              : "Ajoutez un premier article dès maintenant, ou passez cette étape pour démarrer directement."}
           </p>
         </div>
 
@@ -87,6 +114,8 @@ export default function OnboardingPage() {
             <StoreSetupStep
               initialData={storeData}
               onNext={handleStoreNext}
+              onCompleteDirect={handleStoreDirectComplete}
+              isSubmitting={isSubmitting}
             />
           )}
 

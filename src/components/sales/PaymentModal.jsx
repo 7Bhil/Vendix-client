@@ -10,6 +10,7 @@ import {
   User,
 } from "lucide-react";
 import { loadCustomers } from "../../utils/customerDebtUtils";
+import MoneyDisplay from "../ui/MoneyDisplay";
 
 const formatPrice = (price) =>
   new Intl.NumberFormat("fr-FR").format(Number(price) || 0) + " FCFA";
@@ -24,6 +25,7 @@ export default function PaymentModal({
   const [paymentMethod, setPaymentMethod] = useState("CASH");
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [customCustomerName, setCustomCustomerName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const customers = useMemo(() => {
     try {
@@ -47,8 +49,6 @@ export default function PaymentModal({
   }, [selectedCustomerObj]);
 
   if (!isOpen) return null;
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const numericPaid = Number(paidAmount) || 0;
   const remainingAmount = Math.max(totalAmount - numericPaid, 0);
@@ -217,27 +217,38 @@ export default function PaymentModal({
               min="0"
               value={paidAmount}
               onChange={(e) => setPaidAmount(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 p-3 text-lg font-black outline-none focus:border-vendix-brand focus:ring-2 focus:ring-blue-100"
+              className="w-full rounded-xl border border-slate-300 p-3 text-xl font-money font-black outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
               placeholder="0"
             />
 
-            <div className="mt-2 flex gap-2">
+            {/* Raccourcis de coupures usuelles FCFA */}
+            <div className="mt-2.5 flex flex-wrap gap-1.5">
               <button
                 type="button"
                 onClick={() => setPaidAmount(String(totalAmount))}
-                className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+                className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-200 btn-press"
               >
                 Paiement exact
               </button>
+              {[1000, 2000, 5000, 10000].map((denomination) => (
+                <button
+                  key={denomination}
+                  type="button"
+                  onClick={() => setPaidAmount(String((Number(paidAmount) || 0) + denomination))}
+                  className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 btn-press"
+                >
+                  +{denomination.toLocaleString('fr-FR')}
+                </button>
+              ))}
               <button
                 type="button"
                 onClick={() => {
                   setPaidAmount("0");
                   setPaymentMethod("CREDIT");
                 }}
-                className="rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100"
+                className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-bold text-amber-800 hover:bg-amber-100 btn-press"
               >
-                100% à crédit (0 FCFA)
+                Crédit (0 FCFA)
               </button>
             </div>
           </div>
@@ -272,16 +283,16 @@ export default function PaymentModal({
           </div>
 
           {/* Bilan financier de la transaction */}
-          <div className="rounded-xl border border-slate-200 p-3.5">
+          <div className="rounded-xl border border-slate-200 p-4 bg-slate-50/60">
             {remainingAmount > 0 ? (
-              <div className="flex items-center justify-between text-amber-800">
-                <span className="text-xs font-bold">Reste à recouvrer (Dette client)</span>
-                <span className="text-base font-black">{formatPrice(remainingAmount)}</span>
+              <div className="flex items-center justify-between text-amber-900">
+                <span className="text-xs font-bold uppercase tracking-wider">Reste à recouvrer (Dette client)</span>
+                <MoneyDisplay amount={remainingAmount} size="md" className="text-amber-800 font-black" />
               </div>
             ) : changeAmount > 0 ? (
-              <div className="flex items-center justify-between text-emerald-800">
-                <span className="text-xs font-bold">Monnaie à rendre au client</span>
-                <span className="text-base font-black">{formatPrice(changeAmount)}</span>
+              <div className="flex items-center justify-between text-emerald-900">
+                <span className="text-xs font-bold uppercase tracking-wider">Monnaie à rendre au client</span>
+                <MoneyDisplay amount={changeAmount} size="xl" className="text-emerald-700 font-black" />
               </div>
             ) : (
               <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700">
@@ -293,11 +304,11 @@ export default function PaymentModal({
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 border-t border-slate-100 p-5">
+        <div className="flex gap-3 border-t border-slate-100 p-5 bg-slate-50/30">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 rounded-xl border border-slate-300 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
+            className="flex-1 rounded-xl border border-slate-300 py-3 text-xs font-bold text-slate-700 hover:bg-slate-50 btn-press"
           >
             Annuler
           </button>
@@ -305,7 +316,7 @@ export default function PaymentModal({
             type="button"
             onClick={handleConfirm}
             disabled={!isValid || isSubmitting}
-            className="flex-1 rounded-xl bg-vendix-brand py-2.5 text-xs font-bold text-white transition hover:bg-vendix-brand-dark disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand"
+            className="flex-1 rounded-xl bg-emerald-600 py-3 text-xs font-bold text-white transition hover:bg-emerald-700 active:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-40 btn-press focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 shadow-sm"
           >
             {isSubmitting ? "Enregistrement..." : "Valider et imprimer le reçu"}
           </button>
