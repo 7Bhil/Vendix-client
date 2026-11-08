@@ -120,6 +120,57 @@ describe('Client HTTP & Services API (Vendix Contracts)', () => {
       expect(data).toEqual({ products: [] });
       expect(api.getAccessToken()).toBe('new-valid-access-token');
     });
+
+    it('partage la même promesse de rafraîchissement (mutex) lors de requêtes 401 concurrentes', async () => {
+      api.setTokens('expired-token', 'valid-refresh-token');
+
+      let refreshCalls = 0;
+      globalThis.fetch = vi.fn().mockImplementation((url, opts) => {
+        if (url.includes('/auth/refresh')) {
+          refreshCalls++;
+          return new Promise((resolve) => {
+            setTimeout(() => {
+              resolve({
+                ok: true,
+                status: 200,
+                headers: new Headers({ 'content-type': 'application/json' }),
+                json: () =>
+                  Promise.resolve({
+                    access_token: 'mutex-refreshed-token',
+                    refresh_token: 'valid-refresh-token',
+                  }),
+              });
+            }, 10);
+          });
+        }
+
+        const authHeader = opts?.headers?.Authorization;
+        if (authHeader === 'Bearer mutex-refreshed-token') {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'application/json' }),
+            json: () => Promise.resolve({ data: url }),
+          });
+        }
+
+        return Promise.resolve({
+          ok: false,
+          status: 401,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: () => Promise.resolve({ message: 'Token expiré' }),
+        });
+      });
+
+      const [res1, res2] = await Promise.all([
+        api.get('/endpoint-1'),
+        api.get('/endpoint-2'),
+      ]);
+
+      expect(res1).toEqual({ data: expect.stringContaining('/endpoint-1') });
+      expect(res2).toEqual({ data: expect.stringContaining('/endpoint-2') });
+      expect(refreshCalls).toBe(1);
+    });
   });
 
   describe('authService', () => {

@@ -265,7 +265,11 @@ export const cashService = {
 
 export const publicShopService = {
   getShop(slug) {
-    return api.get(`/public-shop/${slug}`);
+    return api.get(`/public/shop/${slug}`, { isPublic: true });
+  },
+
+  getBySlug(slug) {
+    return api.get(`/public/shop/${slug}`, { isPublic: true });
   },
 
   getProducts(slug, params = {}) {
@@ -273,11 +277,16 @@ export const publicShopService = {
     if (params.limit) query.append('limit', String(params.limit));
     if (params.offset) query.append('offset', String(params.offset));
     if (params.search) query.append('search', params.search);
+    if (params.categoryId) query.append('categoryId', params.categoryId);
     const qs = query.toString();
-    return api.get(`/public-shop/${slug}/products${qs ? `?${qs}` : ''}`);
+    return api.get(`/public/shop/${slug}/products${qs ? `?${qs}` : ''}`, { isPublic: true });
   },
 
-  trackVisit(slug) {
-    return api.post(`/public-shop/${slug}/visit`, {});
+  getProductById(slug, productId) {
+    return api.get(`/public/shop/${slug}/products/${productId}`, { isPublic: true });
+  },
+
+  trackVisit(slug, payload = {}) {
+    return api.post(`/public/shop/${slug}/track-visit`, payload, { isPublic: true });
   },
 };

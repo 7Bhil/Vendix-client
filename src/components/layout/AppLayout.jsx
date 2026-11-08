@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -7,8 +7,10 @@ import {
   Package,
   Store,
   Boxes,
+  LogOut,
 } from "lucide-react";
 import OfflineSyncBadge from "../dashboard/OfflineSyncBadge";
+import { useAuth } from "../../context/AuthContext.jsx";
 
 const NAVIGATION_ITEMS = [
   {
@@ -35,7 +37,7 @@ const NAVIGATION_ITEMS = [
     path: "/app/products",
     icon: Package,
   },
-    {
+  {
     name: "Stock",
     shortName: "Stock",
     path: "/app/stock",
@@ -45,9 +47,25 @@ const NAVIGATION_ITEMS = [
 
 export default function AppLayout({ children }) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [isHovered, setIsHovered] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-   const isCurrent = (path) => {
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      navigate("/login", { replace: true });
+    } catch {
+      navigate("/login", { replace: true });
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  const isCurrent = (path) => {
     if (path === "/app/customers") {
       return location.pathname.startsWith("/app/customers");
     }
@@ -62,6 +80,8 @@ export default function AppLayout({ children }) {
 
     return location.pathname === path;
   };
+
+  const shopDisplayName = user?.shopName || "Ma boutique Vendix";
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-vendix-ink">
@@ -145,9 +165,9 @@ export default function AppLayout({ children }) {
           </div>
         </nav>
 
-        {/* Statut hors-ligne et compte */}
-        <div className="border-t border-slate-100 p-3 overflow-hidden">
-          <div className="mb-3 flex justify-center overflow-hidden">
+        {/* Statut hors-ligne, compte et déconnexion */}
+        <div className="border-t border-slate-100 p-3 overflow-hidden space-y-2">
+          <div className="flex justify-center overflow-hidden">
             <div className="w-full">
               {isHovered ? (
                 <div className="transition-opacity duration-300 animate-fade-in">
@@ -173,9 +193,29 @@ export default function AppLayout({ children }) {
               Boutique connectée
             </p>
             <p className="truncate text-xs font-bold text-slate-800">
-              Ma boutique Vendix
+              {shopDisplayName}
             </p>
           </div>
+
+          {/* Bouton de Déconnexion Desktop */}
+          <button
+            type="button"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            title={!isHovered ? "Déconnexion" : undefined}
+            className={`flex w-full items-center gap-3.5 rounded-xl p-2.5 text-sm font-semibold text-rose-600 transition-all duration-200 hover:bg-rose-50 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 disabled:opacity-50`}
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center transition-transform duration-200 hover:scale-110">
+              <LogOut size={20} className="text-rose-600" />
+            </div>
+            <span
+              className={`whitespace-nowrap font-medium transition-all duration-300 ${
+                isHovered ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-3 pointer-events-none"
+              }`}
+            >
+              {isLoggingOut ? "Déconnexion..." : "Déconnexion"}
+            </span>
+          </button>
         </div>
       </aside>
 
@@ -193,7 +233,19 @@ export default function AppLayout({ children }) {
             <span>Vendix<span className="text-vendix-accent">.</span></span>
           </Link>
 
-          <OfflineSyncBadge />
+          <div className="flex items-center gap-2">
+            <OfflineSyncBadge />
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              aria-label="Se déconnecter"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition active:scale-95 disabled:opacity-50"
+              title="Déconnexion"
+            >
+              <LogOut size={17} />
+            </button>
+          </div>
         </header>
 
         <main className="flex-1 overflow-x-hidden animate-fade-in">{children}</main>
@@ -209,7 +261,7 @@ export default function AppLayout({ children }) {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex flex-col items-center justify-center gap-1 rounded-xl px-3 py-1.5 transition active:scale-95 ${
+              className={`flex flex-col items-center justify-center gap-1 rounded-xl px-2.5 py-1.5 transition active:scale-95 ${
                 active ? "text-vendix-brand font-bold" : "text-slate-500 hover:text-slate-800"
               }`}
             >
@@ -218,6 +270,18 @@ export default function AppLayout({ children }) {
             </Link>
           );
         })}
+
+        {/* Action déconnexion intégrée en mobile */}
+        <button
+          type="button"
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          aria-label="Déconnexion"
+          className="flex flex-col items-center justify-center gap-1 rounded-xl px-2.5 py-1.5 text-slate-500 transition hover:text-rose-600 active:scale-95 disabled:opacity-50"
+        >
+          <LogOut size={19} className="text-slate-400 hover:text-rose-600" />
+          <span className="text-[11px] font-medium leading-tight">Quitter</span>
+        </button>
       </nav>
     </div>
   );

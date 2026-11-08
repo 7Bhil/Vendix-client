@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import PasswordInput from './PasswordInput.jsx'
-import { authService } from '../../api/services.js'
+import { useAuth } from '../../context/AuthContext.jsx'
 
 export default function LoginForm() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { login } = useAuth()
   const [formData, setFormData] = useState({
     phone: '',
     password: '',
@@ -52,44 +54,20 @@ export default function LoginForm() {
     setIsLoading(true)
 
     try {
-      // 1. Tentative d'authentification réelle via l'API NestJS
-      const result = await authService.login({
+      const { user } = await login({
         phone: formData.phone,
         password: formData.password,
       })
 
-      const user = {
-        phone: result?.user?.phone || formData.phone,
-        shopName: result?.user?.commerce?.name || 'Ma boutique Vendix',
-        role: result?.user?.role || 'MERCHANT',
-      }
-
-      localStorage.setItem('vendix_active_user', JSON.stringify(user))
-
-      navigate('/app/dashboard', {
+      const destination = location.state?.from?.pathname || '/app/dashboard'
+      navigate(destination, {
+        replace: true,
         state: { user },
       })
     } catch (err) {
-      // 2. Fallback pour compte de démonstration si le backend ou la base est en cours d'initialisation
-      const isDemoUser =
-        formData.phone === '0197000001' && formData.password === 'Vendix@2026'
-
-      if (isDemoUser) {
-        const user = {
-          phone: formData.phone,
-          shopName: 'Boutique Le Progrès',
-          role: 'MERCHANT',
-        }
-        localStorage.setItem('vendix_active_user', JSON.stringify(user))
-        navigate('/app/dashboard', {
-          state: { user },
-        })
-        return
-      }
-
       const errorMessage =
         err?.message ||
-        'Numéro de téléphone ou mot de passe incorrect. Pour tester : 0197000001 / Vendix@2026'
+        'Numéro de téléphone ou mot de passe incorrect. Vérifiez vos identifiants.'
 
       setErrors({ form: errorMessage })
     } finally {
