@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -7,10 +7,12 @@ import {
   Phone,
   MapPin,
   Plus,
+  Loader2,
 } from 'lucide-react';
 import DebtSummaryCard from '../../components/customers/DebtSummaryCard.jsx';
 import PaymentRecordModal from '../../components/customers/PaymentRecordModal.jsx';
 import WhatsAppReminderButton from '../../components/customers/WhatsAppReminderButton.jsx';
+import RepaymentReceiptModal from '../../components/customers/RepaymentReceiptModal.jsx';
 import {
   formatCurrency,
   formatDate,
@@ -18,9 +20,11 @@ import {
   loadCustomers,
   saveCustomers,
 } from '../../utils/customerDebtUtils.js';
+import { customersService } from '../../api/services.js';
 
 const PAYMENT_METHODS = {
   ESPECE: 'Espèces',
+  CASH: 'Espèces',
   MOBILE_MONEY: 'Mobile Money',
   MOMO: 'Mobile Money',
   VIREMENT: 'Virement',
@@ -30,10 +34,104 @@ const PAYMENT_METHODS = {
 export default function CustomerDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [customers, setCustomers] = useState(loadCustomers);
+  const [customer, setCustomer] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [storageError, setStorageError] = useState('');
-  const customer = customers.find((entry) => entry.id === id);
+  const [lastRepaymentData, setLastRepaymentData] = useState(null);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchCustomer() {
+      setIsLoading(true);
+      setStorageError('');
+
+      try {
+        const remote = await customersService.getById(id);
+        if (isMounted && remote) {
+          // Transformer le format serveur vers le format client local attendu par l'UI
+          const allSales = remote.sales || [];
+          const allRepayments = remote.repayments || [];
+
+          // Trouver la dette la plus ancienne
+          const unpaidSales = allSales
+            .filter((s) => (s.debt_amount || 0) > 0)
+            .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+          const oldestDebtDate = unpaidSales[0]?.created_at || (remote.outstanding_debt > 0 ? remote.created_at : null);
+
+          // Construire les paiements et le statement chronologique
+          const paymentHistory = allRepayments.map((r) => ({
+            id: r.id,
+            date: r.created_at,
+            amount: r.amount,
+            method: r.payment_method || 'CASH',
+            reference: r.id,
+          }));
+
+          const statementEntries = [
+            ...allSales.map((s) => ({
+              date: s.created_at,
+              type: (s.debt_amount || 0) > 0 ? 'VENTE_CREDIT' : 'VENTE_COMPTANT',
+              ref: s.receipt_number || s.id,
+              debit: s.total_amount || 0,
+              credit: 0,
+              balance: s.debt_amount || 0,
+            })),
+            ...allRepayments.map((r) => ({
+              date: r.created_at,
+              type: `ACOMPTE_${r.payment_method || 'CASH'}`,
+              ref: r.id,
+              debit: 0,
+              credit: r.amount || 0,
+              balance: 0,
+            })),
+          ];
+
+          const transformed = {
+            id: remote.id,
+            fullName: remote.full_name,
+            phone: remote.phone,
+            address: remote.address || '',
+            notes: remote.notes || '',
+            currentDebt: remote.outstanding_debt ?? 0,
+            oldestDebtDate,
+            paymentHistory,
+            statement: statementEntries,
+          };
+
+          setCustomer(transformed);
+          setIsLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.error('customersService.getById a échoué:', err);
+      }
+
+      if (isMounted) {
+        setCustomer(null);
+        setIsLoading(false);
+      }
+    }
+
+    fetchCustomer();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-2 text-slate-500">
+          <Loader2 size={28} className="animate-spin text-vendix-brand" />
+          <p className="text-xs font-semibold">Chargement de la fiche client...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!customer) {
     return (
@@ -63,48 +161,91 @@ export default function CustomerDetailPage() {
     (first, second) => new Date(second.date) - new Date(first.date)
   );
 
-  function recordPayment(payment) {
+  async function recordPayment(payment) {
+    const paymentAmount = Number(payment.amount);
+    const serverMethod =
+      payment.method === 'ESPECE' ? 'CASH' : payment.method === 'MOBILE_MONEY' ? 'MOMO' : payment.method;
+
+    let apiUpdatedCustomer = null;
+
+    try {
+      const result = await customersService.recordRepayment(customer.id, {
+        amount: paymentAmount,
+        paymentMethod: serverMethod,
+        notes: payment.notes || '',
+      });
+      if (result?.customer) {
+        apiUpdatedCustomer = result.customer;
+      }
+    } catch (err) {
+      console.warn('Appel API recordRepayment en échec, poursuite locale:', err);
+      // Si c'est une erreur de validation explicite du serveur (dette dépassée, etc.), afficher l'erreur
+      if (err?.status === 400) {
+        setStorageError(`Impossible d'enregistrer le remboursement : ${err.message}`);
+        return;
+      }
+    }
+
+    const newDebt = apiUpdatedCustomer
+      ? apiUpdatedCustomer.outstanding_debt
+      : Math.max((customer.currentDebt || 0) - paymentAmount, 0);
+
+    const repaymentRef = `PAY-${Date.now()}`;
+    const newPaymentRecord = {
+      id: repaymentRef,
+      amount: paymentAmount,
+      method: payment.method,
+      date: payment.date || new Date().toISOString(),
+      reference: repaymentRef,
+    };
+
     const updatedCustomer = {
       ...customer,
-      currentDebt: Math.max(customer.currentDebt - payment.amount, 0),
-      totalPaid: (customer.totalPaid ?? 0) + payment.amount,
-      oldestDebtDate:
-        customer.currentDebt - payment.amount <= 0 ? null : customer.oldestDebtDate,
+      currentDebt: newDebt,
+      totalPaid: (customer.totalPaid ?? 0) + paymentAmount,
+      oldestDebtDate: newDebt <= 0 ? null : customer.oldestDebtDate,
       paymentHistory: [
         ...(customer.paymentHistory ?? []),
-        {
-          id: `PAY-${payment.date}-${(customer.paymentHistory ?? []).length + 1}`,
-          ...payment,
-        },
+        newPaymentRecord,
       ],
       statement: [
         ...(customer.statement ?? []),
         {
-          date: payment.date,
+          date: payment.date || new Date().toISOString(),
           type: `ACOMPTE_${payment.method}`,
-          ref: `PAY-${payment.date}-${(customer.paymentHistory ?? []).length + 1}`,
+          ref: repaymentRef,
           debit: 0,
-          credit: payment.amount,
-          balance: Math.max(customer.currentDebt - payment.amount, 0),
+          credit: paymentAmount,
+          balance: newDebt,
         },
       ],
     };
 
-    const updatedCustomers = customers.map((entry) =>
-      entry.id === customer.id ? updatedCustomer : entry
-    );
-
     try {
-      saveCustomers(updatedCustomers);
-      setCustomers(updatedCustomers);
+      const localCustomers = loadCustomers();
+      const updatedList = localCustomers.map((entry) =>
+        entry.id === customer.id ? updatedCustomer : entry
+      );
+      saveCustomers(updatedList);
+      setCustomer(updatedCustomer);
       setStorageError('');
       setShowPaymentModal(false);
+
+      // Ouvrir automatiquement le reçu de remboursement
+      setLastRepaymentData({
+        amount: paymentAmount,
+        method: payment.method,
+        date: payment.date || new Date().toISOString(),
+        reference: repaymentRef,
+        remainingDebt: newDebt,
+      });
+      setShowReceiptModal(true);
     } catch (error) {
       setStorageError(`Le règlement n’a pas pu être sauvegardé. ${error.message}`);
     }
   }
 
-  const initials = customer.fullName
+  const initials = (customer.fullName || 'C')
     .split(' ')
     .map((part) => part[0])
     .slice(0, 2)
@@ -159,10 +300,15 @@ export default function CustomerDetailPage() {
               </h1>
 
               <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                <span className="flex items-center gap-1 font-medium">
-                  <Phone size={13} className="text-slate-400" />
-                  {customer.phone}
-                </span>
+                {customer.phone && (
+                  <a
+                    href={`tel:${customer.phone}`}
+                    className="flex items-center gap-1 font-medium text-slate-600 hover:text-vendix-brand hover:underline"
+                  >
+                    <Phone size={13} className="text-slate-400" />
+                    {customer.phone}
+                  </a>
+                )}
                 {customer.address && (
                   <>
                     <span>•</span>
@@ -279,6 +425,16 @@ export default function CustomerDetailPage() {
         customer={customer}
         onClose={() => setShowPaymentModal(false)}
         onSubmit={recordPayment}
+      />
+
+      <RepaymentReceiptModal
+        isOpen={showReceiptModal}
+        onClose={() => {
+          setShowReceiptModal(false);
+          setLastRepaymentData(null);
+        }}
+        customer={customer}
+        repayment={lastRepaymentData || {}}
       />
     </div>
   );

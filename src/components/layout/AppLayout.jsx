@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -7,8 +7,10 @@ import {
   Package,
   Store,
   Boxes,
+  LogOut,
 } from "lucide-react";
 import OfflineSyncBadge from "../dashboard/OfflineSyncBadge";
+import { useAuth } from "../../context/AuthContext.jsx";
 
 const NAVIGATION_ITEMS = [
   {
@@ -22,6 +24,7 @@ const NAVIGATION_ITEMS = [
     shortName: "Caisse",
     path: "/app/sales/new",
     icon: ShoppingCart,
+    isPrimary: true,
   },
   {
     name: "Clients & Dettes",
@@ -35,7 +38,7 @@ const NAVIGATION_ITEMS = [
     path: "/app/products",
     icon: Package,
   },
-    {
+  {
     name: "Stock",
     shortName: "Stock",
     path: "/app/stock",
@@ -45,9 +48,25 @@ const NAVIGATION_ITEMS = [
 
 export default function AppLayout({ children }) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [isHovered, setIsHovered] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-   const isCurrent = (path) => {
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      navigate("/login", { replace: true });
+    } catch {
+      navigate("/login", { replace: true });
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  const isCurrent = (path) => {
     if (path === "/app/customers") {
       return location.pathname.startsWith("/app/customers");
     }
@@ -62,6 +81,8 @@ export default function AppLayout({ children }) {
 
     return location.pathname === path;
   };
+
+  const shopDisplayName = user?.shopName || "Ma boutique Vendix";
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-vendix-ink">
@@ -145,9 +166,9 @@ export default function AppLayout({ children }) {
           </div>
         </nav>
 
-        {/* Statut hors-ligne et compte */}
-        <div className="border-t border-slate-100 p-3 overflow-hidden">
-          <div className="mb-3 flex justify-center overflow-hidden">
+        {/* Statut hors-ligne, compte et déconnexion */}
+        <div className="border-t border-slate-100 p-3 overflow-hidden space-y-2">
+          <div className="flex justify-center overflow-hidden">
             <div className="w-full">
               {isHovered ? (
                 <div className="transition-opacity duration-300 animate-fade-in">
@@ -173,52 +194,108 @@ export default function AppLayout({ children }) {
               Boutique connectée
             </p>
             <p className="truncate text-xs font-bold text-slate-800">
-              Ma boutique Vendix
+              {shopDisplayName}
             </p>
           </div>
+
+          {/* Bouton de Déconnexion Desktop */}
+          <button
+            type="button"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            title={!isHovered ? "Déconnexion" : undefined}
+            className={`flex w-full items-center gap-3.5 rounded-xl p-2.5 text-sm font-semibold text-rose-600 transition-all duration-200 hover:bg-rose-50 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 disabled:opacity-50`}
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center transition-transform duration-200 hover:scale-110">
+              <LogOut size={20} className="text-rose-600" />
+            </div>
+            <span
+              className={`whitespace-nowrap font-medium transition-all duration-300 ${
+                isHovered ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-3 pointer-events-none"
+              }`}
+            >
+              {isLoggingOut ? "Déconnexion..." : "Déconnexion"}
+            </span>
+          </button>
         </div>
       </aside>
 
-      {/* Contenu principal */}
-      <div className="flex flex-1 flex-col pb-20 md:pb-0 min-w-0">
+      {/* Contenu principal avec transition fluide de page */}
+      <div className="flex flex-1 flex-col pb-24 md:pb-0 min-w-0">
         {/* Barre du haut mobile */}
-        <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 md:hidden print:hidden">
+        <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white/90 backdrop-blur-md px-4 sticky top-0 z-30 md:hidden print:hidden">
           <Link
             to="/app/dashboard"
             className="flex items-center gap-2 text-base font-extrabold text-vendix-brand"
           >
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-vendix-brand text-white">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-vendix-brand text-white shadow-2xs">
               <Store size={15} />
             </div>
             <span>Vendix<span className="text-vendix-accent">.</span></span>
           </Link>
 
-          <OfflineSyncBadge />
+          <div className="flex items-center gap-2">
+            <OfflineSyncBadge />
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              aria-label="Se déconnecter"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition active:scale-95 disabled:opacity-50"
+              title="Déconnexion"
+            >
+              <LogOut size={17} />
+            </button>
+          </div>
         </header>
 
-        <main className="flex-1 overflow-x-hidden animate-fade-in">{children}</main>
+        <main key={location.pathname} className="flex-1 overflow-x-hidden animate-fade-in">{children}</main>
       </div>
 
-      {/* Barre de navigation basse pour mobile */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-slate-200 bg-white/95 px-2 backdrop-blur-md md:hidden print:hidden">
-        {NAVIGATION_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const active = isCurrent(item.path);
+      {/* Barre de navigation basse flottante pour mobile (Floating Pill Nav) */}
+      <div className="fixed bottom-3 left-0 right-0 z-40 px-3 md:hidden print:hidden pointer-events-none">
+        <nav className="mx-auto max-w-md pointer-events-auto flex h-16 items-center justify-around rounded-2xl border border-slate-200/80 bg-white/95 px-2 shadow-xl shadow-slate-900/10 backdrop-blur-xl">
+          {NAVIGATION_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const active = isCurrent(item.path);
 
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex flex-col items-center justify-center gap-1 rounded-xl px-3 py-1.5 transition active:scale-95 ${
-                active ? "text-vendix-brand font-bold" : "text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              <Icon size={19} className={active ? "text-vendix-brand" : "text-slate-400"} />
-              <span className="text-[11px] font-medium leading-tight">{item.shortName}</span>
-            </Link>
-          );
-        })}
-      </nav>
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`relative flex flex-col items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  active
+                    ? "-translate-y-2 scale-105"
+                    : "translate-y-0 scale-100 hover:text-slate-600"
+                } active:scale-95`}
+              >
+                <div
+                  className={`flex items-center justify-center rounded-2xl transition-all duration-300 ${
+                    active
+                      ? "h-11 w-11 bg-vendix-brand text-white shadow-lg shadow-blue-900/25 ring-4 ring-blue-50"
+                      : "h-9 w-9 text-slate-400 hover:text-slate-600"
+                  }`}
+                >
+                  <Icon size={active ? 20 : 18} />
+                </div>
+
+                <span
+                  className={`mt-0.5 text-[10px] tracking-tight transition-colors ${
+                    active ? "font-black text-vendix-brand" : "font-medium text-slate-400"
+                  }`}
+                >
+                  {item.shortName}
+                </span>
+
+                {/* Pastille dynamique uniquement sous l'onglet actif */}
+                {active && (
+                  <span className="absolute -bottom-1 h-1 w-3 rounded-full bg-vendix-brand animate-fade-in" />
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
     </div>
   );
 }

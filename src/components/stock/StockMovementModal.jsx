@@ -5,6 +5,7 @@ export default function StockMovementModal({
   products = [],
   onClose,
   onSubmit,
+  isLoading = false,
 }) {
   // Type de mouvement sélectionné
   const [type, setType] = useState('ENTRY');
@@ -348,10 +349,10 @@ const signedQuantity =
 
             <button
               type="submit"
-              disabled={products.length === 0}
+              disabled={products.length === 0 || isLoading}
               className="rounded-xl bg-vendix-brand px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Enregistrer le mouvement
+              {isLoading ? 'Enregistrement...' : 'Enregistrer le mouvement'}
             </button>
           </div>
         </form>

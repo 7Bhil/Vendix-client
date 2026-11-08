@@ -17,11 +17,11 @@ import {
   Sliders,
   CheckCircle2,
 } from 'lucide-react';
-import productsData from '../../mocks/modules/products.json';
 import ProductImageUpload from '../../components/products/ProductImageUpload.jsx';
 import PriceTierManager from '../../components/products/PriceTierManager.jsx';
 import UnitConversionField from '../../components/products/UnitConversionField.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
+import { productsService, categoriesService } from '../../api/services.js';
 
 const STEPS = [
   { id: 1, title: 'Article & Image', subtitle: 'Nom, catégorie & photo', icon: Tag },
@@ -39,18 +39,30 @@ export default function NewProductPage() {
 
   // Catégories dynamiques
   const [categories, setCategories] = useState(() => {
-    const saved = JSON.parse(
+    return JSON.parse(
       localStorage.getItem('vendix-custom-categories') || '[]'
     );
-    const existingIds = new Set(saved.map((c) => c.id));
-    const mockCategories = productsData.categories.filter(
-      (c) => !existingIds.has(c.id)
-    );
-    return [...saved, ...mockCategories];
   });
 
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+
+  // Chargement des catégories depuis l'API NestJS
+  useEffect(() => {
+    let isMounted = true;
+    categoriesService.getAll()
+      .then((data) => {
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          setCategories(data);
+        }
+      })
+      .catch(() => {
+        // En cas d'erreur API, on conserve les catégories locales
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // États du produit
   const [name, setName] = useState('');
@@ -81,41 +93,96 @@ export default function NewProductPage() {
   useEffect(() => {
     if (!id) return;
 
-    const savedCustom = JSON.parse(
-      localStorage.getItem('vendix-custom-products') || '[]'
-    );
-    const savedLegacy = JSON.parse(
-      localStorage.getItem('vendix_products') || '[]'
-    );
-    const combinedSaved = [...savedCustom, ...savedLegacy];
+    let isMounted = true;
 
-    const productToEdit =
-      combinedSaved.find((product) => String(product.id) === String(id)) ??
-      productsData.products.find((product) => String(product.id) === String(id));
+    async function fetchProduct() {
+      try {
+        const prod = await productsService.getById(id);
+        if (!isMounted) return;
+        if (prod) {
+          setName(prod.name ?? '');
+          setCategory(prod.category_id ?? '');
+          setDescription(prod.description ?? '');
+          setPhotoUrl(prod.image_url ?? '');
+          setCostPrice(String(prod.default_cost_price ?? ''));
+          const baseUnitObj = (prod.product_units || []).find((u) => u.is_base_unit) || (prod.product_units || [])[0];
+          setSalePrice(String(baseUnitObj?.retail_price ?? ''));
+          setCurrentStock(String(prod.current_stock ?? ''));
+          setAlertThreshold(String(prod.alert_threshold ?? ''));
+          setBaseUnit(baseUnitObj?.label ?? 'Unité');
+          setIsVisible(prod.is_visible_public ?? true);
+          setIsFavorite(prod.is_favorite ?? false);
+          const secondaryUnits = (prod.product_units || [])
+            .filter((u) => !u.is_base_unit)
+            .map((u) => ({
+              id: u.id,
+              name: u.label,
+              conversionFactor: Number(u.conversion_factor) || 1,
+              isBase: false,
+            }));
+          setUnitConversions(secondaryUnits);
+          return;
+        }
+      } catch {
+        // En cas d'erreur de récupération réseau, on tente le fallback local
+      }
 
-    if (!productToEdit) {
-      toastError?.('Produit introuvable.', 'Erreur');
-      navigate('/app/products');
-      return;
+      const savedCustom = JSON.parse(
+        localStorage.getItem('vendix-custom-products') || '[]'
+      );
+      const savedLegacy = JSON.parse(
+        localStorage.getItem('vendix_products') || '[]'
+      );
+      const combinedSaved = [...savedCustom, ...savedLegacy];
+
+      const productToEdit = combinedSaved.find((product) => String(product.id) === String(id));
+
+      if (!productToEdit) {
+        toastError?.('Produit introuvable.', 'Erreur');
+        navigate('/app/products');
+        return;
+      }
+
+      setName(productToEdit.name ?? '');
+      setCategory(productToEdit.categoryId ?? productToEdit.category ?? '');
+      setDescription(productToEdit.description ?? '');
+      setPhotoUrl(productToEdit.photoUrl ?? '');
+      setCostPrice(String(productToEdit.costPrice ?? ''));
+      setSalePrice(String(productToEdit.salePrice ?? ''));
+      setCurrentStock(String(productToEdit.currentStock ?? ''));
+      setAlertThreshold(String(productToEdit.alertThreshold ?? ''));
+      setBaseUnit(productToEdit.baseUnit ?? 'Unité');
+      setIsVisible(productToEdit.isVisible ?? true);
+      setIsFavorite(productToEdit.isFavorite ?? false);
+      setPriceTiers(productToEdit.priceTiers ?? []);
+      setUnitConversions(productToEdit.unitConversions ?? productToEdit.units ?? []);
     }
 
-    setName(productToEdit.name ?? '');
-    setCategory(productToEdit.categoryId ?? productToEdit.category ?? '');
-    setDescription(productToEdit.description ?? '');
-    setPhotoUrl(productToEdit.photoUrl ?? '');
-    setCostPrice(String(productToEdit.costPrice ?? ''));
-    setSalePrice(String(productToEdit.salePrice ?? ''));
-    setCurrentStock(String(productToEdit.currentStock ?? ''));
-    setAlertThreshold(String(productToEdit.alertThreshold ?? ''));
-    setBaseUnit(productToEdit.baseUnit ?? 'Unité');
-    setIsVisible(productToEdit.isVisible ?? true);
-    setIsFavorite(productToEdit.isFavorite ?? false);
-    setPriceTiers(productToEdit.priceTiers ?? []);
-    setUnitConversions(productToEdit.unitConversions ?? productToEdit.units ?? []);
+    fetchProduct();
+
+    return () => {
+      isMounted = false;
+    };
   }, [id, navigate, toastError]);
 
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     if (!newCategoryName.trim()) return;
+
+    try {
+      const created = await categoriesService.create(newCategoryName.trim());
+      if (created && created.id) {
+        const updated = [created, ...categories];
+        setCategories(updated);
+        setCategory(created.id);
+        setNewCategoryName('');
+        setIsCreatingCategory(false);
+        setStepErrors((prev) => ({ ...prev, category: '' }));
+        return;
+      }
+    } catch {
+      // En cas de non disponibilité réseau, fallback local
+    }
+
     const catId = `cat-${Date.now()}`;
     const newCat = {
       id: catId,
@@ -190,15 +257,57 @@ export default function NewProductPage() {
     performSave();
   };
 
-  const performSave = () => {
+  const performSave = async () => {
     setIsSubmitting(true);
     setShowLossWarningModal(false);
 
     const currentCatObj = categories.find((c) => String(c.id) === String(category));
     const categoryName = currentCatObj ? currentCatObj.name : 'Général';
 
+    // Formatage des unités pour le backend NestJS
+    // 1. Unité de base (conversion_factor = 1, is_base_unit = true, retail_price = numSale)
+    const baseUnitEntry = {
+      label: baseUnit.trim() || 'Unité',
+      conversion_factor: 1,
+      retail_price: Math.round(numSale),
+      wholesale_price: undefined,
+      is_base_unit: true,
+    };
+
+    // 2. Unités secondaires si renseignées
+    const secondaryUnitsEntries = unitConversions
+      .filter((u) => u.name && u.name.trim())
+      .map((u) => ({
+        label: u.name.trim(),
+        conversion_factor: Number(u.conversionFactor) || 1,
+        retail_price: Math.round(numSale * (Number(u.conversionFactor) || 1)),
+        is_base_unit: false,
+      }));
+
+    const backendPayload = {
+      name: name.trim(),
+      category_id: category && !String(category).startsWith('cat-') ? category : undefined,
+      image_url: photoUrl || undefined,
+      default_cost_price: Math.round(numCost),
+      is_visible_public: isVisible,
+      initial_stock: Number(currentStock) || 0,
+      units: [baseUnitEntry, ...secondaryUnitsEntries],
+    };
+
+    let savedProductFromApi = null;
+
+    try {
+      if (id && !String(id).startsWith('p-')) {
+        savedProductFromApi = await productsService.update(id, backendPayload);
+      } else {
+        savedProductFromApi = await productsService.create(backendPayload);
+      }
+    } catch {
+      // En cas de panne de réseau ou mode déconnecté, on conserve le secours local
+    }
+
     const newProduct = {
-      id: id ? (isNaN(Number(id)) ? id : Number(id)) : `p-${Date.now()}`,
+      id: savedProductFromApi?.id || (id ? (isNaN(Number(id)) ? id : Number(id)) : `p-${Date.now()}`),
       name: name.trim(),
       categoryId: category,
       category,
@@ -223,19 +332,17 @@ export default function NewProductPage() {
     );
 
     let updatedCustom;
-    if (id) {
-      const existsInCustom = existingCustom.some(
-        (product) => String(product.id) === String(id)
+    const targetId = newProduct.id;
+    const existsInCustom = existingCustom.some(
+      (product) => String(product.id) === String(targetId) || String(product.id) === String(id)
+    );
+
+    if (existsInCustom) {
+      updatedCustom = existingCustom.map((product) =>
+        String(product.id) === String(targetId) || String(product.id) === String(id)
+          ? { ...newProduct, createdAt: product.createdAt || newProduct.updatedAt }
+          : product
       );
-      if (existsInCustom) {
-        updatedCustom = existingCustom.map((product) =>
-          String(product.id) === String(id)
-            ? { ...newProduct, createdAt: product.createdAt || newProduct.updatedAt }
-            : product
-        );
-      } else {
-        updatedCustom = [newProduct, ...existingCustom];
-      }
     } else {
       updatedCustom = [newProduct, ...existingCustom];
     }
@@ -248,10 +355,8 @@ export default function NewProductPage() {
       toastSuccess(message, 'Catalogue');
     }
 
-    setTimeout(() => {
-      setIsSubmitting(false);
-      navigate('/app/products');
-    }, 250);
+    setIsSubmitting(false);
+    navigate('/app/products');
   };
 
   return (

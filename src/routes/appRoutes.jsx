@@ -1,5 +1,6 @@
 import { Route, Navigate } from 'react-router-dom';
 import AppLayout from '../components/layout/AppLayout.jsx';
+import ProtectedRoute from '../components/auth/ProtectedRoute.jsx';
 
 import DashboardPage from '../pages/dashboard/DashboardPage.jsx';
 import NewSalePage from '../pages/sales/NewSalePage.jsx';
@@ -21,9 +22,11 @@ import NewExpensePage from '../pages/expenses/NewExpensePage.jsx';
 
 function withLayout(Component) {
   return (
-    <AppLayout>
-      <Component />
-    </AppLayout>
+    <ProtectedRoute>
+      <AppLayout>
+        <Component />
+      </AppLayout>
+    </ProtectedRoute>
   );
 }
 

@@ -24,9 +24,11 @@ import {
   Upload,
   Image as ImageIcon,
   X,
+  Loader2,
 } from "lucide-react";
 
-import expensesData from "../../mocks/modules/expenses.json";
+import { expensesService } from "../../api/services.js";
+import { compressImageFile } from "../../utils/imageCompression.js";
 
 import {
   formatFCFA,
@@ -100,6 +102,7 @@ export default function NewExpensePage() {
 
   const [error, setError] = useState("");
   const [isReadingReceipt, setIsReadingReceipt] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Catégorie sélectionnée
   const selectedCategory = EXPENSE_CATEGORIES.find(
@@ -148,10 +151,10 @@ export default function NewExpensePage() {
   };
 
   // ============================================
-  // AJOUT D'UNE PHOTO DE REÇU
+  // AJOUT ET COMPRESSION D'UNE PHOTO DE REÇU VIA CANVAS
   // ============================================
 
-  const handleReceiptChange = (e) => {
+  const handleReceiptChange = async (e) => {
     const file = e.target.files?.[0];
 
     if (!file) return;
@@ -163,10 +166,10 @@ export default function NewExpensePage() {
       return;
     }
 
-    // Limiter la taille à 1,5 Mo
-    if (file.size > 1.5 * 1024 * 1024) {
+    // Limiter la taille brute à 10 Mo pour éviter de figer le navigateur
+    if (file.size > 10 * 1024 * 1024) {
       setError(
-        "La photo est trop volumineuse. Choisissez une image de 1,5 Mo maximum."
+        "La photo est trop volumineuse. Choisissez une image de moins de 10 Mo."
       );
       e.target.value = "";
       return;
@@ -175,23 +178,33 @@ export default function NewExpensePage() {
     setError("");
     setIsReadingReceipt(true);
 
-    const reader = new FileReader();
+    try {
+      // Compression Canvas automatique : max 1024px, JPEG qualité 0.7
+      const compressedDataUrl = await compressImageFile(file, 1024, 1024, 0.7);
 
-    reader.onload = () => {
       setFormData((previousData) => ({
         ...previousData,
-        receipt: reader.result,
+        receipt: compressedDataUrl,
       }));
+    } catch (compressionErr) {
+      console.warn("Erreur lors de la compression canvas, fallback FileReader standard :", compressionErr);
+      const reader = new FileReader();
 
+      reader.onload = () => {
+        setFormData((previousData) => ({
+          ...previousData,
+          receipt: reader.result,
+        }));
+      };
+
+      reader.onerror = () => {
+        setError("Impossible de lire cette image. Veuillez réessayer.");
+      };
+
+      reader.readAsDataURL(file);
+    } finally {
       setIsReadingReceipt(false);
-    };
-
-    reader.onerror = () => {
-      setError("Impossible de lire cette image. Veuillez réessayer.");
-      setIsReadingReceipt(false);
-    };
-
-    reader.readAsDataURL(file);
+    }
   };
 
   // ============================================
@@ -215,7 +228,7 @@ export default function NewExpensePage() {
   // ENREGISTREMENT DE LA DÉPENSE
   // ============================================
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (
@@ -232,36 +245,74 @@ export default function NewExpensePage() {
     }
 
     if (isReadingReceipt) {
-      setError("Veuillez patienter pendant le chargement de la photo.");
+      setError("Veuillez patienter pendant la compression de la photo.");
       return;
+    }
+
+    setIsSubmitting(true);
+    setError("");
+
+    // Mapping catégorie vers enum NestJS
+    const mapCategoryToBackend = (cat) => {
+      const normalized = (cat || "").toUpperCase();
+      if (normalized === "LOYER" || normalized === "RENT") return "RENT";
+      if (normalized === "TRANSPORT") return "TRANSPORT";
+      if (normalized === "ENERGIE" || normalized === "ELECTRICITY") return "ELECTRICITY";
+      if (normalized === "FOURNITURES" || normalized === "PACKAGING") return "PACKAGING";
+      return "OTHER";
+    };
+
+    // Mapping mode paiement
+    const mapPaymentMethodToBackend = (method) => {
+      const normalized = (method || "").toUpperCase();
+      if (normalized === "MOBILE_MONEY" || normalized === "MOMO") return "MOMO";
+      return "CASH";
+    };
+
+    const backendCategory = mapCategoryToBackend(formData.category);
+    const backendPaymentMethod = mapPaymentMethodToBackend(formData.paymentMethod);
+    const descriptionText = formData.description.trim() || `Dépense ${formData.category}`;
+
+    let createdApiExpense = null;
+
+    try {
+      createdApiExpense = await expensesService.create({
+        category: backendCategory,
+        amount: Math.round(Number(formData.amount)),
+        notes: descriptionText,
+        motif: descriptionText,
+        payment_method: backendPaymentMethod,
+        mode: backendPaymentMethod,
+        receiptUrl: formData.receipt || undefined,
+        receipt: formData.receipt || undefined,
+      });
+    } catch (apiError) {
+      console.warn("Échec d'enregistrement API backend, bascule sur enregistrement local :", apiError);
     }
 
     let expenses = [];
 
     try {
       const savedExpenses = localStorage.getItem("vendix_expenses");
-
-      expenses = savedExpenses
-        ? JSON.parse(savedExpenses)
-        : expensesData.expenses || [];
+      expenses = savedExpenses ? JSON.parse(savedExpenses) : [];
 
       if (!Array.isArray(expenses)) {
-        expenses = expensesData.expenses || [];
+        expenses = [];
       }
-    } catch (error) {
-      console.error("Erreur de lecture des dépenses :", error);
-      expenses = expensesData.expenses || [];
+    } catch (readError) {
+      console.error("Erreur de lecture des dépenses :", readError);
+      expenses = [];
     }
 
     const newExpense = {
-      id: Date.now(),
+      id: createdApiExpense?.id || Date.now(),
       amount: Number(formData.amount),
       category: formData.category,
       paymentMethod: formData.paymentMethod,
       date: formData.date,
-      description:
-        formData.description.trim() || "Dépense de la boutique",
+      description: descriptionText,
       receipt: formData.receipt || null,
+      receiptUrl: formData.receipt || null,
     };
 
     const updatedExpenses = [newExpense, ...expenses];
@@ -274,11 +325,13 @@ export default function NewExpensePage() {
 
       navigate("/app/expenses");
     } catch (storageError) {
-      console.error("Erreur d'enregistrement :", storageError);
+      console.error("Erreur d'enregistrement local :", storageError);
 
       setError(
-        "Impossible d'enregistrer cette dépense. Le stockage de votre navigateur est peut-être plein. Essayez une photo plus légère."
+        "Impossible d'enregistrer cette dépense en mémoire locale. Réessayez avec une photo plus légère."
       );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -717,11 +770,20 @@ export default function NewExpensePage() {
 
             <button
               type="submit"
-              disabled={isReadingReceipt}
+              disabled={isReadingReceipt || isSubmitting}
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-700/20 transition hover:-translate-y-0.5 hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Save size={18} />
-              Enregistrer la dépense
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  Enregistrement en cours...
+                </>
+              ) : (
+                <>
+                  <Save size={18} />
+                  Enregistrer la dépense
+                </>
+              )}
             </button>
           </div>
         </form>

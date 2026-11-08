@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ShoppingCart,
@@ -12,23 +12,55 @@ import PaymentModal from "../../components/sales/PaymentModal";
 import ReceiptModal from "../../components/sales/ReceiptModal";
 import { getProductTierPrice } from "../../utils/pricingUtils";
 import { useToast } from "../../context/ToastContext";
+import { salesService } from "../../api/services.js";
+
+const CART_STORAGE_KEY = "vendix_pos_active_cart";
 
 const formatPrice = (price) =>
   new Intl.NumberFormat("fr-FR").format(Number(price) || 0) + " FCFA";
 
 export default function NewSalePage() {
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState(() => {
+    try {
+      const saved = localStorage.getItem(CART_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [completedSale, setCompletedSale] = useState(null);
+  const [discountAmount, setDiscountAmount] = useState(0);
   const { success } = useToast();
 
-  const totalAmount = useMemo(() => {
+  // Persistance du panier local
+  useEffect(() => {
+    try {
+      if (cart.length > 0) {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+      } else {
+        localStorage.removeItem(CART_STORAGE_KEY);
+      }
+    } catch {
+      // Ignoré si indisponible
+    }
+  }, [cart]);
+
+  const rawTotalAmount = useMemo(() => {
     return cart.reduce((total, item) => {
       const { unitPrice } = getProductTierPrice(item, item.quantity);
       return total + unitPrice * Number(item.quantity);
     }, 0);
   }, [cart]);
+
+  const effectiveDiscount = useMemo(() => {
+    return Math.min(Math.max(0, Number(discountAmount) || 0), rawTotalAmount);
+  }, [discountAmount, rawTotalAmount]);
+
+  const totalAmount = useMemo(() => {
+    return Math.max(0, rawTotalAmount - effectiveDiscount);
+  }, [rawTotalAmount, effectiveDiscount]);
 
   const totalItems = useMemo(() => {
     return cart.reduce((total, item) => total + Number(item.quantity), 0);
@@ -62,11 +94,78 @@ export default function NewSalePage() {
 
   const handleClearCart = () => {
     setCart([]);
+    try {
+      localStorage.removeItem(CART_STORAGE_KEY);
+    } catch {
+      // Ignoré
+    }
   };
 
-  const handleConfirmPayment = (payment) => {
+  const handleConfirmPayment = async (payment) => {
+    // Mapping strict selon le contrat Prisma / Backend (PaymentMethod: CASH, MOMO, CREDIT, SPLIT)
+    let mappedPaymentMethod = 'CASH';
+    const methodUpper = String(payment.paymentMethod || '').toUpperCase();
+    if (methodUpper === 'MOMO' || methodUpper === 'MOBILE_MONEY') {
+      mappedPaymentMethod = 'MOMO';
+    } else if (methodUpper === 'CREDIT') {
+      mappedPaymentMethod = 'CREDIT';
+    } else if (methodUpper === 'SPLIT') {
+      mappedPaymentMethod = 'SPLIT';
+    } else {
+      mappedPaymentMethod = 'CASH';
+    }
+
+    // Clé d'idempotence stricte UUID v4
+    const clientOpUuid = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `op-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+    // Si un marchandage/rabais est consenti, on répartit proportionnellement la remise
+    // sur les lignes tout en garantissant des entiers FCFA stricts et une somme exacte.
+    const discountFactor = rawTotalAmount > 0 ? (totalAmount / rawTotalAmount) : 1;
+    let runningAdjustedSum = 0;
+
+    const computedLines = cart.map((item, index) => {
+      const { unitPrice, activeTier } = getProductTierPrice(item, item.quantity);
+      let adjustedUnitPrice = Math.round(Number(unitPrice) * discountFactor);
+      
+      // Ajustement sur la dernière ligne pour combler l'écart d'arrondi
+      if (index === cart.length - 1) {
+        const remainingTarget = totalAmount - runningAdjustedSum;
+        const lastLineQty = Number(item.quantity) || 1;
+        adjustedUnitPrice = Math.max(0, Math.round(remainingTarget / lastLineQty));
+      } else {
+        runningAdjustedSum += adjustedUnitPrice * Number(item.quantity);
+      }
+
+      return {
+        product_id: item.id,
+        quantity: Number(item.quantity),
+        unit_label: activeTier?.unit || item.unit || 'Pièce',
+        conversion_factor: Number(activeTier?.conversionFactor) || 1,
+        unit_price: adjustedUnitPrice,
+      };
+    });
+
+    const salePayload = {
+      amount_paid: Number(payment.paidAmount) || 0,
+      payment_method: mappedPaymentMethod,
+      customer_id: payment.customerId || undefined,
+      client_op_uuid: clientOpUuid,
+      lines: computedLines,
+    };
+
+    let serverSale = null;
+    try {
+      serverSale = await salesService.create(salePayload);
+    } catch (err) {
+      console.warn('Vente enregistrée en local (mode dégradé):', err?.message);
+    }
+
+    const receiptNumber = serverSale?.reference || `VND-${Date.now()}`;
+
     const sale = {
-      receiptNumber: `VND-${Date.now()}`,
+      id: serverSale?.id || `sale_${Date.now()}`,
+      receiptNumber,
+      client_op_uuid: clientOpUuid,
       date: new Date().toISOString(),
       products: cart.map((item) => {
         const { unitPrice, activeTier } = getProductTierPrice(item, item.quantity);
@@ -83,11 +182,18 @@ export default function NewSalePage() {
       receivedAmount: payment.paidAmount,
       changeAmount: payment.changeAmount,
       remainingAmount: payment.remainingAmount,
-      paymentMethod: payment.paymentMethod,
+      paymentMethod: mappedPaymentMethod,
       customerId: payment.customerId,
       customerName: payment.customerName,
       status: payment.status,
     };
+
+    try {
+      const existingSales = JSON.parse(localStorage.getItem('vendix-custom-sales') || '[]');
+      localStorage.setItem('vendix-custom-sales', JSON.stringify([sale, ...existingSales]));
+    } catch {
+      // Ignoré si indisponible
+    }
 
     setCompletedSale(sale);
     setIsPaymentOpen(false);
@@ -99,6 +205,11 @@ export default function NewSalePage() {
     setIsReceiptOpen(false);
     setCompletedSale(null);
     setCart([]);
+    try {
+      localStorage.removeItem(CART_STORAGE_KEY);
+    } catch {
+      // Ignoré
+    }
   };
 
   return (
@@ -141,6 +252,8 @@ export default function NewSalePage() {
           <div className="hidden lg:block space-y-5 lg:sticky lg:top-6">
             <CartSheet
               cart={cart}
+              discount={effectiveDiscount}
+              onUpdateDiscount={(amount) => setDiscountAmount(amount)}
               onUpdateQuantity={handleUpdateQuantity}
               onRemoveProduct={handleRemoveProduct}
               onClearCart={handleClearCart}
