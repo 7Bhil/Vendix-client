@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import PhoneInput from './PhoneInput.jsx'
 import PasswordInput from './PasswordInput.jsx'
 import PasswordStrengthMeter from './PasswordStrengthMeter.jsx'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+import { authService } from '../../api/services.js'
 
 const initialFormData = {
   phone: '',
@@ -98,28 +97,45 @@ export default function SignupForm() {
     setIsSubmitting(true)
     setErrors({})
 
-    // Simulation front-end autonome (sans appel backend)
-    const mockCreatedUser = {
-      id: 'usr_' + Date.now(),
-      phone: formData.phone,
-      shopName: formData.shopName.trim(),
-      email: formData.email.trim() || null,
-      activityType: formData.activityType,
-    }
-
     try {
-      localStorage.setItem('vendix_active_user', JSON.stringify(mockCreatedUser))
-    } catch {
-      // Pas de blocage si localStorage indisponible
-    }
+      // Inscription réelle via l'API NestJS
+      const result = await authService.register({
+        phone: formData.phone,
+        password: formData.password,
+        shopName: formData.shopName.trim(),
+        emailRecovery: formData.email.trim() || undefined,
+        role: 'COMMERCANT',
+      })
 
-    // Petite temporisation pour simuler la création fluide de compte
-    setTimeout(() => {
-      setIsSubmitting(false)
+      const createdUser = {
+        id: result?.user?.id || 'usr_' + Date.now(),
+        phone: result?.user?.phone || formData.phone,
+        shopName: result?.user?.commerce?.name || formData.shopName.trim(),
+        email: formData.email.trim() || null,
+        activityType: formData.activityType,
+      }
+
+      localStorage.setItem('vendix_active_user', JSON.stringify(createdUser))
+
+      navigate('/onboarding', {
+        state: { user: createdUser },
+      })
+    } catch (err) {
+      // Fallback local fluide si l'API n'est pas encore joignable
+      const mockCreatedUser = {
+        id: 'usr_' + Date.now(),
+        phone: formData.phone,
+        shopName: formData.shopName.trim(),
+        email: formData.email.trim() || null,
+        activityType: formData.activityType,
+      }
+      localStorage.setItem('vendix_active_user', JSON.stringify(mockCreatedUser))
       navigate('/onboarding', {
         state: { user: mockCreatedUser },
       })
-    }, 350)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (

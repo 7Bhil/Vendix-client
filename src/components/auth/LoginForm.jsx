@@ -1,7 +1,7 @@
-
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import PasswordInput from './PasswordInput.jsx'
+import { authService } from '../../api/services.js'
 
 export default function LoginForm() {
   const navigate = useNavigate()
@@ -11,7 +11,7 @@ export default function LoginForm() {
   })
 
   const [errors, setErrors] = useState({})
-  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   function handleChange(event) {
     const { name, value } = event.target
@@ -28,7 +28,7 @@ export default function LoginForm() {
     }))
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
 
     const newErrors = {}
@@ -49,27 +49,52 @@ export default function LoginForm() {
       return
     }
 
-    // Identifiants de test / Démo autorisés
-    const isDemoUser =
-      formData.phone === '0197000001' && formData.password === 'Vendix@2026'
+    setIsLoading(true)
 
-    if (isDemoUser) {
-      // Connexion réussie : un utilisateur existant va TOUJOURS au dashboard
-      navigate('/app/dashboard', {
-        state: {
-          user: {
-            phone: formData.phone,
-            shopName: 'Boutique Le Progrès',
-            role: 'MERCHANT',
-          },
-        },
+    try {
+      // 1. Tentative d'authentification réelle via l'API NestJS
+      const result = await authService.login({
+        phone: formData.phone,
+        password: formData.password,
       })
-      return
-    }
 
-    setErrors({
-      form: 'Numéro de téléphone ou mot de passe incorrect. Pour tester : 0197000001 / Vendix@2026',
-    })
+      const user = {
+        phone: result?.user?.phone || formData.phone,
+        shopName: result?.user?.commerce?.name || 'Ma boutique Vendix',
+        role: result?.user?.role || 'MERCHANT',
+      }
+
+      localStorage.setItem('vendix_active_user', JSON.stringify(user))
+
+      navigate('/app/dashboard', {
+        state: { user },
+      })
+    } catch (err) {
+      // 2. Fallback pour compte de démonstration si le backend ou la base est en cours d'initialisation
+      const isDemoUser =
+        formData.phone === '0197000001' && formData.password === 'Vendix@2026'
+
+      if (isDemoUser) {
+        const user = {
+          phone: formData.phone,
+          shopName: 'Boutique Le Progrès',
+          role: 'MERCHANT',
+        }
+        localStorage.setItem('vendix_active_user', JSON.stringify(user))
+        navigate('/app/dashboard', {
+          state: { user },
+        })
+        return
+      }
+
+      const errorMessage =
+        err?.message ||
+        'Numéro de téléphone ou mot de passe incorrect. Pour tester : 0197000001 / Vendix@2026'
+
+      setErrors({ form: errorMessage })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -145,9 +170,10 @@ export default function LoginForm() {
 
       <button
         type="submit"
-        className="w-full rounded-xl bg-teal-700 px-4 py-3 font-semibold text-white transition hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
+        disabled={isLoading}
+        className="w-full rounded-xl bg-teal-700 px-4 py-3 font-semibold text-white transition hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:opacity-60"
       >
-        Se connecter
+        {isLoading ? 'Connexion en cours...' : 'Se connecter'}
       </button>
 
       <p className="mt-6 text-center text-sm text-slate-600">
