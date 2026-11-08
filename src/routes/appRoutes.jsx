@@ -14,6 +14,8 @@ import StockListPage from '../pages/stock/StockListPage.jsx';
 import StockMovementsPage from '../pages/stock/StockMovementsPage.jsx';
 import ExpensesListPage from '../pages/expenses/ExpensesListPage.jsx';
 import SupplierListPage from '../pages/suppliers/SupplierListPage.jsx';
+import SupplierDetailPage from '../pages/suppliers/SupplierDetailPage.jsx';
+import NewPurchasePage from '../pages/suppliers/NewPurchasePage.jsx';
 import CashClosurePage from '../pages/cash/CashClosurePage.jsx';
 import NewExpensePage from '../pages/expenses/NewExpensePage.jsx';
 
@@ -60,6 +62,8 @@ export const appRoutes = [
 
   // Collaborateur 3 : Fournisseurs & Achats (feature/suppliers-purchases)
   <Route key="collab-suppliers" path="/app/suppliers" element={withLayout(SupplierListPage)} />,
+  <Route key="collab-suppliers-detail" path="/app/suppliers/:id" element={withLayout(SupplierDetailPage)} />,
+  <Route key="collab-purchases-new" path="/app/purchases/new" element={withLayout(NewPurchasePage)} />,
 
   // Collaborateur 4 : Clôture de Caisse & Rapports (feature/cash-and-reports)
   <Route key="collab-cash" path="/app/cash-closure" element={withLayout(CashClosurePage)} />,
