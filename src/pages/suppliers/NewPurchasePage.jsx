@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -6,33 +6,104 @@ import {
   Plus,
   Trash2,
   AlertCircle,
+  Package,
 } from 'lucide-react';
 import {
   loadSuppliers,
   saveSuppliers,
+  fetchSuppliers,
   formatCurrency,
 } from '../../utils/supplierUtils.js';
+import {
+  productsService,
+  purchasesService,
+  stockService,
+  suppliersService,
+} from '../../api/services.js';
+import { useToast } from '../../context/ToastContext.jsx';
+import {
+  STOCK_PRODUCTS_CACHE_KEY,
+  STOCK_MOVEMENTS_CACHE_KEY,
+  readLocalStorage,
+  writeLocalStorage,
+} from '../../utils/stockStorage.js';
 
 export default function NewPurchasePage() {
   const navigate = useNavigate();
-  const [suppliers] = useState(loadSuppliers);
+  const { success, error: toastError } = useToast();
+
+  const [suppliers, setSuppliers] = useState(loadSuppliers);
+  const [catalogProducts, setCatalogProducts] = useState(() =>
+    readLocalStorage(STOCK_PRODUCTS_CACHE_KEY)
+  );
 
   // Formulaire Achat
-  const [supplierId, setSupplierId] = useState(suppliers[0]?.id || '');
+  const [supplierId, setSupplierId] = useState('');
   const [isNewSupplier, setIsNewSupplier] = useState(false);
   const [newSupplierName, setNewSupplierName] = useState('');
   const [newSupplierPhone, setNewSupplierPhone] = useState('');
 
   // Articles achetés
   const [items, setItems] = useState([
-    { id: 1, productName: '', quantity: 1, unitCost: '' },
+    {
+      id: 1,
+      productId: '',
+      productName: '',
+      unitLabel: 'Unité',
+      conversionFactor: 1,
+      quantity: 1,
+      unitCost: '',
+    },
   ]);
 
   // Données de paiement
   const [amountPaid, setAmountPaid] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('ESPECE');
+  const [paymentMethod, setPaymentMethod] = useState('CASH');
   const [reference, setReference] = useState(() => `CMD-${Date.now().toString().slice(-4)}`);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Charger les fournisseurs et produits réels
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadData() {
+      try {
+        const [suppliersList, productsRes] = await Promise.all([
+          fetchSuppliers(),
+          productsService.getAll().catch(() => []),
+        ]);
+
+        if (!isMounted) return;
+
+        if (Array.isArray(suppliersList) && suppliersList.length > 0) {
+          setSuppliers(suppliersList);
+          setSupplierId((prev) => prev || suppliersList[0].id);
+        }
+
+        const prods = Array.isArray(productsRes) ? productsRes : productsRes?.data || [];
+        if (prods.length > 0) {
+          setCatalogProducts(prods);
+          writeLocalStorage(STOCK_PRODUCTS_CACHE_KEY, prods);
+        }
+      } catch {
+        // Fallback local
+      }
+    }
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Définir le premier fournisseur si non sélectionné
+  useEffect(() => {
+    if (!supplierId && suppliers.length > 0) {
+      setSupplierId(suppliers[0].id);
+    }
+  }, [supplierId, suppliers]);
 
   // Calcul du coût total
   const totalCost = useMemo(() => {
@@ -49,7 +120,15 @@ export default function NewPurchasePage() {
   const handleAddItem = () => {
     setItems((prev) => [
       ...prev,
-      { id: Date.now(), productName: '', quantity: 1, unitCost: '' },
+      {
+        id: Date.now(),
+        productId: '',
+        productName: '',
+        unitLabel: 'Unité',
+        conversionFactor: 1,
+        quantity: 1,
+        unitCost: '',
+      },
     ]);
   };
 
@@ -58,13 +137,42 @@ export default function NewPurchasePage() {
     setItems((prev) => prev.filter((it) => it.id !== id));
   };
 
-  const handleItemChange = (id, field, value) => {
+  const handleProductSelect = (itemId, prodId) => {
+    const selectedProd = catalogProducts.find((p) => p.id === prodId);
+    if (!selectedProd) return;
+
+    const baseUnit =
+      selectedProd.product_units?.find((u) => u.is_base_unit) ||
+      selectedProd.product_units?.[0] ||
+      null;
+
+    const unitLabel = baseUnit ? baseUnit.label : selectedProd.baseUnit || 'Unité';
+    const conversionFactor = baseUnit ? Number(baseUnit.conversion_factor) || 1 : 1;
+    const defaultCost = selectedProd.default_cost_price || selectedProd.costPrice || '';
+
     setItems((prev) =>
-      prev.map((it) => (it.id === id ? { ...it, [field]: value } : it)),
+      prev.map((it) =>
+        it.id === itemId
+          ? {
+              ...it,
+              productId: selectedProd.id,
+              productName: selectedProd.name,
+              unitLabel,
+              conversionFactor,
+              unitCost: it.unitCost ? it.unitCost : defaultCost,
+            }
+          : it
+      )
     );
   };
 
-  const handleSubmit = (e) => {
+  const handleItemChange = (id, field, value) => {
+    setItems((prev) =>
+      prev.map((it) => (it.id === id ? { ...it, [field]: value } : it))
+    );
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -78,68 +186,146 @@ export default function NewPurchasePage() {
       return;
     }
 
-    let targetSupplierId = supplierId;
-    let currentSuppliers = [...suppliers];
-
-    // Création d'un nouveau fournisseur à la volée si demandé
-    if (isNewSupplier) {
-      if (!newSupplierName.trim() || !newSupplierPhone.trim()) {
-        setError('Veuillez renseigner le nom et le téléphone du nouveau fournisseur.');
+    // Vérifier que chaque article est lié à un produit réel
+    for (const it of items) {
+      if (!it.productId) {
+        setError('Veuillez sélectionner un produit du catalogue pour chaque ligne de commande.');
         return;
       }
-
-      const newSup = {
-        id: `sup-${Date.now()}`,
-        fullName: newSupplierName.trim(),
-        companyName: '',
-        phone: newSupplierPhone.trim(),
-        address: '',
-        currentDebt: 0,
-        totalPurchases: 0,
-        totalPaid: 0,
-        notes: 'Fournisseur créé lors d’une commande de stock.',
-        statement: [],
-      };
-
-      currentSuppliers.unshift(newSup);
-      targetSupplierId = newSup.id;
     }
 
-    const newPurchaseEntry = {
-      id: `ach-${Date.now()}`,
-      date: new Date().toISOString(),
-      type: 'ACHAT_STOCK',
-      ref: reference.trim() || `CMD-${Date.now().toString().slice(-4)}`,
-      totalCost,
-      amountPaid: parsedAmountPaid,
-      debtAmount,
-      status: 'COMPLETED',
-      paymentMethod,
-      items: items.map((it) => ({
-        productName: it.productName.trim(),
+    setIsSubmitting(true);
+
+    try {
+      let targetSupplierId = supplierId;
+
+      // 1. Création d'un nouveau fournisseur via l'API si demandé
+      if (isNewSupplier) {
+        if (!newSupplierName.trim() || !newSupplierPhone.trim()) {
+          setError('Veuillez renseigner le nom et le téléphone du nouveau fournisseur.');
+          setIsSubmitting(false);
+          return;
+        }
+
+        try {
+          const createdSup = await suppliersService.create({
+            name: newSupplierName.trim(),
+            phone: newSupplierPhone.trim(),
+          });
+          targetSupplierId = createdSup.id;
+          const updatedSuppliers = [createdSup, ...suppliers];
+          setSuppliers(updatedSuppliers);
+          saveSuppliers(updatedSuppliers);
+        } catch (supErr) {
+          // Secours local si échec de l'API fournisseur
+          const newSupLocal = {
+            id: `sup-${Date.now()}`,
+            fullName: newSupplierName.trim(),
+            name: newSupplierName.trim(),
+            companyName: '',
+            phone: newSupplierPhone.trim(),
+            address: '',
+            currentDebt: 0,
+            totalPurchases: 0,
+            totalPaid: 0,
+            notes: 'Fournisseur créé lors d’une commande de stock.',
+            statement: [],
+          };
+          targetSupplierId = newSupLocal.id;
+          const updatedSuppliers = [newSupLocal, ...suppliers];
+          setSuppliers(updatedSuppliers);
+          saveSuppliers(updatedSuppliers);
+        }
+      }
+
+      // 2. Préparation du payload pour la commande d'achat avec réception directe (RECEIVED)
+      const purchaseLines = items.map((it) => ({
+        product_id: it.productId,
         quantity: Number(it.quantity),
-        unitCost: Number(it.unitCost),
-      })),
-    };
+        unit_label: it.unitLabel || 'Unité',
+        conversion_factor: Number(it.conversionFactor) || 1,
+        unit_cost: Math.round(Number(it.unitCost)),
+      }));
 
-    const updated = currentSuppliers.map((s) => {
-      if (s.id !== targetSupplierId) return s;
-
-      const newDebt = (s.currentDebt || 0) + debtAmount;
-      const newTotalPurchases = (s.totalPurchases || 0) + totalCost;
-      const newTotalPaid = (s.totalPaid || 0) + parsedAmountPaid;
-
-      return {
-        ...s,
-        currentDebt: newDebt,
-        totalPurchases: newTotalPurchases,
-        totalPaid: newTotalPaid,
-        statement: [newPurchaseEntry, ...(s.statement || [])],
+      const purchasePayload = {
+        supplier_id: targetSupplierId,
+        lines: purchaseLines,
+        amount_paid: Math.round(parsedAmountPaid),
+        payment_method: paymentMethod === 'MOBILE_MONEY' ? 'MOMO' : paymentMethod === 'VIREMENT' ? 'CASH' : paymentMethod,
+        status: 'RECEIVED',
       };
-    });
 
-    saveSuppliers(updated);
-    navigate(`/app/suppliers/${targetSupplierId}`);
+      let purchaseRecorded = false;
+      try {
+        await purchasesService.create(purchasePayload);
+        purchaseRecorded = true;
+      } catch (purchaseErr) {
+        // En cas d'échec de l'API /purchases, incrémenter le stock via stockService.recordMovement
+        for (const line of items) {
+          const qty = Number(line.quantity) * (Number(line.conversionFactor) || 1);
+          await stockService.recordMovement({
+            productId: line.productId,
+            type: 'PURCHASE_ENTRY',
+            quantity: qty,
+            reason: `Entrée achat bon ${reference.trim() || 'CMD'}`,
+          }).catch(() => {});
+        }
+      }
+
+      // 3. Mettre à jour l'historique et le cache local des mouvements et fournisseurs
+      const localHistory = readLocalStorage(STOCK_MOVEMENTS_CACHE_KEY);
+      const newEntries = items.map((it) => ({
+        id: crypto.randomUUID(),
+        productId: it.productId,
+        productName: it.productName,
+        type: 'PURCHASE_ENTRY',
+        quantity: Number(it.quantity),
+        signedQuantity: Number(it.quantity),
+        reason: `Réception bon ${reference.trim() || 'CMD'}`,
+        createdAt: new Date().toISOString(),
+      }));
+      writeLocalStorage(STOCK_MOVEMENTS_CACHE_KEY, [...newEntries, ...localHistory]);
+
+      // Mettre à jour le cache local du carnet de commandes fournisseur
+      const updatedLocalSuppliers = suppliers.map((s) => {
+        if (s.id !== targetSupplierId) return s;
+        const newDebt = (s.currentDebt || 0) + debtAmount;
+        const newTotalPurchases = (s.totalPurchases || 0) + totalCost;
+        const newTotalPaid = (s.totalPaid || 0) + parsedAmountPaid;
+        const newPurchaseEntry = {
+          id: `ach-${Date.now()}`,
+          date: new Date().toISOString(),
+          type: 'ACHAT_STOCK',
+          ref: reference.trim() || `CMD-${Date.now().toString().slice(-4)}`,
+          totalCost,
+          amountPaid: parsedAmountPaid,
+          debtAmount,
+          status: 'COMPLETED',
+          paymentMethod,
+          items: items.map((it) => ({
+            productName: it.productName,
+            quantity: Number(it.quantity),
+            unitCost: Number(it.unitCost),
+          })),
+        };
+        return {
+          ...s,
+          currentDebt: newDebt,
+          totalPurchases: newTotalPurchases,
+          totalPaid: newTotalPaid,
+          statement: [newPurchaseEntry, ...(s.statement || [])],
+        };
+      });
+      saveSuppliers(updatedLocalSuppliers);
+
+      success('La commande d’achat a été réceptionnée et le stock a été incrémenté.');
+      navigate(`/app/suppliers/${targetSupplierId}`);
+    } catch (err) {
+      toastError(err.message || 'Erreur lors de l’enregistrement de la commande.');
+      setError(err.message || 'Erreur lors de l’enregistrement de la commande.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -194,9 +380,12 @@ export default function NewPurchasePage() {
                 required
                 className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-900 outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
               >
+                {suppliers.length === 0 && (
+                  <option value="">Aucun fournisseur existant</option>
+                )}
                 {suppliers.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.fullName} {s.phone ? `(${s.phone})` : ''} - Dette actuelle : {formatCurrency(s.currentDebt)} FCFA
+                    {s.fullName || s.name} {s.phone ? `(${s.phone})` : ''} - Dette actuelle : {formatCurrency(s.currentDebt || s.outstanding_debt || 0)} FCFA
                   </option>
                 ))}
               </select>
@@ -229,10 +418,13 @@ export default function NewPurchasePage() {
           )}
         </div>
 
-        {/* Lignes d'articles achetés */}
+        {/* Lignes d'articles achetés raccordées au catalogue */}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h2 className="text-sm font-bold text-slate-900">Marchandises reçues</h2>
+            <div className="flex items-center gap-2">
+              <Package size={16} className="text-vendix-brand" />
+              <h2 className="text-sm font-bold text-slate-900">Articles achetés (Catalogue)</h2>
+            </div>
             <button
               type="button"
               onClick={handleAddItem}
@@ -247,19 +439,26 @@ export default function NewPurchasePage() {
             {items.map((item) => (
               <div key={item.id} className="flex flex-col sm:flex-row gap-3 items-end bg-slate-50 p-3 rounded-xl border border-slate-200/60">
                 <div className="flex-1 w-full">
-                  <label className="block text-[11px] font-bold text-slate-600">Désignation du produit *</label>
-                  <input
-                    type="text"
+                  <label className="block text-[11px] font-bold text-slate-600">Sélectionner le produit *</label>
+                  <select
                     required
-                    placeholder="Ex: Sac de Riz 25kg"
-                    value={item.productName}
-                    onChange={(e) => handleItemChange(item.id, 'productName', e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 outline-none focus:border-vendix-brand"
-                  />
+                    value={item.productId}
+                    onChange={(e) => handleProductSelect(item.id, e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 outline-none focus:border-vendix-brand font-medium"
+                  >
+                    <option value="">-- Choisir un produit du catalogue --</option>
+                    {catalogProducts.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} (Stock actuel : {p.current_stock ?? p.currentStock ?? 0})
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="w-full sm:w-28">
-                  <label className="block text-[11px] font-bold text-slate-600">Quantité *</label>
+                  <label className="block text-[11px] font-bold text-slate-600">
+                    Quantité ({item.unitLabel || 'Unité'}) *
+                  </label>
                   <input
                     type="number"
                     min="1"
@@ -271,7 +470,7 @@ export default function NewPurchasePage() {
                 </div>
 
                 <div className="w-full sm:w-36">
-                  <label className="block text-[11px] font-bold text-slate-600">Prix unitaire (FCFA) *</label>
+                  <label className="block text-[11px] font-bold text-slate-600">Coût d’achat unitaire (FCFA) *</label>
                   <input
                     type="number"
                     min="0"
@@ -336,9 +535,9 @@ export default function NewPurchasePage() {
                 onChange={(e) => setPaymentMethod(e.target.value)}
                 className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-900 outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
               >
-                <option value="ESPECE">Espèces</option>
-                <option value="MOBILE_MONEY">Mobile Money</option>
-                <option value="VIREMENT">Virement bancaire</option>
+                <option value="CASH">Espèces</option>
+                <option value="MOMO">Mobile Money</option>
+                <option value="CREDIT">Crédit fournisseur</option>
               </select>
             </div>
 
@@ -374,9 +573,10 @@ export default function NewPurchasePage() {
           </Link>
           <button
             type="submit"
-            className="rounded-xl bg-vendix-brand px-6 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-vendix-brand-dark transition"
+            disabled={isSubmitting}
+            className="rounded-xl bg-vendix-brand px-6 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-vendix-brand-dark transition disabled:opacity-50"
           >
-            Valider et enregistrer l’achat
+            {isSubmitting ? 'Enregistrement et réception...' : 'Valider et réceptionner la commande'}
           </button>
         </div>
       </form>

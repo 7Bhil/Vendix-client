@@ -1,9 +1,8 @@
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Plus,
-  CalendarDays,
   Wallet,
   TrendingDown,
   Receipt,
@@ -22,9 +21,11 @@ import {
   Package,
   CircleHelp,
   Image as ImageIcon,
+  Loader2,
 } from "lucide-react";
 
 import expensesData from "../../mocks/modules/expenses.json";
+import { expensesService } from "../../api/services.js";
 
 import {
   formatFCFA,
@@ -43,11 +44,16 @@ const CATEGORY_ICONS = {
   SALAIRES: Users,
   FOURNITURES: Package,
   AUTRE: CircleHelp,
+  RENT: Building2,
+  ELECTRICITY: Zap,
+  PACKAGING: Package,
+  OTHER: CircleHelp,
 };
 
 const PAYMENT_ICONS = {
   CASH: Banknote,
   MOBILE_MONEY: Smartphone,
+  MOMO: Smartphone,
   CARD: CreditCard,
   OTHER: CircleDollarSign,
 };
@@ -64,29 +70,79 @@ export default function ExpensesListPage() {
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Normalisation des dépenses API vs Local
+  const normalizeExpense = (item) => {
+    let dateStr = "";
+    if (item.date) {
+      dateStr = String(item.date).split("T")[0];
+    } else if (item.created_at) {
+      dateStr = String(item.created_at).split("T")[0];
+    }
+
+    return {
+      id: item.id,
+      amount: Number(item.amount || 0),
+      category: item.category || "AUTRE",
+      paymentMethod: item.paymentMethod || item.payment_method || item.mode || "CASH",
+      date: dateStr,
+      description: item.description || item.motif || item.reason || "",
+      receipt: item.receipt || item.receipt_url || item.receiptUrl || null,
+    };
+  };
 
   // --------------------------------------------
-  // Chargement des dépenses
+  // Chargement des dépenses (API avec fallback localStorage)
   // --------------------------------------------
 
-  useEffect(() => {
+  const loadExpenses = useCallback(async () => {
+    setIsLoading(true);
+    let localExpenses = [];
     try {
       const savedExpenses = localStorage.getItem("vendix_expenses");
-
       if (savedExpenses) {
-        setExpenses(JSON.parse(savedExpenses));
+        localExpenses = JSON.parse(savedExpenses);
       } else {
-        setExpenses(expensesData.expenses || []);
-        localStorage.setItem(
-          "vendix_expenses",
-          JSON.stringify(expensesData.expenses || [])
-        );
+        localExpenses = expensesData.expenses || [];
       }
-    } catch (error) {
-      console.error("Erreur de chargement des dépenses :", error);
-      setExpenses(expensesData.expenses || []);
+    } catch {
+      localExpenses = expensesData.expenses || [];
+    }
+
+    try {
+      const apiResponse = await expensesService.getAll({ limit: 100 });
+      const apiData = Array.isArray(apiResponse?.data)
+        ? apiResponse.data
+        : Array.isArray(apiResponse)
+          ? apiResponse
+          : [];
+
+      if (apiData.length > 0) {
+        const normalizedApi = apiData.map(normalizeExpense);
+        // Fusionner avec les dépenses locales (en évitant les doublons d'id)
+        const apiIds = new Set(normalizedApi.map((e) => String(e.id)));
+        const localRemaining = (Array.isArray(localExpenses) ? localExpenses : [])
+          .filter((e) => !apiIds.has(String(e.id)))
+          .map(normalizeExpense);
+        const combined = [...normalizedApi, ...localRemaining];
+        setExpenses(combined);
+        localStorage.setItem("vendix_expenses", JSON.stringify(combined));
+      } else {
+        const normalizedLocal = (Array.isArray(localExpenses) ? localExpenses : []).map(normalizeExpense);
+        setExpenses(normalizedLocal);
+      }
+    } catch {
+      const normalizedLocal = (Array.isArray(localExpenses) ? localExpenses : []).map(normalizeExpense);
+      setExpenses(normalizedLocal);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    loadExpenses();
+  }, [loadExpenses]);
 
   // --------------------------------------------
   // Dates utiles pour les filtres
@@ -179,12 +235,18 @@ export default function ExpensesListPage() {
   // Suppression d'une dépense
   // --------------------------------------------
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     const confirmed = window.confirm(
       "Voulez-vous vraiment supprimer cette dépense ?"
     );
 
     if (!confirmed) return;
+
+    try {
+      await expensesService.delete(id);
+    } catch {
+      // Ignorer l'erreur distante si non supporté ou dépense locale
+    }
 
     const updatedExpenses = expenses.filter(
       (expense) => expense.id !== id
@@ -214,6 +276,12 @@ export default function ExpensesListPage() {
   // --------------------------------------------
 
   const getCategoryLabel = (value) => {
+    const normalized = (value || "").toUpperCase();
+    if (normalized === "RENT" || normalized === "LOYER") return "Loyer";
+    if (normalized === "TRANSPORT") return "Transport";
+    if (normalized === "ELECTRICITY" || normalized === "ENERGIE") return "Énergie";
+    if (normalized === "PACKAGING" || normalized === "FOURNITURES") return "Emballages / Fournitures";
+    if (normalized === "SALAIRES") return "Salaires";
     return (
       EXPENSE_CATEGORIES.find(
         (category) => category.value === value
@@ -464,9 +532,14 @@ export default function ExpensesListPage() {
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
 
         <div className="flex items-center justify-between border-b border-gray-100 p-5">
-          <h2 className="font-semibold text-gray-900">
-            Historique des dépenses
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="font-semibold text-gray-900">
+              Historique des dépenses
+            </h2>
+            {isLoading && (
+              <Loader2 size={16} className="animate-spin text-blue-600" />
+            )}
+          </div>
 
           <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
             {filteredExpenses.length} résultat(s)

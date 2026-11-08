@@ -7,7 +7,19 @@ import {
   productsService,
   salesService,
   customersService,
+  expensesService,
+  cashService,
 } from './services.js';
+
+if (typeof globalThis.localStorage === 'undefined') {
+  const store = new Map();
+  globalThis.localStorage = {
+    getItem: (key) => store.get(key) ?? null,
+    setItem: (key, val) => store.set(key, String(val)),
+    removeItem: (key) => store.delete(key),
+    clear: () => store.clear(),
+  };
+}
 
 describe('Client HTTP & Services API (Vendix Contracts)', () => {
   beforeEach(() => {
@@ -335,6 +347,98 @@ describe('Client HTTP & Services API (Vendix Contracts)', () => {
       expect(repaymentPayload.amount).toBe(5000);
       expect(repaymentPayload.payment_method).toBe('MOMO');
       expect(repaymentPayload.notes).toBe('Acompte via MTN MoMo');
+    });
+  });
+
+  describe('expensesService & cashService (Trésorerie & Clôture de Caisse)', () => {
+    it('expensesService.getAll transmet les query params corrects', async () => {
+      let requestedUrl = null;
+      globalThis.fetch = vi.fn().mockImplementation((url) => {
+        requestedUrl = url;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: () => Promise.resolve({ data: [] }),
+        });
+      });
+
+      await expensesService.getAll({ category: 'TRANSPORT', payment_method: 'CASH', limit: 50 });
+      expect(requestedUrl).toContain('/expenses?category=TRANSPORT&payment_method=CASH&limit=50');
+    });
+
+    it('expensesService.create formate le payload de dépense et gère receiptUrl', async () => {
+      let createdPayload = null;
+      globalThis.fetch = vi.fn().mockImplementation((url, opts) => {
+        createdPayload = JSON.parse(opts.body);
+        return Promise.resolve({
+          ok: true,
+          status: 201,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: () => Promise.resolve({ id: 'exp-123', ...createdPayload }),
+        });
+      });
+
+      await expensesService.create({
+        category: 'RENT',
+        amount: 25000,
+        notes: 'Loyer boutique novembre',
+        receiptUrl: 'data:image/jpeg;base64,mockedCompressedBase64',
+      });
+
+      expect(createdPayload.category).toBe('RENT');
+      expect(createdPayload.amount).toBe(25000);
+      expect(createdPayload.motif).toBe('Loyer boutique novembre');
+      expect(createdPayload.receipt_url).toBe('data:image/jpeg;base64,mockedCompressedBase64');
+      expect(createdPayload.payment_method).toBe('CASH');
+    });
+
+    it('cashService.getDailySummary interroge le endpoint avec la date et le fond de caisse', async () => {
+      let requestedUrl = null;
+      globalThis.fetch = vi.fn().mockImplementation((url) => {
+        requestedUrl = url;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: () => Promise.resolve({
+            date: '2026-11-08',
+            opening_amount: 10000,
+            cash_sales: 50000,
+            cash_expenses: 8000,
+            theoretical_cash: 52000,
+          }),
+        });
+      });
+
+      const summary = await cashService.getDailySummary({ date: '2026-11-08', openingAmount: 10000 });
+      expect(requestedUrl).toContain('/cash/daily-summary?date=2026-11-08&openingAmount=10000');
+      expect(summary.theoretical_cash).toBe(52000);
+    });
+
+    it('cashService.recordClosure envoie la clôture avec le fond initial, le compté et les notes', async () => {
+      let closureBody = null;
+      globalThis.fetch = vi.fn().mockImplementation((url, opts) => {
+        closureBody = JSON.parse(opts.body);
+        return Promise.resolve({
+          ok: true,
+          status: 201,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: () => Promise.resolve({ id: 'closure-uuid-1', ...closureBody }),
+        });
+      });
+
+      await cashService.recordClosure({
+        openingAmount: 10000,
+        countedCash: 52000,
+        notes: 'Caisse équilibrée, fin de journée',
+        date: '2026-11-08',
+      });
+
+      expect(closureBody.opening_amount).toBe(10000);
+      expect(closureBody.actual_cash_counted).toBe(52000);
+      expect(closureBody.notes).toBe('Caisse équilibrée, fin de journée');
+      expect(closureBody.date).toBe('2026-11-08');
     });
   });
 });

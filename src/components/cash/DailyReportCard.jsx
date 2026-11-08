@@ -15,6 +15,9 @@ export default function DailyReportCard({
   balanceDue,
   countedCash,
   cashDifference,
+  openingAmount = 0,
+  cashExpenses = 0,
+  theoreticalCash = null,
 }) {
   const [shareMessage, setShareMessage] = useState("");
 
@@ -22,8 +25,10 @@ export default function DailyReportCard({
     `Rapport journalier Vendix — ${date}`,
     `${salesCount} vente(s) — ventes : ${formatPrice(totalSales)}`,
     `Encaissements : ${formatPrice(totalCollected)}`,
-    `Espèces : ${formatPrice(cashReceived)} | Mobile Money : ${formatPrice(momoReceived)}`,
+    `Fond initial : ${formatPrice(openingAmount)} | Dépenses espèces : ${formatPrice(cashExpenses)}`,
+    `Espèces encaissées : ${formatPrice(cashReceived)} | Mobile Money : ${formatPrice(momoReceived)}`,
     `Autres règlements : ${formatPrice(otherReceived)}`,
+    `Solde théorique caisse : ${formatPrice(theoreticalCash !== null ? theoreticalCash : (openingAmount + cashReceived - cashExpenses))}`,
     `Reste à recouvrer : ${formatPrice(balanceDue)}`,
     ...(countedCash === null
       ? []
@@ -122,6 +127,35 @@ export default function DailyReportCard({
           <p className="mt-1 font-extrabold text-emerald-900">
             {formatPrice(salesCount > 0 ? Math.round(totalSales / salesCount) : 0)}
           </p>
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-sm font-bold text-slate-800">Flux de caisse théorique</h3>
+          <span className="text-xs font-semibold text-slate-500">
+            Formule : Fond initial + Espèces encaissées - Dépenses en espèces
+          </span>
+        </div>
+        <div className="mt-3 grid gap-2 rounded-xl border border-slate-100 bg-slate-50/50 p-3 sm:grid-cols-4">
+          <div>
+            <span className="text-xs text-slate-500">Fond initial</span>
+            <p className="font-bold text-slate-800">{formatPrice(openingAmount)}</p>
+          </div>
+          <div>
+            <span className="text-xs text-slate-500">+ Ventes espèces</span>
+            <p className="font-bold text-emerald-700">+{formatPrice(cashReceived)}</p>
+          </div>
+          <div>
+            <span className="text-xs text-slate-500">- Dépenses espèces</span>
+            <p className="font-bold text-red-600">-{formatPrice(cashExpenses)}</p>
+          </div>
+          <div>
+            <span className="text-xs font-semibold text-blue-700">= Solde théorique</span>
+            <p className="text-base font-extrabold text-blue-900">
+              {formatPrice(theoreticalCash !== null ? theoreticalCash : (openingAmount + cashReceived - cashExpenses))}
+            </p>
+          </div>
         </div>
       </div>
 

@@ -1,21 +1,36 @@
-import suppliersMock from '../mocks/modules/suppliers.json';
+import { suppliersService } from '../api/services.js';
 
-const STORAGE_KEY = 'vendix.suppliers';
+export const SUPPLIERS_STORAGE_KEY = 'vendix.suppliers';
 
 export function loadSuppliers() {
   try {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : suppliersMock.suppliers;
+    const saved = window.localStorage.getItem(SUPPLIERS_STORAGE_KEY);
+    return saved ? JSON.parse(saved) : [];
   } catch {
-    return suppliersMock.suppliers;
+    return [];
   }
 }
 
 export function saveSuppliers(suppliers) {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(suppliers));
+    window.localStorage.setItem(SUPPLIERS_STORAGE_KEY, JSON.stringify(suppliers));
   } catch (error) {
-    console.error('Erreur lors de la sauvegarde des fournisseurs', error);
+    // Quota depasse ou acces restreint
+  }
+}
+
+/**
+ * Recupere les fournisseurs depuis l'API NestJS avec cache de secours offline.
+ */
+export async function fetchSuppliers(params = {}) {
+  try {
+    const remoteData = await suppliersService.getAll(params);
+    const list = Array.isArray(remoteData) ? remoteData : remoteData?.data || [];
+    saveSuppliers(list);
+    return list;
+  } catch (error) {
+    const cached = loadSuppliers();
+    return cached;
   }
 }
 

@@ -229,12 +229,21 @@ export const suppliersService = {
 };
 
 export const purchasesService = {
-  getAll() {
-    return api.get('/purchases');
+  getAll(limit = 50) {
+    const qs = limit ? `?limit=${limit}` : '';
+    return api.get(`/purchases${qs}`);
+  },
+
+  getById(id) {
+    return api.get(`/purchases/${id}`);
   },
 
   create(purchasePayload) {
     return api.post('/purchases', purchasePayload);
+  },
+
+  receiveOrder(id) {
+    return api.patch(`/purchases/${id}/receive`);
   },
 };
 
@@ -243,12 +252,35 @@ export const expensesService = {
     const query = new URLSearchParams();
     if (params.category) query.append('category', params.category);
     if (params.payment_method) query.append('payment_method', params.payment_method);
+    if (params.mode) query.append('mode', params.mode);
+    if (params.month) query.append('month', String(params.month));
+    if (params.year) query.append('year', String(params.year));
+    if (params.page) query.append('page', String(params.page));
+    if (params.limit) query.append('limit', String(params.limit));
+    if (params.startDate) query.append('startDate', params.startDate);
+    if (params.endDate) query.append('endDate', params.endDate);
     const qs = query.toString();
     return api.get(`/expenses${qs ? `?${qs}` : ''}`);
   },
 
   create(expensePayload) {
-    return api.post('/expenses', expensePayload);
+    const body = {
+      amount: Math.round(Number(expensePayload.amount)),
+      category: expensePayload.category,
+      payment_method: expensePayload.payment_method || expensePayload.paymentMethod || 'CASH',
+      mode: expensePayload.mode || expensePayload.payment_method || expensePayload.paymentMethod || 'CASH',
+      motif: expensePayload.motif || expensePayload.notes || expensePayload.description || 'Dépense',
+      reason: expensePayload.reason || expensePayload.motif || expensePayload.notes || expensePayload.description,
+      description: expensePayload.description || expensePayload.motif || expensePayload.notes,
+      ...(expensePayload.receiptUrl ? { receipt_url: expensePayload.receiptUrl, receiptUrl: expensePayload.receiptUrl } : {}),
+      ...(expensePayload.receipt ? { receipt: expensePayload.receipt } : {}),
+      ...(expensePayload.client_op_uuid ? { client_op_uuid: expensePayload.client_op_uuid } : {}),
+    };
+    return api.post('/expenses', body);
+  },
+
+  delete(id) {
+    return api.delete(`/expenses/${id}`);
   },
 };
 
@@ -258,8 +290,53 @@ export const cashService = {
     return api.get(`/cash/daily${qs}`);
   },
 
+  getDailySummary(params = {}) {
+    const query = new URLSearchParams();
+    if (params.date) query.append('date', params.date);
+    if (params.openingAmount !== undefined) query.append('openingAmount', String(params.openingAmount));
+    if (params.opening_amount !== undefined) query.append('opening_amount', String(params.opening_amount));
+    const qs = query.toString();
+    return api.get(`/cash/daily-summary${qs ? `?${qs}` : ''}`);
+  },
+
   closeSession(payload) {
     return api.post('/cash/close', payload);
+  },
+
+  recordClosure(payload = {}) {
+    const body = {
+      actual_cash_counted:
+        payload.actual_cash_counted !== undefined
+          ? Math.round(Number(payload.actual_cash_counted))
+          : payload.countedCash !== undefined
+            ? Math.round(Number(payload.countedCash))
+            : payload.counted_amount !== undefined
+              ? Math.round(Number(payload.counted_amount))
+              : payload.physical_cash !== undefined
+                ? Math.round(Number(payload.physical_cash))
+                : 0,
+      opening_amount:
+        payload.opening_amount !== undefined
+          ? Math.round(Number(payload.opening_amount))
+          : payload.openingAmount !== undefined
+            ? Math.round(Number(payload.openingAmount))
+            : undefined,
+      notes: payload.notes || payload.comment || payload.explanation || undefined,
+      comment: payload.comment || payload.notes || undefined,
+      date: payload.date || undefined,
+      client_op_uuid: payload.client_op_uuid || undefined,
+    };
+    return api.post('/cash/closure', body);
+  },
+
+  getClosuresHistory(params = {}) {
+    const query = new URLSearchParams();
+    if (params.page) query.append('page', String(params.page));
+    if (params.limit) query.append('limit', String(params.limit));
+    if (params.startDate) query.append('startDate', params.startDate);
+    if (params.endDate) query.append('endDate', params.endDate);
+    const qs = query.toString();
+    return api.get(`/cash/closures${qs ? `?${qs}` : ''}`);
   },
 };
 

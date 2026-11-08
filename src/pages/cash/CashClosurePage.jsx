@@ -1,16 +1,22 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   Banknote,
   CalendarDays,
+  CheckCircle2,
   CircleAlert,
   ClipboardList,
+  Loader2,
+  Lock,
   Smartphone,
+  TrendingDown,
   Wallet,
 } from "lucide-react";
 import salesData from "../../mocks/modules/sales.json";
+import expensesData from "../../mocks/modules/expenses.json";
 import DailyReportCard from "../../components/cash/DailyReportCard.jsx";
+import { cashService, expensesService } from "../../api/services.js";
 
 const formatPrice = (amount) =>
   `${new Intl.NumberFormat("fr-FR").format(amount)} FCFA`;
@@ -61,6 +67,23 @@ const getAllSales = () => {
   }
 };
 
+// Récupère les dépenses locales
+const getAllExpenses = () => {
+  const baseExpenses = Array.isArray(expensesData.expenses) ? expensesData.expenses : [];
+  try {
+    const raw = localStorage.getItem("vendix_expenses") || "[]";
+    const customExpenses = JSON.parse(raw);
+    if (!Array.isArray(customExpenses) || customExpenses.length === 0) {
+      return baseExpenses;
+    }
+    const baseIds = new Set(baseExpenses.map((e) => String(e.id)));
+    const uniqueCustom = customExpenses.filter((e) => !baseIds.has(String(e.id)));
+    return [...baseExpenses, ...uniqueCustom];
+  } catch {
+    return baseExpenses;
+  }
+};
+
 const getLatestSalesDate = (sales) =>
   sales.reduce((latest, sale) => {
     const dateKey = getDateKey(sale.createdAt);
@@ -72,6 +95,7 @@ const MetricCard = ({ icon: Icon, label, value, tone = "blue" }) => {
     blue: "bg-blue-50 text-vendix-brand",
     green: "bg-emerald-50 text-emerald-700",
     orange: "bg-orange-50 text-orange-700",
+    red: "bg-red-50 text-red-600",
     slate: "bg-slate-100 text-slate-600",
   };
 
@@ -95,18 +119,56 @@ const MetricCard = ({ icon: Icon, label, value, tone = "blue" }) => {
 export default function CashClosurePage({ reportsOnly = false }) {
   const location = useLocation();
   const allSales = useMemo(() => getAllSales(), []);
+  const allExpenses = useMemo(() => getAllExpenses(), []);
 
   const [selectedDate, setSelectedDate] = useState(
     () => getLatestSalesDate(allSales) || getDateKey(new Date()),
   );
+  const [openingAmountInput, setOpeningAmountInput] = useState("0");
   const [countedCash, setCountedCash] = useState("");
+  const [closureNotes, setClosureNotes] = useState("");
+  const [isSubmittingClosure, setIsSubmittingClosure] = useState(false);
+  const [closureSuccessMessage, setClosureSuccessMessage] = useState("");
+  const [closureError, setClosureError] = useState("");
 
+  // État des données réelles issues de l'API cashService.getDailySummary
+  const [apiSummary, setApiSummary] = useState(null);
+  const [isLoadingSummary, setIsLoadingSummary] = useState(false);
+
+  // Charger le résumé réel de la journée depuis cashService.getDailySummary
+  const fetchDailySummary = useCallback(async (date) => {
+    setIsLoadingSummary(true);
+    setClosureSuccessMessage("");
+    setClosureError("");
+    try {
+      const summary = await cashService.getDailySummary({ date });
+      if (summary) {
+        setApiSummary(summary);
+        if (summary.opening_amount !== undefined) {
+          setOpeningAmountInput(String(summary.opening_amount));
+        }
+      }
+    } catch (err) {
+      console.warn("Échec de récupération cashService.getDailySummary, repli sur calculs locaux :", err);
+      setApiSummary(null);
+    } finally {
+      setIsLoadingSummary(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selectedDate) {
+      fetchDailySummary(selectedDate);
+    }
+  }, [selectedDate, fetchDailySummary]);
+
+  // Calcul local (fallback ou complément)
   const report = useMemo(() => {
     const daySales = allSales.filter(
       (sale) => getDateKey(sale.createdAt) === selectedDate,
     );
 
-    return daySales.reduce(
+    const salesSummary = daySales.reduce(
       (summary, sale) => {
         const totalAmount = Number(sale.totalAmount);
         const total = Number.isFinite(totalAmount) ? Math.max(totalAmount, 0) : 0;
@@ -138,7 +200,56 @@ export default function CashClosurePage({ reportsOnly = false }) {
         balanceDue: 0,
       },
     );
-  }, [allSales, selectedDate]);
+
+    // Calcul des dépenses espèces du jour (fallback local)
+    const dayExpenses = allExpenses.filter((exp) => {
+      const expDate = exp.date ? String(exp.date).split("T")[0] : "";
+      return expDate === selectedDate;
+    });
+
+    let localCashExpenses = 0;
+    for (const exp of dayExpenses) {
+      const method = (exp.paymentMethod || exp.payment_method || exp.mode || "CASH").toUpperCase();
+      if (method === "CASH" || method === "ESPECES") {
+        localCashExpenses += Number(exp.amount || 0);
+      }
+    }
+
+    return {
+      ...salesSummary,
+      cashExpenses: localCashExpenses,
+    };
+  }, [allSales, allExpenses, selectedDate]);
+
+  // Si l'API retourne des totaux réels de la journée, les utiliser en priorité
+  const effectiveCashReceived =
+    apiSummary?.cash_sales !== undefined
+      ? Number(apiSummary.cash_sales)
+      : report.cashReceived;
+
+  const effectiveMomoReceived =
+    apiSummary?.non_cash_summary?.momo_sales !== undefined
+      ? Number(apiSummary.non_cash_summary.momo_sales)
+      : report.momoReceived;
+
+  const effectiveCashExpenses =
+    apiSummary?.cash_expenses !== undefined
+      ? Number(apiSummary.cash_expenses)
+      : report.cashExpenses;
+
+  const effectiveOpeningAmount =
+    !Number.isNaN(Number(openingAmountInput)) && Number(openingAmountInput) >= 0
+      ? Math.round(Number(openingAmountInput))
+      : apiSummary?.opening_amount !== undefined
+        ? Number(apiSummary.opening_amount)
+        : 0;
+
+  // Règle comptable :
+  // Solde théorique = Fond de caisse initial + Espèces encaissées (Ventes CASH) - Dépenses en espèces
+  const theoreticalCash = Math.max(
+    0,
+    effectiveOpeningAmount + effectiveCashReceived - effectiveCashExpenses,
+  );
 
   const parsedCountedCash =
     countedCash !== "" && !Number.isNaN(Number(countedCash))
@@ -146,8 +257,9 @@ export default function CashClosurePage({ reportsOnly = false }) {
       : 0;
   const isCashCountEntered = countedCash !== "" && !Number.isNaN(Number(countedCash));
   const cashDifference = isCashCountEntered
-    ? parsedCountedCash - report.cashReceived
+    ? parsedCountedCash - theoreticalCash
     : 0;
+
   const dateLabel = selectedDate
     ? new Date(`${selectedDate}T00:00:00`).toLocaleDateString("fr-FR", {
         day: "numeric",
@@ -160,6 +272,56 @@ export default function CashClosurePage({ reportsOnly = false }) {
   const handleDateChange = (event) => {
     setSelectedDate(event.target.value);
     setCountedCash("");
+    setClosureSuccessMessage("");
+    setClosureError("");
+  };
+
+  // Enregistrement et archivage de la clôture de caisse via cashService.recordClosure
+  const handleRecordClosure = async (e) => {
+    if (e) e.preventDefault();
+
+    if (!isCashCountEntered) {
+      setClosureError("Veuillez renseigner le montant physique réellement compté.");
+      return;
+    }
+
+    if (cashDifference !== 0 && !closureNotes.trim()) {
+      setClosureError("Un commentaire explicatif est obligatoire en cas d’écart de caisse (surplus ou manquant).");
+      return;
+    }
+
+    setIsSubmittingClosure(true);
+    setClosureError("");
+    setClosureSuccessMessage("");
+
+    try {
+      const payload = {
+        openingAmount: effectiveOpeningAmount,
+        opening_amount: effectiveOpeningAmount,
+        countedCash: parsedCountedCash,
+        actual_cash_counted: parsedCountedCash,
+        notes: closureNotes.trim() || undefined,
+        comment: closureNotes.trim() || undefined,
+        date: selectedDate,
+      };
+
+      await cashService.recordClosure(payload);
+
+      setClosureSuccessMessage(
+        `Clôture de caisse du ${dateLabel} enregistrée et archivée avec succès ! (Solde théorique : ${formatPrice(theoreticalCash)}, Compté : ${formatPrice(parsedCountedCash)}, Écart : ${cashDifference > 0 ? "+" : ""}${formatPrice(cashDifference)})`,
+      );
+
+      // Rafraîchir le sommaire
+      await fetchDailySummary(selectedDate);
+    } catch (err) {
+      console.error("Erreur lors de la clôture de caisse :", err);
+      const errMsg =
+        err?.message ||
+        "Impossible d'enregistrer la clôture de caisse. Vérifiez vos données ou votre connexion.";
+      setClosureError(errMsg);
+    } finally {
+      setIsSubmittingClosure(false);
+    }
   };
 
   return (
@@ -205,7 +367,7 @@ export default function CashClosurePage({ reportsOnly = false }) {
         </label>
       </section>
 
-      <section aria-label={`Statistiques du ${dateLabel}`} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section aria-label={`Statistiques du ${dateLabel}`} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <MetricCard
           icon={Wallet}
           label="Ventes réalisées"
@@ -213,98 +375,200 @@ export default function CashClosurePage({ reportsOnly = false }) {
           tone="blue"
         />
         <MetricCard
-          icon={ClipboardList}
-          label="Nombre de ventes"
-          value={report.salesCount}
-          tone="slate"
-        />
-        <MetricCard
           icon={Banknote}
           label="Espèces encaissées"
-          value={formatPrice(report.cashReceived)}
+          value={formatPrice(effectiveCashReceived)}
           tone="green"
         />
         <MetricCard
           icon={Smartphone}
           label="Mobile Money encaissé"
-          value={formatPrice(report.momoReceived)}
+          value={formatPrice(effectiveMomoReceived)}
           tone="orange"
+        />
+        <MetricCard
+          icon={TrendingDown}
+          label="Dépenses en espèces"
+          value={formatPrice(effectiveCashExpenses)}
+          tone="red"
+        />
+        <MetricCard
+          icon={Lock}
+          label="Solde théorique caisse"
+          value={formatPrice(theoreticalCash)}
+          tone="blue"
         />
       </section>
 
       {!isReportsRoute && (
-        <section className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-            <div className="flex items-start gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-                <Banknote size={20} aria-hidden="true" />
-              </span>
-              <div>
-                <h2 className="font-bold text-slate-900">Comptage physique des espèces</h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Montant attendu dans la caisse :{" "}
-                  <strong className="text-slate-800">{formatPrice(report.cashReceived)}</strong>
-                </p>
+        <section className="space-y-4">
+          <div className="grid gap-4 lg:grid-cols-3">
+            {/* FOND DE CAISSE INITIAL */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-vendix-brand">
+                  <Wallet size={20} aria-hidden="true" />
+                </span>
+                <div>
+                  <h2 className="font-bold text-slate-900">Fond de caisse initial</h2>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Montant présent à l'ouverture de la session.
+                  </p>
+                </div>
+              </div>
+
+              <label htmlFor="opening-amount" className="mt-4 block text-xs font-semibold text-slate-700">
+                Fond initial (FCFA)
+              </label>
+              <div className="mt-1 flex rounded-xl border border-slate-200 focus-within:border-vendix-brand focus-within:ring-2 focus-within:ring-vendix-brand/20">
+                <input
+                  id="opening-amount"
+                  type="number"
+                  min="0"
+                  step="1"
+                  inputMode="numeric"
+                  value={openingAmountInput}
+                  onChange={(e) => setOpeningAmountInput(e.target.value)}
+                  placeholder="0"
+                  className="min-w-0 flex-1 rounded-l-xl px-3 py-2 text-base font-bold text-slate-900 outline-none"
+                />
+                <span className="flex items-center rounded-r-xl bg-slate-50 px-3 text-xs font-semibold text-slate-500">
+                  FCFA
+                </span>
               </div>
             </div>
 
-            <label htmlFor="counted-cash" className="mt-5 block text-sm font-semibold text-slate-700">
-              Espèces réellement comptées
-            </label>
-            <div className="mt-2 flex rounded-xl border border-slate-200 focus-within:border-vendix-brand focus-within:ring-2 focus-within:ring-vendix-brand/20">
-              <input
-                id="counted-cash"
-                type="number"
-                min="0"
-                step="1"
-                inputMode="numeric"
-                value={countedCash}
-                onChange={(event) => setCountedCash(event.target.value)}
-                placeholder="Ex. 25000"
-                className="min-w-0 flex-1 rounded-l-xl px-4 py-3 text-lg font-bold text-slate-900 outline-none"
-              />
-              <span className="flex items-center rounded-r-xl bg-slate-50 px-4 text-sm font-semibold text-slate-500">
-                FCFA
-              </span>
+            {/* COMPTAGE PHYSIQUE DES ESPÈCES */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                  <Banknote size={20} aria-hidden="true" />
+                </span>
+                <div>
+                  <h2 className="font-bold text-slate-900">Comptage physique</h2>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Attendu : <strong className="text-slate-800">{formatPrice(theoreticalCash)}</strong>
+                  </p>
+                </div>
+              </div>
+
+              <label htmlFor="counted-cash" className="mt-4 block text-xs font-semibold text-slate-700">
+                Espèces réellement comptées
+              </label>
+              <div className="mt-1 flex rounded-xl border border-slate-200 focus-within:border-vendix-brand focus-within:ring-2 focus-within:ring-vendix-brand/20">
+                <input
+                  id="counted-cash"
+                  type="number"
+                  min="0"
+                  step="1"
+                  inputMode="numeric"
+                  value={countedCash}
+                  onChange={(event) => setCountedCash(event.target.value)}
+                  placeholder="Ex. 25000"
+                  className="min-w-0 flex-1 rounded-l-xl px-3 py-2 text-base font-bold text-slate-900 outline-none"
+                />
+                <span className="flex items-center rounded-r-xl bg-slate-50 px-3 text-xs font-semibold text-slate-500">
+                  FCFA
+                </span>
+              </div>
+            </div>
+
+            {/* ÉCART DE CAISSE */}
+            <div
+              className={`flex flex-col justify-center rounded-2xl border p-5 shadow-sm sm:p-6 ${
+                !isCashCountEntered
+                  ? "border-slate-200 bg-slate-50"
+                  : cashDifference === 0
+                    ? "border-emerald-200 bg-emerald-50"
+                    : "border-amber-200 bg-amber-50"
+              }`}
+              aria-live="polite"
+            >
+              <div className="flex items-center gap-2">
+                {isCashCountEntered && cashDifference !== 0 ? (
+                  <CircleAlert size={18} className="text-amber-700" aria-hidden="true" />
+                ) : (
+                  <Banknote
+                    size={18}
+                    className={cashDifference === 0 && isCashCountEntered ? "text-emerald-700" : "text-slate-500"}
+                    aria-hidden="true"
+                  />
+                )}
+                <h2 className="text-sm font-bold text-slate-800">Écart de caisse</h2>
+              </div>
+              <p className="mt-2 text-2xl font-black tracking-tight text-slate-900">
+                {!isCashCountEntered
+                  ? "À renseigner"
+                  : `${cashDifference > 0 ? "+" : ""}${formatPrice(cashDifference)}`}
+              </p>
+              <p className="mt-1 text-xs text-slate-600">
+                {!isCashCountEntered
+                  ? "Saisissez le montant compté pour calculer l’écart."
+                  : cashDifference === 0
+                    ? "La caisse correspond exactement au solde théorique."
+                    : cashDifference > 0
+                      ? "Excédent par rapport au solde théorique attendu."
+                      : "Montant manquant par rapport au solde théorique attendu."}
+              </p>
             </div>
           </div>
 
-          <div
-            className={`flex flex-col justify-center rounded-2xl border p-5 shadow-sm sm:p-6 ${
-              !isCashCountEntered
-                ? "border-slate-200 bg-slate-50"
-                : cashDifference === 0
-                  ? "border-emerald-200 bg-emerald-50"
-                  : "border-amber-200 bg-amber-50"
-            }`}
-            aria-live="polite"
-          >
-            <div className="flex items-center gap-2">
-              {isCashCountEntered && cashDifference !== 0 ? (
-                <CircleAlert size={18} className="text-amber-700" aria-hidden="true" />
-              ) : (
-                <Banknote
-                  size={18}
-                  className={cashDifference === 0 && isCashCountEntered ? "text-emerald-700" : "text-slate-500"}
-                  aria-hidden="true"
+          {/* ACTION DE CLÔTURE ET ARCHIVAGE */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <h3 className="font-bold text-slate-900">Archivage formel de la caisse journalière</h3>
+            <p className="mt-1 text-xs text-slate-500">
+              Enregistre le fond initial, le comptage physique réel et archive formellement la session côté NestJS.
+            </p>
+
+            {isCashCountEntered && cashDifference !== 0 && (
+              <div className="mt-4">
+                <label htmlFor="closure-notes" className="block text-xs font-semibold text-amber-900">
+                  Commentaire explicatif obligatoire (Écart constaté : {cashDifference > 0 ? "+" : ""}{formatPrice(cashDifference)})
+                </label>
+                <textarea
+                  id="closure-notes"
+                  rows={2}
+                  value={closureNotes}
+                  onChange={(e) => setClosureNotes(e.target.value)}
+                  placeholder="Justification de l'écart (ex: monnaie manquante, pourboire non enregistré, etc.)..."
+                  className="mt-1 w-full rounded-xl border border-amber-300 bg-amber-50/50 p-3 text-sm text-slate-800 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
                 />
-              )}
-              <h2 className="text-sm font-bold text-slate-800">Écart de caisse</h2>
+              </div>
+            )}
+
+            {closureError && (
+              <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700">
+                {closureError}
+              </div>
+            )}
+
+            {closureSuccessMessage && (
+              <div className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800">
+                <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                <span>{closureSuccessMessage}</span>
+              </div>
+            )}
+
+            <div className="mt-5 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={handleRecordClosure}
+                disabled={isSubmittingClosure || !isCashCountEntered}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-vendix-brand px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vendix-brand disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isSubmittingClosure ? (
+                  <>
+                    <Loader2 size={17} className="animate-spin" />
+                    Archivage en cours...
+                  </>
+                ) : (
+                  <>
+                    <Lock size={17} />
+                    Clôturer la caisse
+                  </>
+                )}
+              </button>
             </div>
-            <p className="mt-2 text-2xl font-black tracking-tight text-slate-900">
-              {!isCashCountEntered
-                ? "À renseigner"
-                : `${cashDifference > 0 ? "+" : ""}${formatPrice(cashDifference)}`}
-            </p>
-            <p className="mt-1 text-xs text-slate-600">
-              {!isCashCountEntered
-                ? "Saisissez le montant compté pour calculer l’écart."
-                : cashDifference === 0
-                  ? "La caisse correspond exactement aux encaissements."
-                  : cashDifference > 0
-                    ? "Excédent par rapport au montant attendu."
-                    : "Montant manquant par rapport au montant attendu."}
-            </p>
           </div>
         </section>
       )}
@@ -314,12 +578,15 @@ export default function CashClosurePage({ reportsOnly = false }) {
         salesCount={report.salesCount}
         totalSales={report.totalSales}
         totalCollected={report.totalCollected}
-        cashReceived={report.cashReceived}
-        momoReceived={report.momoReceived}
+        cashReceived={effectiveCashReceived}
+        momoReceived={effectiveMomoReceived}
         otherReceived={report.otherReceived}
         balanceDue={report.balanceDue}
         countedCash={isCashCountEntered ? parsedCountedCash : null}
         cashDifference={isCashCountEntered ? cashDifference : null}
+        openingAmount={effectiveOpeningAmount}
+        cashExpenses={effectiveCashExpenses}
+        theoreticalCash={theoreticalCash}
       />
 
       {isReportsRoute && (
