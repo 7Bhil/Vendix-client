@@ -191,42 +191,42 @@ export default function StockListPage() {
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         {/* En-tête de la page */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
+            <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
               Gestion du stock
             </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Suivez vos quantités, vos alertes et vos mouvements de stock en temps réel.
+            <p className="text-xs text-slate-500">
+              Suivez vos quantités, vos alertes et vos mouvements de stock.
             </p>
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
             <button
               type="button"
               onClick={loadStockData}
               disabled={isLoading}
-              className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
+              className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50 active:scale-95 disabled:opacity-50 shrink-0"
               title="Rafraîchir"
             >
-              <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-              <span>Actualiser</span>
+              <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+              <span className="hidden xs:inline">Actualiser</span>
             </button>
 
             <Link
               to="/app/stock/movements"
-              className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
+              className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50 active:scale-95 shrink-0"
             >
-              Historique des mouvements
+              Historique
             </Link>
 
             <button
               type="button"
               onClick={() => setIsModalOpen(true)}
-              className="flex items-center justify-center gap-2 rounded-xl bg-vendix-brand px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-vendix-brand-dark"
+              className="flex h-9 items-center justify-center gap-1.5 rounded-xl bg-vendix-brand px-3.5 text-xs font-bold text-white shadow-2xs transition hover:bg-vendix-brand-dark active:scale-95 shrink-0"
             >
-              <Plus size={18} />
-              Nouveau mouvement
+              <Plus size={15} />
+              <span>Nouveau mouvement</span>
             </button>
           </div>
         </div>
@@ -295,9 +295,8 @@ export default function StockListPage() {
           </div>
         </div>
 
-        {/* Recherche et filtres */}
-        <div className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-3">
-          {/* Recherche par nom */}
+        {/* Recherche et filtres condensés */}
+        <div className="space-y-3">
           <div className="relative">
             <Search
               size={18}
@@ -307,43 +306,67 @@ export default function StockListPage() {
               type="text"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Rechercher un produit..."
-              className="w-full rounded-xl border border-slate-300 py-3 pl-10 pr-4 text-sm outline-none transition focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
+              placeholder="Rechercher une référence en stock..."
+              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-xs font-medium text-slate-800 placeholder-slate-400 shadow-2xs outline-none transition focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
             />
           </div>
 
-          {/* Filtre par catégorie */}
-          <div className="relative">
-            <Filter
-              size={18}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-            <select
-              value={selectedCategory}
-              onChange={(event) => setSelectedCategory(event.target.value)}
-              className="w-full appearance-none rounded-xl border border-slate-300 bg-white py-3 pl-10 pr-4 text-sm outline-none transition focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs no-scrollbar">
+            <button
+              type="button"
+              onClick={() => setSelectedCategory('')}
+              className={`shrink-0 rounded-xl px-3 py-1.5 font-bold transition active:scale-95 ${
+                selectedCategory === ''
+                  ? 'bg-vendix-brand text-white shadow-2xs'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              }`}
             >
-              <option value="">Toutes les catégories</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </div>
+              Toutes ({normalizedProducts.length})
+            </button>
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() => setSelectedCategory(category.id === selectedCategory ? '' : category.id)}
+                className={`shrink-0 rounded-xl px-3 py-1.5 font-bold transition active:scale-95 ${
+                  selectedCategory === category.id
+                    ? 'bg-vendix-brand text-white shadow-2xs'
+                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                {category.name}
+              </button>
+            ))}
 
-          {/* Filtre par état du stock */}
-          <div>
-            <select
-              value={selectedStockStatus}
-              onChange={(event) => setSelectedStockStatus(event.target.value)}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"
+            <span className="h-4 w-px bg-slate-200 shrink-0 mx-1" />
+
+            <button
+              type="button"
+              onClick={() =>
+                setSelectedStockStatus((prev) => (prev === 'Stock faible' ? '' : 'Stock faible'))
+              }
+              className={`shrink-0 rounded-xl px-3 py-1.5 font-bold transition active:scale-95 ${
+                selectedStockStatus === 'Stock faible'
+                  ? 'bg-amber-500 text-white shadow-2xs'
+                  : 'bg-white text-amber-700 border border-amber-200 hover:bg-amber-50'
+              }`}
             >
-              <option value="">Tous les états de stock</option>
-              <option value="Stock normal">Stock normal</option>
-              <option value="Stock faible">Stock faible</option>
-              <option value="Rupture de stock">Rupture de stock</option>
-            </select>
+              Stock faible ({stockStats.lowStock})
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                setSelectedStockStatus((prev) => (prev === 'Rupture de stock' ? '' : 'Rupture de stock'))
+              }
+              className={`shrink-0 rounded-xl px-3 py-1.5 font-bold transition active:scale-95 ${
+                selectedStockStatus === 'Rupture de stock'
+                  ? 'bg-rose-600 text-white shadow-2xs'
+                  : 'bg-white text-rose-700 border border-rose-200 hover:bg-rose-50'
+              }`}
+            >
+              Rupture ({stockStats.outOfStock})
+            </button>
           </div>
         </div>
 
@@ -387,52 +410,44 @@ export default function StockListPage() {
                   const status = getStockStatus(product);
 
                   const statusStyles = {
-                    'Stock normal': 'bg-emerald-50 text-emerald-700',
-                    'Stock faible': 'bg-amber-50 text-amber-700',
-                    'Rupture de stock': 'bg-rose-50 text-rose-700',
+                    'Stock normal': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                    'Stock faible': 'bg-amber-50 text-amber-700 border-amber-200',
+                    'Rupture de stock': 'bg-rose-50 text-rose-700 border-rose-200',
                   };
 
                   return (
-                    <article key={product.id} className="space-y-3 p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <h3 className="break-words text-sm font-bold text-slate-800">
+                    <article key={product.id} className="flex items-center justify-between p-3.5 transition hover:bg-slate-50/80">
+                      <div className="min-w-0 flex-1 pr-3">
+                        <div className="flex items-center gap-2">
+                          <h3 className="truncate text-xs font-bold text-slate-800">
                             {product.name}
                           </h3>
-                          <p className="mt-1 text-xs text-slate-500">
-                            {product.categoryName}
-                          </p>
+                          <span
+                            className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold ${statusStyles[status]}`}
+                          >
+                            {status}
+                          </span>
                         </div>
-
-                        <span
-                          className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${statusStyles[status]}`}
-                        >
-                          {status}
-                        </span>
+                        <p className="mt-0.5 text-[11px] text-slate-400 truncate">
+                          {product.categoryName} • Seuil: {threshold} {product.baseUnit}
+                        </p>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-3">
-                        <div>
-                          <p className="text-xs text-slate-500">Quantité disponible</p>
-                          <p
-                            className={`mt-1 text-lg font-extrabold ${
-                              stock <= 0
-                                ? 'text-rose-600'
-                                : stock <= threshold
-                                  ? 'text-amber-600'
-                                  : 'text-slate-800'
-                            }`}
-                          >
-                            {stock} {product.baseUnit}
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-xs text-slate-500">Seuil d'alerte</p>
-                          <p className="mt-1 text-lg font-bold text-slate-700">
-                            {threshold} {product.baseUnit}
-                          </p>
-                        </div>
+                      <div className="text-right shrink-0">
+                        <span
+                          className={`text-sm font-extrabold ${
+                            stock <= 0
+                              ? 'text-rose-600'
+                              : stock <= threshold
+                                ? 'text-amber-600'
+                                : 'text-slate-900'
+                          }`}
+                        >
+                          {stock}
+                        </span>
+                        <span className="ml-1 text-[11px] font-medium text-slate-500">
+                          {product.baseUnit}
+                        </span>
                       </div>
                     </article>
                   );
