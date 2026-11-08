@@ -267,21 +267,24 @@ export default function AppLayout({ children }) {
                   className="relative -top-2 flex flex-col items-center group active:scale-95 transition-transform"
                 >
                   <div
-                    className={`flex h-12 w-12 items-center justify-center rounded-2xl shadow-lg transition-all duration-200 ${
+                    className={`flex h-12 w-12 items-center justify-center rounded-2xl transition-all duration-200 ${
                       active
-                        ? "bg-emerald-600 text-white shadow-emerald-600/30 ring-4 ring-emerald-100 scale-105"
-                        : "bg-vendix-brand text-white shadow-blue-900/20 group-hover:bg-vendix-brand-dark"
+                        ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/40 ring-4 ring-emerald-100 scale-105"
+                        : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800"
                     }`}
                   >
                     <Icon size={20} />
                   </div>
                   <span
-                    className={`mt-1 text-[10px] font-black tracking-tight ${
-                      active ? "text-emerald-700" : "text-slate-600 font-bold"
+                    className={`mt-1 text-[10px] tracking-tight transition-colors ${
+                      active ? "text-emerald-700 font-black" : "text-slate-500 font-semibold"
                     }`}
                   >
                     {item.shortName}
                   </span>
+                  {active && (
+                    <span className="absolute -bottom-1 h-1 w-3 rounded-full bg-emerald-600 animate-fade-in" />
+                  )}
                 </Link>
               );
             }
