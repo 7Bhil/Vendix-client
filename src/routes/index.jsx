@@ -5,6 +5,7 @@ import PublicShopPage from '../pages/public/PublicShopPage.jsx';
 import { publicRoutes } from './publicRoutes.jsx';
 import { authRoutes } from './authRoutes.jsx';
 import { appRoutes } from './appRoutes.jsx';
+import { adminRoutes } from './adminRoutes.jsx';
 
 export default function AppRoutes() {
   const shopSubdomain = getShopSubdomain();
@@ -31,7 +32,10 @@ export default function AppRoutes() {
       {/* 3. Espace Marchand & Modules de l'équipe */}
       {appRoutes}
 
-      {/* 4. Redirection de secours */}
+      {/* 4. Espace Super-Admin (Supervision Plateforme) */}
+      {adminRoutes}
+
+      {/* 5. Redirection de secours */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

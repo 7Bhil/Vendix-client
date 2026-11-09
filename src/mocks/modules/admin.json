@@ -1,0 +1,81 @@
+{
+  "stats": {
+    "totalMerchants": 42,
+    "activeMerchants": 38,
+    "suspendedMerchants": 4,
+    "totalVolumeFCFA": 18450000,
+    "pendingReports": 3,
+    "totalReports": 12
+  },
+  "merchants": [
+    {
+      "id": "m-001",
+      "fullName": "Mme Dossou Bernadette",
+      "phone": "+22997001122",
+      "storeName": "Épicerie du Port",
+      "slug": "epicerie-du-port",
+      "status": "ACTIF",
+      "totalProducts": 142,
+      "totalSales": 1240,
+      "createdAt": "2026-09-15T10:00:00.000Z"
+    },
+    {
+      "id": "m-002",
+      "fullName": "M. Alassane Issa",
+      "phone": "+22996003344",
+      "storeName": "Alassane Électronique",
+      "slug": "alassane-electro",
+      "status": "ACTIF",
+      "totalProducts": 58,
+      "totalSales": 310,
+      "createdAt": "2026-10-01T14:30:00.000Z"
+    },
+    {
+      "id": "m-003",
+      "fullName": "Koffi Akouavi",
+      "phone": "+22995005566",
+      "storeName": "Boutique Prestige Mode",
+      "slug": "prestige-mode",
+      "status": "SUSPENDU",
+      "suspensionReason": "Signalements multiples de non-conformité et produits contrefaits.",
+      "totalProducts": 89,
+      "totalSales": 95,
+      "createdAt": "2026-10-10T09:15:00.000Z"
+    }
+  ],
+  "reports": [
+    {
+      "id": "rep-001",
+      "targetMerchantId": "m-003",
+      "targetStoreName": "Boutique Prestige Mode",
+      "targetSlug": "prestige-mode",
+      "reporterPhone": "+22994008899",
+      "reason": "PRODUIT_CONTREFAIT",
+      "status": "NOUVEAU",
+      "description": "Article payé par Mobile Money mais sac de contrefaçon reçu sans facture.",
+      "createdAt": "2026-11-07T16:20:00.000Z"
+    },
+    {
+      "id": "rep-002",
+      "targetMerchantId": "m-002",
+      "targetStoreName": "Alassane Électronique",
+      "targetSlug": "alassane-electro",
+      "reporterPhone": "+22991007788",
+      "reason": "NON_LIVRAISON",
+      "status": "EN_COURS",
+      "description": "Retard de livraison de 5 jours et numéro vendeur injoignable sur WhatsApp.",
+      "createdAt": "2026-11-08T11:05:00.000Z"
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "aud-001",
+      "adminId": "admin-root",
+      "action": "SUSPEND_MERCHANT",
+      "targetType": "MERCHANT",
+      "targetId": "m-003",
+      "reason": "Application de la sanction suite à 3 signalements avérés.",
+      "createdAt": "2026-11-08T18:00:00.000Z"
+    }
+  ]
+}

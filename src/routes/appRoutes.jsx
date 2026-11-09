@@ -75,4 +75,16 @@ export const appRoutes = [
     path="/app/reports"
     element={withLayout(() => <CashClosurePage reportsOnly />)}
   />,
+
+  // 6. Paramètres de la boutique & Équipe vendeurs
+  <Route
+    key="settings"
+    path="/app/settings"
+    element={withLayout(() => (
+      <div className="p-6 max-w-4xl mx-auto">
+        <h1 className="text-xl font-bold text-slate-900">Paramètres de la boutique</h1>
+        <p className="text-xs text-slate-500 mt-1">Logo Cloudinary, couleurs, WhatsApp officiel et accès vendeurs.</p>
+      </div>
+    ))}
+  />,
 ];
