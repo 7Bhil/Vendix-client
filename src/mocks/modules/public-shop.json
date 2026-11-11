@@ -1,5 +1,8 @@
+
 {
   "shop": {
+    "id": "shop-01",
+    "slug": "le-progres",
     "name": "Boutique Le Progrès",
     "description": "Grossiste et détaillant en vivres frais et produits alimentaires généraux à Cotonou.",
     "whatsapp": "+22997000001",
@@ -18,8 +21,26 @@
       "id": "p-01",
       "name": "Riz Parfumé Royal 25kg",
       "category": "Alimentation générale",
+      "description": "Riz parfumé de qualité supérieure, idéal pour les repas familiaux et la restauration.",
       "publicPrice": 18500,
       "baseUnit": "Sac",
+      "packaging": {
+        "detail": {
+          "label": "Détail",
+          "price": 18500
+        },
+        "halfWholesale": {
+          "label": "Demi-gros",
+          "price": 18000
+        },
+        "wholesale": {
+          "label": "Gros",
+          "price": 17500
+        }
+      },
+      "photos": [
+        "https://res.cloudinary.com/vendix/image/upload/v1/samples/rice.jpg"
+      ],
       "photoUrl": "https://res.cloudinary.com/vendix/image/upload/v1/samples/rice.jpg",
       "viewsCount": 342,
       "available": true
@@ -28,8 +49,26 @@
       "id": "p-02",
       "name": "Huile Végétale Dinor 5L",
       "category": "Alimentation générale",
+      "description": "Huile végétale de cuisson en bidon de 5 litres.",
       "publicPrice": 5800,
       "baseUnit": "Bidon",
+      "packaging": {
+        "detail": {
+          "label": "Détail",
+          "price": 5800
+        },
+        "halfWholesale": {
+          "label": "Demi-gros",
+          "price": 5600
+        },
+        "wholesale": {
+          "label": "Gros",
+          "price": 5400
+        }
+      },
+      "photos": [
+        "https://res.cloudinary.com/vendix/image/upload/v1/samples/oil.jpg"
+      ],
       "photoUrl": "https://res.cloudinary.com/vendix/image/upload/v1/samples/oil.jpg",
       "viewsCount": 518,
       "available": true
@@ -38,11 +77,47 @@
       "id": "p-03",
       "name": "Savon BF Marseille",
       "category": "Entretien & Hygiène",
+      "description": "Savon de ménage pour le nettoyage et l'entretien quotidien.",
       "publicPrice": 450,
       "baseUnit": "Morceau",
+      "packaging": {
+        "detail": {
+          "label": "Détail",
+          "price": 450
+        },
+        "halfWholesale": {
+          "label": "Demi-gros",
+          "price": 400
+        },
+        "wholesale": {
+          "label": "Gros",
+          "price": 350
+        }
+      },
+      "photos": [
+        "https://res.cloudinary.com/vendix/image/upload/v1/samples/soap.jpg"
+      ],
       "photoUrl": "https://res.cloudinary.com/vendix/image/upload/v1/samples/soap.jpg",
       "viewsCount": 184,
       "available": true
+    }
+  ],
+  "reportTypes": [
+    {
+      "value": "SCAM",
+      "label": "Arnaque / Non-livraison"
+    },
+    {
+      "value": "COUNTERFEIT",
+      "label": "Produit contrefait ou prohibé"
+    },
+    {
+      "value": "ABUSIVE_PRICE",
+      "label": "Prix abusif / Escroquerie"
+    },
+    {
+      "value": "OTHER",
+      "label": "Autre"
     }
   ]
 }
