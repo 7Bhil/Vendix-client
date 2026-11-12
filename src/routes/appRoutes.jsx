@@ -19,6 +19,8 @@ import SupplierDetailPage from '../pages/suppliers/SupplierDetailPage.jsx';
 import NewPurchasePage from '../pages/suppliers/NewPurchasePage.jsx';
 import CashClosurePage from '../pages/cash/CashClosurePage.jsx';
 import NewExpensePage from '../pages/expenses/NewExpensePage.jsx';
+import PublicProductDetailPage from '../pages/public/PublicProductDetailPage.jsx';
+import PublicReportPage from '../pages/public/PublicReportPage.jsx';
 
 function withLayout(Component) {
   return (
@@ -87,4 +89,24 @@ export const appRoutes = [
       </div>
     ))}
   />,
+
+    // 7. Pages publiques accessibles sans authentification
+  <Route
+    key="public-product-detail"
+    path="/boutique/:slug/produit/:id"
+    element={<PublicProductDetailPage />}
+  />,
+
+  <Route
+    key="public-report"
+    path="/signalement"
+    element={<PublicReportPage />}
+  />,
+
+  <Route
+    key="public-shop-report"
+    path="/boutique/:slug/signalement"
+    element={<PublicReportPage />}
+  />,
+  
 ];
