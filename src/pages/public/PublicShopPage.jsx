@@ -299,12 +299,17 @@ export default function PublicShopPage({ shopSlug: propSlug }) {
   const shopWhatsapp = shop.whatsapp || shop.whatsapp_number || "";
   const shopLogo = shop.logoUrl || shop.logo_url;
   const brandColor = shop.primaryColor || shop.primary_color || "#2563eb";
+  const secondaryColor = shop.secondaryColor || shop.secondary_color || "#ca8a04";
 
   // État 3 : Nominal
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-28">
+    <div
+      className="min-h-screen bg-slate-50 text-slate-900 pb-28"
+      style={{ "--shop-primary": brandColor, "--shop-secondary": secondaryColor }}
+    >
       {/* En-tête Boutique */}
       <header className="border-b border-slate-200 bg-white shadow-sm">
+        <div className="h-1" style={{ backgroundColor: "var(--shop-secondary)" }} />
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
             <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -354,6 +359,8 @@ export default function PublicShopPage({ shopSlug: propSlug }) {
                   </p>
                 )}
 
+                {shop.tagline && <p className="mt-1 text-xs font-semibold text-slate-700">{shop.tagline}</p>}
+
                 <div className="mt-2 flex items-center gap-3 text-xs text-slate-500">
                   {shopWhatsapp && (
                     <span className="flex items-center gap-1 font-bold text-emerald-700">
@@ -375,7 +382,8 @@ export default function PublicShopPage({ shopSlug: propSlug }) {
               <button
                 type="button"
                 onClick={handleOrderWhatsApp}
-                className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+                className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-bold text-white shadow-sm transition hover:brightness-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+                style={{ backgroundColor: "var(--shop-primary)" }}
               >
                 <MessageCircle size={17} />
                 <span>Contacter sur WhatsApp</span>
@@ -413,9 +421,10 @@ export default function PublicShopPage({ shopSlug: propSlug }) {
                     onClick={() => setSelectedCategory(cat)}
                     className={`h-9 shrink-0 rounded-xl px-3 text-xs font-semibold transition ${
                       active
-                        ? "bg-slate-900 text-white shadow-sm"
+                        ? "text-white shadow-sm"
                         : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                     }`}
+                    style={active ? { backgroundColor: "var(--shop-primary)" } : undefined}
                   >
                     {cat === "all" ? "Tout voir" : cat}
                   </button>
@@ -462,7 +471,7 @@ export default function PublicShopPage({ shopSlug: propSlug }) {
                   ? product.category
                   : product.category?.name || "";
               const showViews =
-                (shop.showViewsToPublic || shop.show_views_public) &&
+                (shop.showViewsToPublic ?? shop.show_views_public) &&
                 product.views_count != null;
 
               return (
