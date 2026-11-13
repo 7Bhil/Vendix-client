@@ -8,6 +8,7 @@ import {
   Store,
   Boxes,
   LogOut,
+  Settings,
 } from "lucide-react";
 import OfflineSyncBadge from "../dashboard/OfflineSyncBadge";
 import { useAuth } from "../../context/AuthContext.jsx";
@@ -18,6 +19,7 @@ const NAVIGATION_ITEMS = [
     shortName: "Accueil",
     path: "/app/dashboard",
     icon: LayoutDashboard,
+    sellerAccess: false,
   },
   {
     name: "Caisse & Vente",
@@ -25,24 +27,35 @@ const NAVIGATION_ITEMS = [
     path: "/app/sales/new",
     icon: ShoppingCart,
     isPrimary: true,
+    sellerAccess: true,
   },
   {
     name: "Clients & Dettes",
     shortName: "Clients",
     path: "/app/customers",
     icon: Users,
+    sellerAccess: false,
   },
   {
     name: "Catalogue Produits",
     shortName: "Produits",
     path: "/app/products",
     icon: Package,
+    sellerAccess: false,
   },
   {
     name: "Stock",
     shortName: "Stock",
     path: "/app/stock",
     icon: Boxes,
+    sellerAccess: true,
+  },
+  {
+    name: "Paramètres",
+    shortName: "Réglages",
+    path: "/app/settings",
+    icon: Settings,
+    sellerAccess: false,
   },
 ];
 
@@ -83,6 +96,8 @@ export default function AppLayout({ children }) {
   };
 
   const shopDisplayName = user?.shopName || "Ma boutique Vendix";
+  const isSeller = String(user?.role || "").toUpperCase() === "VENDEUR";
+  const visibleNavigationItems = NAVIGATION_ITEMS.filter((item) => !isSeller || item.sellerAccess);
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-vendix-ink">
@@ -129,7 +144,7 @@ export default function AppLayout({ children }) {
           </div>
 
           <div className="mt-2 space-y-1">
-            {NAVIGATION_ITEMS.map((item, index) => {
+            {visibleNavigationItems.map((item, index) => {
               const Icon = item.icon;
               const active = isCurrent(item.path);
 
@@ -255,7 +270,7 @@ export default function AppLayout({ children }) {
       {/* Barre de navigation basse flottante pour mobile (Floating Pill Nav) */}
       <div className="fixed bottom-3 left-0 right-0 z-40 px-3 md:hidden print:hidden pointer-events-none">
         <nav className="mx-auto max-w-md pointer-events-auto flex h-16 items-center justify-around rounded-2xl border border-slate-200/80 bg-white/95 px-2 shadow-xl shadow-slate-900/10 backdrop-blur-xl">
-          {NAVIGATION_ITEMS.map((item) => {
+          {visibleNavigationItems.map((item) => {
             const Icon = item.icon;
             const active = isCurrent(item.path);
 

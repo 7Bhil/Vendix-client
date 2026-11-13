@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
  * - Vérifie la présence d'une session active via useAuth().
  * - Cloisonne les rôles (ex: empêche un simple MERCHANT d'accéder à requiredRole='ADMIN').
  */
-export default function ProtectedRoute({ children, requiredRole }) {
+export default function ProtectedRoute({ children, requiredRole, allowedRoles }) {
   const location = useLocation();
   const { user, isAuthenticated, isLoading } = useAuth();
 
@@ -41,6 +41,15 @@ export default function ProtectedRoute({ children, requiredRole }) {
       if (expectedRole === 'MERCHANT' && userRole === 'ADMIN') {
         return <Navigate to="/admin" replace />;
       }
+    }
+  }
+
+  if (allowedRoles) {
+    const userRole = String(user?.role || '').toUpperCase();
+    const permittedRoles = allowedRoles.map((role) => String(role).toUpperCase());
+
+    if (!permittedRoles.includes(userRole)) {
+      return <Navigate to={userRole === 'VENDEUR' ? '/app/sales/new' : '/app/dashboard'} replace />;
     }
   }
 
