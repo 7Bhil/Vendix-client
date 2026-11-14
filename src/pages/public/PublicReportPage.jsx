@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -16,7 +16,6 @@ import {
   Loader2,
 } from 'lucide-react';
 
-import shopData from '../../mocks/modules/public-shop.json';
 import { publicShopService } from '../../api/services.js';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -25,16 +24,8 @@ const MAX_FILES = 5;
 export default function PublicReportPage() {
   const { slug } = useParams();
 
-  const initialShop = slug
-    ? shopData.shop.slug === slug
-      ? shopData.shop
-      : null
-    : null;
-
-  const [shopIdentifier, setShopIdentifier] = useState(
-    initialShop?.name || ''
-  );
-
+  const [shopIdentifier, setShopIdentifier] = useState(slug || '');
+  const [shopName, setShopName] = useState('');
   const [reportType, setReportType] = useState('');
   const [reporterName, setReporterName] = useState('');
   const [reporterPhone, setReporterPhone] = useState('');
@@ -44,6 +35,28 @@ export default function PublicReportPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+
+  // Charger le nom réel de la boutique si un slug est présent dans l'URL
+  useEffect(() => {
+    let isMounted = true;
+    if (!slug) return;
+
+    publicShopService
+      .getShop(slug)
+      .then((shopData) => {
+        if (isMounted && shopData?.name) {
+          setShopName(shopData.name);
+          setShopIdentifier(shopData.name);
+        }
+      })
+      .catch(() => {
+        // En cas d'erreur ou si slug introuvable, on garde le slug comme identifiant
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [slug]);
 
   const handleFiles = (event) => {
     const selectedFiles = Array.from(event.target.files || []);
@@ -105,12 +118,19 @@ export default function PublicReportPage() {
       return;
     }
 
+    const cleanPhone = reporterPhone.replace(/\D/g, '');
+    if (cleanPhone && ![8, 10, 11, 12].includes(cleanPhone.length)) {
+      setError('Veuillez saisir un numéro de téléphone valide (8 ou 10 chiffres).');
+      return;
+    }
+
     const formData = new FormData();
 
-    formData.append('shop_identifier', shopIdentifier.trim());
+    formData.append('shop_identifier', (shopName || shopIdentifier).trim());
+    if (slug) formData.append('shop_slug', slug.trim());
     formData.append('report_type', reportType);
     formData.append('reporter_name', reporterName.trim());
-    formData.append('reporter_phone', reporterPhone.trim());
+    formData.append('reporter_phone', cleanPhone);
     formData.append('description', description.trim());
 
     files.forEach((file) => {
