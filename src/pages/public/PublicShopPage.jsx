@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 
 import { publicShopService } from "../../api/services.js";
-import shopData from "../../mocks/modules/public-shop.json";
 
 const formatPrice = (price) =>
   new Intl.NumberFormat("fr-FR").format(Number(price) || 0) + " FCFA";
@@ -34,16 +33,6 @@ export default function PublicShopPage({ shopSlug: propSlug }) {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedItems, setSelectedItems] = useState({});
   const [customerName, setCustomerName] = useState("");
-
-  // Conversion des produits mockés au format utilisé par la page
-  const getMockProducts = () =>
-    shopData.publicProducts.map((product) => ({
-      ...product,
-      image_url: product.photoUrl,
-      views_count: product.viewsCount,
-      base_price: product.publicPrice,
-      category: product.category,
-    }));
 
   // Chargement de la boutique
   useEffect(() => {
@@ -79,22 +68,11 @@ export default function PublicShopPage({ shopSlug: propSlug }) {
           .catch(() => {});
       } catch (err) {
         if (isCancelled) return;
-
-        console.warn("API indisponible, utilisation des données mockées.");
-
-        const mockShop = shopData.shop;
-
-        if (mockShop.slug.toLowerCase() === slug) {
-          setShop(mockShop);
-          setProducts(getMockProducts());
-          setError(null);
-        } else {
-          setError(
-            err.status === 404
-              ? "Cette boutique est introuvable ou n'est plus accessible."
-              : "Impossible de charger les données de la boutique."
-          );
-        }
+        setError(
+          err.status === 404
+            ? "Cette boutique est introuvable ou n'est plus accessible."
+            : "Impossible de contacter le serveur de la boutique."
+        );
       } finally {
         if (!isCancelled) {
           setLoading(false);
@@ -539,12 +517,15 @@ export default function PublicShopPage({ shopSlug: propSlug }) {
                   key={product.id}
                   className="flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
                 >
-                  <div className="relative h-32 bg-slate-100 sm:h-36">
+                  <Link
+                    to={`/boutique/${slug}/produit/${product.id}`}
+                    className="relative block h-32 bg-slate-100 sm:h-36 group cursor-pointer"
+                  >
                     {photo ? (
                       <img
                         src={photo}
                         alt={product.name}
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-cover transition duration-200 group-hover:scale-105"
                         loading="lazy"
                       />
                     ) : (
@@ -559,7 +540,7 @@ export default function PublicShopPage({ shopSlug: propSlug }) {
                         <span>{viewsCount} vues</span>
                       </div>
                     )}
-                  </div>
+                  </Link>
 
                   <div className="flex flex-1 flex-col justify-between p-3">
                     <div>
@@ -569,9 +550,12 @@ export default function PublicShopPage({ shopSlug: propSlug }) {
                         </span>
                       )}
 
-                      <h3 className="line-clamp-2 mt-0.5 text-xs font-bold leading-snug text-slate-900">
+                      <Link
+                        to={`/boutique/${slug}/produit/${product.id}`}
+                        className="line-clamp-2 mt-0.5 text-xs font-bold leading-snug text-slate-900 hover:text-emerald-700"
+                      >
                         {product.name}
-                      </h3>
+                      </Link>
 
                       <p className="mt-1 text-sm font-black text-slate-900">
                         {formatPrice(unitPrice)}
