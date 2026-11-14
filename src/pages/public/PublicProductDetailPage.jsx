@@ -13,7 +13,6 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
-import shopData from '../../mocks/modules/public-shop.json';
 import { publicShopService } from '../../api/services.js';
 
 // Formater les prix en FCFA
@@ -27,58 +26,52 @@ export default function PublicProductDetailPage() {
   const { slug, id } = useParams();
 
   const [product, setProduct] = useState(null);
-  const [shop, setShop] = useState(shopData.shop);
+  const [shop, setShop] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedPhoto, setSelectedPhoto] = useState('');
   const [selectedPackaging, setSelectedPackaging] = useState('detail');
   const [imageError, setImageError] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Chargement des informations du produit
+  // Chargement des informations réelles du produit et de la boutique
   useEffect(() => {
     let isMounted = true;
+    setLoading(true);
+    setError(null);
+    setSelectedPackaging('detail');
 
-    const loadProduct = async () => {
-      setLoading(true);
-
-      // Données de secours provenant du mock
-      const mockProduct = shopData.publicProducts.find(
-        (item) => item.id === id
-      );
-
-      if (isMounted) {
-        setShop(shopData.shop);
-        setProduct(mockProduct || null);
-        setSelectedPhoto(
-          mockProduct?.photos?.[0] || mockProduct?.photoUrl || ''
-        );
-        setLoading(false);
-      }
-
-      // Tentative de récupération depuis l'API
+    const loadData = async () => {
       try {
-        const response = await publicShopService.getProductDetail(slug, id);
+        const [shopRes, productRes] = await Promise.all([
+          publicShopService.getShop(slug),
+          publicShopService.getProductById(slug, id),
+        ]);
 
-        const result = response?.product || response?.data?.product || response?.data || response;
+        if (!isMounted) return;
 
-        const apiProduct = result?.id ? result : null;
+        setShop(shopRes);
 
-        if (isMounted && apiProduct) {
-          setProduct(apiProduct);
-          setSelectedPhoto(
-            apiProduct.photos?.[0] || apiProduct.photoUrl || ''
-          );
-
-          if (result.shop) {
-            setShop(result.shop);
-          }
+        const loadedProduct = productRes?.product || productRes?.data?.product || productRes?.data || productRes;
+        if (loadedProduct?.id) {
+          setProduct(loadedProduct);
+          const firstImg = loadedProduct.photos?.[0] || loadedProduct.image_url || loadedProduct.photoUrl || '';
+          setSelectedPhoto(firstImg);
+        } else {
+          setProduct(null);
+          setError('Article introuvable');
         }
-      } catch (error) {
-        // Le mock reste disponible si l'API n'est pas encore prête.
-        console.warn('Impossible de charger le produit depuis l’API :', error);
+      } catch (err) {
+        if (!isMounted) return;
+        setError(err.status === 404 ? 'Produit introuvable' : 'Impossible de contacter le serveur.');
+        setProduct(null);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
-    loadProduct();
+    loadData();
 
     return () => {
       isMounted = false;
@@ -139,14 +132,22 @@ export default function PublicProductDetailPage() {
   ];
 
   const selectedPrice =
-    product.packaging?.[selectedPackaging]?.price ?? product.publicPrice;
+    product.packaging?.[selectedPackaging]?.price ??
+    product.base_price ??
+    product.publicPrice ??
+    0;
+
+  const currentPackagingLabel =
+    packagingOptions.find((opt) => opt.key === selectedPackaging)?.label || 'Détail';
 
   // Construire le lien WhatsApp
-  const phone = (shop.whatsapp || '').replace(/\D/g, '');
+  const phone = (shop?.whatsapp || '').replace(/\D/g, '');
 
-  const message = `Bonjour ${shop.name}, je souhaite commander l'article "${product.name}" au prix de ${selectedPrice} FCFA. Est-il disponible ?`;
+  const message = `Bonjour ${shop?.name || ''}, je souhaite commander l'article "${product.name}" (${currentPackagingLabel}) au prix de ${formatFCFA(selectedPrice)}. Est-il disponible ?`;
 
-  const whatsappLink = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  const whatsappLink = phone
+    ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+    : '#';
 
   return (
     <div className="min-h-screen bg-slate-50 pb-28">
