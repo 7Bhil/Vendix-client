@@ -15,6 +15,15 @@ const formatPrice = (price) =>
 
 const RECEIPT_FORMAT_KEY = "vendix_receipt_paper_format";
 const AUTO_PRINT_KEY = "vendix_receipt_auto_print";
+const MERCHANT_SETTINGS_KEY = "vendix_merchant_settings";
+
+function readMerchantSettings() {
+  try {
+    return JSON.parse(localStorage.getItem(MERCHANT_SETTINGS_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
 
 export default function ReceiptModal({
   isOpen,
@@ -23,8 +32,14 @@ export default function ReceiptModal({
   shopName = "Ma boutique Vendix",
   autoPrintEnabled = false,
 }) {
+  const [merchantSettings, setMerchantSettings] = useState(readMerchantSettings);
+
   // Format de papier : '58mm' ou '80mm'
   const [paperFormat, setPaperFormat] = useState(() => {
+    const configuredWidth = readMerchantSettings().receiptWidth;
+    if (configuredWidth === "58" || configuredWidth === "80") {
+      return `${configuredWidth}mm`;
+    }
     try {
       return localStorage.getItem(RECEIPT_FORMAT_KEY) || "80mm";
     } catch {
@@ -45,6 +60,12 @@ export default function ReceiptModal({
     setPaperFormat(format);
     try {
       localStorage.setItem(RECEIPT_FORMAT_KEY, format);
+      const updatedSettings = {
+        ...readMerchantSettings(),
+        receiptWidth: format.replace("mm", ""),
+      };
+      localStorage.setItem(MERCHANT_SETTINGS_KEY, JSON.stringify(updatedSettings));
+      setMerchantSettings(updatedSettings);
     } catch {
       // Ignoré
     }
@@ -67,6 +88,7 @@ export default function ReceiptModal({
     sale.changeAmount ?? Math.max(receivedAmount - totalAmount, 0)
   );
   const balanceDue = Number(sale.remainingAmount ?? sale.balanceDue ?? 0);
+  const displayedShopName = merchantSettings.name || shopName;
 
   const saleDateFormatted = useMemo(() => {
     const d = sale.date ? new Date(sale.date) : new Date();
@@ -94,7 +116,7 @@ export default function ReceiptModal({
 
   const handleShareWhatsApp = () => {
     const text = encodeURIComponent(
-      `Reçu ${sale.receiptNumber || "VENDIX"}\nBoutique: ${shopName}\nTotal: ${formatPrice(
+      `Reçu ${sale.receiptNumber || "VENDIX"}\nBoutique: ${displayedShopName}\nTotal: ${formatPrice(
         totalAmount
       )}\nPayé: ${formatPrice(receivedAmount)}${
         balanceDue > 0 ? `\nReste dû: ${formatPrice(balanceDue)}` : ""
@@ -165,7 +187,8 @@ export default function ReceiptModal({
             <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-vendix-brand">
               <Store size={24} />
             </div>
-            <h2 className="text-xl font-black text-slate-900">{shopName}</h2>
+            <h2 className="text-xl font-black text-slate-900">{displayedShopName}</h2>
+            {merchantSettings.receiptHeader && <p className="mt-1 text-xs text-slate-600">{merchantSettings.receiptHeader}</p>}
             <p className="text-xs text-slate-500">Reçu de vente officiel</p>
 
             <div className="my-3 flex items-center justify-center gap-1.5 text-emerald-700">
@@ -266,7 +289,7 @@ export default function ReceiptModal({
 
             {/* Pied */}
             <div className="mt-4 border-t border-dashed border-slate-300 pt-3 text-center">
-              <p className="text-xs font-bold text-slate-800">Merci de votre confiance !</p>
+              <p className="text-xs font-bold text-slate-800">{merchantSettings.receiptFooter || "Merci de votre confiance !"}</p>
               <p className="mt-2 text-[10px] font-black tracking-widest text-vendix-brand">
                 POWERED BY VENDIX
               </p>

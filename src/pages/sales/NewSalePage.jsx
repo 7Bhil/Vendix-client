@@ -297,11 +297,13 @@ export default function NewSalePage() {
       />
 
       {/* Modale de Reçu */}
-      <ReceiptModal
-        isOpen={isReceiptOpen}
-        onClose={handleCloseReceipt}
-        sale={completedSale || {}}
-      />
+      {isReceiptOpen && (
+        <ReceiptModal
+          isOpen={isReceiptOpen}
+          onClose={handleCloseReceipt}
+          sale={completedSale || {}}
+        />
+      )}
     </div>
   );
 }
