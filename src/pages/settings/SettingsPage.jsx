@@ -108,7 +108,7 @@ const actionClass = "inline-flex min-h-10 items-center justify-center gap-2 roun
 const primaryActionClass = "inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-emerald-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const toast = useToast();
   const logoInputRef = useRef(null);
   const [activeTab, setActiveTab] = useState("identity");
@@ -143,6 +143,17 @@ export default function SettingsPage() {
     setIsSaving(true);
     try {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+
+      // Synchroniser le nom de la boutique dans la session active et le localStorage
+      if (settings.name && settings.name !== user?.shopName) {
+        const storedUser = readJson("vendix_active_user", user || {});
+        const updatedUser = { ...storedUser, shopName: settings.name };
+        localStorage.setItem("vendix_active_user", JSON.stringify(updatedUser));
+        if (typeof setUser === "function") {
+          setUser(updatedUser);
+        }
+      }
+
       toast.success("Réglages enregistrés sur cet appareil.", "Paramètres sauvegardés");
     } catch {
       toast.error("Le stockage local est plein ou indisponible.", "Enregistrement impossible");
