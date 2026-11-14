@@ -339,30 +339,70 @@ export const cashService = {
   },
 };
 
+
 export const publicShopService = {
+  // Récupérer les informations publiques d'une boutique
   getShop(slug) {
-    return api.get(`/public/shop/${slug}`, { isPublic: true });
+    return api.get(`/public/shop/${slug}`, {
+      isPublic: true,
+    });
   },
 
+  // Alias pour récupérer une boutique par son slug
   getBySlug(slug) {
-    return api.get(`/public/shop/${slug}`, { isPublic: true });
+    return api.get(`/public/shop/${slug}`, {
+      isPublic: true,
+    });
   },
 
+  // Récupérer les produits publics d'une boutique
   getProducts(slug, params = {}) {
     const query = new URLSearchParams();
+
     if (params.limit) query.append('limit', String(params.limit));
     if (params.offset) query.append('offset', String(params.offset));
     if (params.search) query.append('search', params.search);
     if (params.categoryId) query.append('categoryId', params.categoryId);
+
     const qs = query.toString();
-    return api.get(`/public/shop/${slug}/products${qs ? `?${qs}` : ''}`, { isPublic: true });
+
+    return api.get(
+      `/public/shop/${slug}/products${qs ? `?${qs}` : ''}`,
+      { isPublic: true }
+    );
   },
 
+  // Récupérer un produit par son identifiant
   getProductById(slug, productId) {
-    return api.get(`/public/shop/${slug}/products/${productId}`, { isPublic: true });
+    return api.get(
+      `/public/shop/${slug}/products/${productId}`,
+      { isPublic: true }
+    );
   },
 
+  // Nouvelle méthode : récupérer les détails d'un produit public
+  getProductDetail(slug, productId) {
+    return api.get(
+      `/public/shop/${slug}/products/${productId}`,
+      { isPublic: true }
+    );
+  },
+
+  // Enregistrer une visite sur la boutique
   trackVisit(slug, payload = {}) {
-    return api.post(`/public/shop/${slug}/track-visit`, payload, { isPublic: true });
+    return api.post(
+      `/public/shop/${slug}/track-visit`,
+      payload,
+      { isPublic: true }
+    );
+  },
+
+  // Nouvelle méthode : soumettre un signalement citoyen
+  submitReport(payload) {
+    return api.post(
+      '/public/reports',
+      payload,
+      { isPublic: true }
+    );
   },
 };
