@@ -9,6 +9,7 @@ import NewProductPage from '../pages/products/NewProductPage.jsx';
 import CustomerListPage from '../pages/customers/CustomerListPage.jsx';
 import CustomerDetailPage from '../pages/customers/CustomerDetailPage.jsx';
 import NewCustomerPage from '../pages/customers/NewCustomerPage.jsx';
+import SettingsPage from '../pages/settings/SettingsPage.jsx';
 
 // Modules réservés aux 4 collaborateurs de l'équipe
 import StockListPage from '../pages/stock/StockListPage.jsx';
@@ -20,9 +21,12 @@ import NewPurchasePage from '../pages/suppliers/NewPurchasePage.jsx';
 import CashClosurePage from '../pages/cash/CashClosurePage.jsx';
 import NewExpensePage from '../pages/expenses/NewExpensePage.jsx';
 
-function withLayout(Component) {
+const MERCHANT_ROLES = ['MERCHANT', 'ADMIN'];
+const SELLER_ROLES = [...MERCHANT_ROLES, 'VENDEUR'];
+
+function withLayout(Component, allowedRoles = MERCHANT_ROLES) {
   return (
-    <ProtectedRoute>
+    <ProtectedRoute allowedRoles={allowedRoles}>
       <AppLayout>
         <Component />
       </AppLayout>
@@ -35,7 +39,7 @@ export const appRoutes = [
   <Route key="dashboard" path="/app/dashboard" element={withLayout(DashboardPage)} />,
 
   // 2. Caisse & Ventes (POS)
-  <Route key="sales-new" path="/app/sales/new" element={withLayout(NewSalePage)} />,
+  <Route key="sales-new" path="/app/sales/new" element={withLayout(NewSalePage, SELLER_ROLES)} />,
 
   // 3. Produits & Catalogue
   <Route key="products-list" path="/app/products" element={withLayout(ProductListPage)} />,
@@ -53,8 +57,8 @@ export const appRoutes = [
   // 5. Modules des 4 collaborateurs (Chacun travaille dans sa page dédiée)
   // =========================================================================
   // Collaborateur 1 : Stock & Mouvements (feature/stock-management)
-  <Route key="collab-stock" path="/app/stock" element={withLayout(StockListPage)} />,
-  <Route key="collab-stock-movements" path="/app/stock/movements" element={withLayout(StockMovementsPage)} />,
+  <Route key="collab-stock" path="/app/stock" element={withLayout(StockListPage, SELLER_ROLES)} />,
+  <Route key="collab-stock-movements" path="/app/stock/movements" element={withLayout(StockMovementsPage, SELLER_ROLES)} />,
 
   // Collaborateur 2 : Dépenses & Frais (feature/expenses-tracking)
 <Route
@@ -75,4 +79,6 @@ export const appRoutes = [
     path="/app/reports"
     element={withLayout(() => <CashClosurePage reportsOnly />)}
   />,
+
+  <Route key="merchant-settings" path="/app/settings" element={withLayout(SettingsPage)} />,
 ];
