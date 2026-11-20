@@ -272,6 +272,28 @@ describe('Client HTTP & Services API (Vendix Contracts)', () => {
   });
 
   describe('salesService (Caisse & POS)', () => {
+    it('demande le résumé consolidé des ventes sur une période', async () => {
+      let requestedUrl = null;
+      globalThis.fetch = vi.fn().mockImplementation((url) => {
+        requestedUrl = url;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: () => Promise.resolve({ total_revenue: 12500 }),
+        });
+      });
+
+      await salesService.getSummary({
+        startDate: '2026-11-01T00:00:00.000Z',
+        endDate: '2026-11-30T23:59:59.999Z',
+      });
+
+      expect(requestedUrl).toContain(
+        '/sales/summary?startDate=2026-11-01T00%3A00%3A00.000Z&endDate=2026-11-30T23%3A59%3A59.999Z',
+      );
+    });
+
     it('transmet les lignes de vente avec snapshots d’unités et de prix', async () => {
       let payloadSent = null;
       globalThis.fetch = vi.fn().mockImplementation((url, opts) => {
@@ -351,6 +373,28 @@ describe('Client HTTP & Services API (Vendix Contracts)', () => {
   });
 
   describe('expensesService & cashService (Trésorerie & Clôture de Caisse)', () => {
+    it('expensesService.getSummary ne récupère qu’un élément tout en demandant le cumul de la période', async () => {
+      let requestedUrl = null;
+      globalThis.fetch = vi.fn().mockImplementation((url) => {
+        requestedUrl = url;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: () => Promise.resolve({ summary: { total_amount: 2500 }, data: [] }),
+        });
+      });
+
+      await expensesService.getSummary({
+        startDate: '2026-11-01T00:00:00.000Z',
+        endDate: '2026-11-30T23:59:59.999Z',
+      });
+
+      expect(requestedUrl).toContain('page=1&limit=1');
+      expect(requestedUrl).toContain('startDate=2026-11-01T00%3A00%3A00.000Z');
+      expect(requestedUrl).toContain('endDate=2026-11-30T23%3A59%3A59.999Z');
+    });
+
     it('expensesService.getAll transmet les query params corrects', async () => {
       let requestedUrl = null;
       globalThis.fetch = vi.fn().mockImplementation((url) => {

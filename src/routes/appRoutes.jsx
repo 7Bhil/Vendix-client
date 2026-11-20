@@ -20,6 +20,7 @@ import SupplierDetailPage from '../pages/suppliers/SupplierDetailPage.jsx';
 import NewPurchasePage from '../pages/suppliers/NewPurchasePage.jsx';
 import CashClosurePage from '../pages/cash/CashClosurePage.jsx';
 import NewExpensePage from '../pages/expenses/NewExpensePage.jsx';
+import ReportsPage from '../pages/reports/ReportsPage.jsx';
 
 const MERCHANT_ROLES = ['MERCHANT', 'ADMIN'];
 const SELLER_ROLES = [...MERCHANT_ROLES, 'VENDEUR'];
@@ -77,7 +78,7 @@ export const appRoutes = [
   <Route
     key="collab-reports"
     path="/app/reports"
-    element={withLayout(() => <CashClosurePage reportsOnly />)}
+    element={withLayout(ReportsPage)}
   />,
 
   <Route key="merchant-settings" path="/app/settings" element={withLayout(SettingsPage)} />,
