@@ -6,6 +6,7 @@ import {
   CircleDollarSign,
   Package,
   ReceiptText,
+  RefreshCw,
   TrendingDown,
   TrendingUp,
 } from 'lucide-react';
@@ -57,7 +58,7 @@ function parseAmount(value, label) {
   return amount;
 }
 
-function MetricCard({ icon: Icon, label, value, tone }) {
+function MetricCard({ icon: Icon, label, value, tone, loading }) {
   const tones = {
     blue: 'bg-blue-50 text-vendix-brand',
     green: 'bg-emerald-50 text-emerald-700',
@@ -69,11 +70,18 @@ function MetricCard({ icon: Icon, label, value, tone }) {
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold text-slate-500 sm:text-sm">{label}</p>
-          <p className="mt-2 break-words text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
-            {formatCurrency(value)}
-          </p>
+          {loading ? (
+            <div
+              aria-hidden="true"
+              className="mt-2 h-7 w-32 animate-pulse rounded-lg bg-slate-200 sm:h-8"
+            />
+          ) : (
+            <p className="mt-2 break-words text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
+              {formatCurrency(value)}
+            </p>
+          )}
         </div>
         <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tones[tone]}`}>
           <Icon size={20} aria-hidden="true" />
@@ -85,6 +93,7 @@ function MetricCard({ icon: Icon, label, value, tone }) {
 
 export default function ReportsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState('today');
+  const [reloadKey, setReloadKey] = useState(0);
   const [report, setReport] = useState(INITIAL_REPORT);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -110,13 +119,20 @@ export default function ReportsPage() {
 
         const grossProfit = parseAmount(sales.gross_profit, 'marge brute');
         const expenseAmount = parseAmount(expenseTotal, 'dépenses');
+        const topProducts = sales.top_products.map((product) => ({
+          product_id: product.product_id,
+          name: product.name,
+          quantity: parseAmount(product.quantity, 'quantité vendue'),
+          revenue: parseAmount(product.revenue, 'ventes produit'),
+        }));
+
         const nextReport = {
           revenue: parseAmount(sales.total_revenue, "chiffre d'affaires"),
           costOfGoodsSold: parseAmount(sales.cost_of_goods_sold, 'coût des marchandises'),
           grossProfit,
           expenses: expenseAmount,
           netProfit: grossProfit - expenseAmount,
-          topProducts: sales.top_products,
+          topProducts,
         };
 
         if (isCurrentRequest) setReport(nextReport);
@@ -133,7 +149,7 @@ export default function ReportsPage() {
     return () => {
       isCurrentRequest = false;
     };
-  }, [selectedPeriod]);
+  }, [selectedPeriod, reloadKey]);
 
   const metrics = [
     { label: "Chiffre d'affaires", value: report.revenue, icon: Banknote, tone: 'blue' },
@@ -201,20 +217,43 @@ export default function ReportsPage() {
         className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5"
       >
         {metrics.map((metric) => (
-          <MetricCard key={metric.label} {...metric} />
+          <MetricCard key={metric.label} {...metric} loading={loading} />
         ))}
       </section>
 
       {loading && (
-        <p role="status" className="text-sm font-medium text-slate-500">
-          Chargement du rapport...
-        </p>
+        <section
+          role="status"
+          aria-label="Chargement des meilleures ventes"
+          className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+        >
+          <div className="space-y-3">
+            <div className="h-5 w-48 animate-pulse rounded bg-slate-200" />
+            <div className="h-10 w-full animate-pulse rounded-lg bg-slate-100" />
+            <div className="h-10 w-full animate-pulse rounded-lg bg-slate-100" />
+            <div className="h-10 w-full animate-pulse rounded-lg bg-slate-100" />
+          </div>
+          <span className="sr-only">Chargement du rapport...</span>
+        </section>
       )}
 
       {error && (
-        <section role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-5">
-          <h2 className="font-bold text-rose-900">Rapport indisponible</h2>
-          <p className="mt-1 text-sm text-rose-800">{error}</p>
+        <section
+          role="alert"
+          className="flex flex-col gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-5 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div>
+            <h2 className="font-bold text-rose-900">Rapport indisponible</h2>
+            <p className="mt-1 text-sm text-rose-800">{error}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setReloadKey((prev) => prev + 1)}
+            className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-900 transition-colors hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+          >
+            <RefreshCw size={16} aria-hidden="true" />
+            Réessayer
+          </button>
         </section>
       )}
 
@@ -251,10 +290,10 @@ export default function ReportsPage() {
                     <tr key={product.product_id}>
                       <td className="px-5 py-3 font-semibold text-slate-800">{product.name}</td>
                       <td className="px-5 py-3 text-right text-slate-600">
-                        {Number(product.quantity).toLocaleString('fr-FR')}
+                        {product.quantity.toLocaleString('fr-FR')}
                       </td>
                       <td className="whitespace-nowrap px-5 py-3 text-right font-bold text-slate-800">
-                        {formatCurrency(parseAmount(product.revenue, 'ventes produit'))}
+                        {formatCurrency(product.revenue)}
                       </td>
                     </tr>
                   ))}
