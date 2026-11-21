@@ -408,7 +408,7 @@ export default function NewPurchasePage() {
                 <input
                   type="tel"
                   required
-                  placeholder="Ex: +22997000000"
+                  placeholder="Ex: +2290197000000"
                   value={newSupplierPhone}
                   onChange={(e) => setNewSupplierPhone(e.target.value)}
                   className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"

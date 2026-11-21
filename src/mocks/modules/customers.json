@@ -3,7 +3,7 @@
     {
       "id": "c-01",
       "fullName": "Mme Clarisse Dossou",
-      "phone": "+22996112233",
+      "phone": "+2290196112233",
       "address": "Dantokpa, Allée 4",
       "currentDebt": 14300,
       "oldestDebtDate": "2026-10-17T14:30:00Z",
@@ -18,7 +18,7 @@
     {
       "id": "c-02",
       "fullName": "M. Paul Agbodjan",
-      "phone": "+22995445566",
+      "phone": "+2290195445566",
       "address": "Akpakpa, Cotonou",
       "currentDebt": 0,
       "oldestDebtDate": null,

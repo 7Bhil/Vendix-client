@@ -4,7 +4,6 @@ export const phoneUtils = {
   /**
    * Normalise un numéro en format E.164 béninois ou international (+229...)
    * Ex: "0197000001" -> "+2290197000001"
-   * Ex: "97000001" -> "+22997000001"
    * Ex: "+2290197000001" -> "+2290197000001"
    */
   toE164(phone, defaultCountryCode = '+229') {
