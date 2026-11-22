@@ -340,6 +340,17 @@ export const cashService = {
 };
 
 
+export const commerceService = {
+  getCommerce() {
+    return api.get('/commerce');
+  },
+
+  updateCommerce(payload) {
+    return api.patch('/commerce', payload);
+  },
+};
+
+
 export const publicShopService = {
   // Récupérer les informations publiques d'une boutique
   getShop(slug) {

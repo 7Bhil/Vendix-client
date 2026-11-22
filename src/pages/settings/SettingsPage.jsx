@@ -16,8 +16,10 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { useToast } from "../../context/ToastContext.jsx";
+import { commerceService } from "../../api/services.js";
 
 const SETTINGS_KEY = "vendix_merchant_settings";
+const PENDING_SYNC_KEY = "vendix_pending_commerce_settings";
 const TEAM_KEY = "vendix_merchant_vendors";
 const DEFAULT_SETTINGS = {
   name: "",
@@ -57,6 +59,24 @@ function loadSettings(user) {
     primaryColor: saved.primaryColor || onboarding.primaryColor || DEFAULT_SETTINGS.primaryColor,
     secondaryColor: saved.secondaryColor || onboarding.secondaryColor || DEFAULT_SETTINGS.secondaryColor,
     ...saved,
+  };
+}
+
+
+function mapCommerceToSettings(commerce, currentSettings) {
+  return {
+    ...currentSettings,
+    name: commerce.name ?? currentSettings.name,
+    tagline: commerce.tagline ?? currentSettings.tagline,
+    description: commerce.description ?? currentSettings.description,
+    whatsapp: commerce.whatsapp ?? currentSettings.whatsapp,
+    logo: commerce.logoUrl ?? commerce.logo ?? currentSettings.logo,
+    primaryColor: commerce.primaryColor ?? currentSettings.primaryColor,
+    secondaryColor: commerce.secondaryColor ?? currentSettings.secondaryColor,
+    showViewsToPublic:
+      commerce.settings?.showViewsToPublic ??
+      commerce.showViewsToPublic ??
+      currentSettings.showViewsToPublic,
   };
 }
 
@@ -115,6 +135,7 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState(() => loadSettings(user));
   const [vendors, setVendors] = useState(() => readJson(TEAM_KEY, []));
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
   const [vendorForm, setVendorForm] = useState({ name: "", phone: "", credential: "" });
 
@@ -123,6 +144,48 @@ export default function SettingsPage() {
     document.documentElement.style.setProperty("--shop-secondary", settings.secondaryColor);
   }, [settings.primaryColor, settings.secondaryColor]);
 
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchSettings() {
+      try {
+        const pendingSettings = localStorage.getItem(PENDING_SYNC_KEY);
+        if (pendingSettings) {
+          return;
+        }
+        const response = await commerceService.getCommerce();
+        const commerce = response?.commerce ?? response?.data?.commerce ?? response?.data ?? response;
+
+        if (!commerce || !isMounted) return;
+
+        setSettings((currentSettings) => {
+          const updatedSettings = mapCommerceToSettings(commerce, currentSettings);
+
+          try {
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(updatedSettings));
+          } catch {
+            // Le cache local n'est pas disponible.
+          }
+
+          return updatedSettings;
+        });
+      } catch (error) {
+        console.error("Erreur lors du chargement des paramètres :", error);
+      } finally {
+        if (isMounted) {
+          setIsLoadingSettings(false);
+        }
+      }
+    }
+
+    fetchSettings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   function updateSetting(key, value) {
     setSettings((current) => ({ ...current, [key]: value }));
   }
@@ -130,37 +193,141 @@ export default function SettingsPage() {
   async function handleLogoChange(event) {
     const file = event.target.files?.[0];
     event.target.value = "";
+
     if (!file) return;
+
     try {
-      updateSetting("logo", await cropAndCompressLogo(file));
+      const response = await commerceService.uploadLogo(file);
+
+      if (!response?.logoUrl) {
+        throw new Error("L'API n'a pas retourné l'URL du logo.");
+      }
+
+      updateSetting("logo", response.logoUrl);
+      toast.success("Logo importé avec succès.");
     } catch (error) {
       toast.error(error.message, "Logo non importé");
     }
   }
 
-  function saveSettings(event) {
+
+
+  async function syncPendingSettings() {
+    const pendingSettings = localStorage.getItem(PENDING_SYNC_KEY);
+
+    if (!pendingSettings) return;
+
+    try {
+      const payload = JSON.parse(pendingSettings);
+
+      await commerceService.updateCommerce(payload);
+
+      localStorage.removeItem(PENDING_SYNC_KEY);
+
+      toast.success(
+        "Vos paramètres ont été synchronisés avec le serveur.",
+        "Synchronisation réussie"
+      );
+    } catch (error) {
+      console.error("Erreur de synchronisation :", error);
+    }
+  }
+
+
+  useEffect(() => {
+    function handleOnline() {
+      syncPendingSettings();
+    }
+
+    window.addEventListener("online", handleOnline);
+
+    // Vérifier également si une synchronisation est possible au chargement.
+    if (navigator.onLine) {
+      syncPendingSettings();
+    }
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+    };
+  }, []);
+
+
+
+
+  async function saveSettings(event) {
     event.preventDefault();
     setIsSaving(true);
-    try {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 
-      // Synchroniser le nom de la boutique dans la session active et le localStorage
+    const payload = {
+      name: settings.name,
+      tagline: settings.tagline,
+      description: settings.description,
+      whatsapp: settings.whatsapp,
+      logoUrl: settings.logo,
+      primaryColor: settings.primaryColor,
+      secondaryColor: settings.secondaryColor,
+      showViewsToPublic: settings.showViewsToPublic,
+    };
+
+    try {
+      const response = await commerceService.updateCommerce(payload);
+
+      const commerce =
+        response?.commerce ??
+        response?.data?.commerce ??
+        response?.data ??
+        response;
+
+      const updatedSettings = mapCommerceToSettings(commerce, settings);
+
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(updatedSettings));
+      localStorage.removeItem(PENDING_SYNC_KEY);
+      setSettings(updatedSettings);
+
       if (settings.name && settings.name !== user?.shopName) {
         const storedUser = readJson("vendix_active_user", user || {});
         const updatedUser = { ...storedUser, shopName: settings.name };
+
         localStorage.setItem("vendix_active_user", JSON.stringify(updatedUser));
+
         if (typeof setUser === "function") {
           setUser(updatedUser);
         }
       }
 
-      toast.success("Réglages enregistrés sur cet appareil.", "Paramètres sauvegardés");
-    } catch {
-      toast.error("Le stockage local est plein ou indisponible.", "Enregistrement impossible");
+      toast.success(
+        "Les paramètres ont été enregistrés sur le serveur.",
+        "Paramètres sauvegardés"
+      );
+    } catch (error) {
+      console.error("Erreur lors de l'enregistrement :", error);
+
+      if (error.isNetworkError) {
+        try {
+          localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+          localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(payload));
+
+          toast.error(
+            "Serveur inaccessible. Vos modifications sont conservées sur cet appareil, mais ne sont pas encore synchronisées.",
+            "Sauvegarde locale"
+          );
+        } catch {
+          toast.error(
+            "Impossible d'enregistrer les paramètres localement.",
+            "Enregistrement impossible"
+          );
+        }
+      } else {
+        toast.error(
+          error.message || "Une erreur est survenue pendant l'enregistrement.",
+          "Enregistrement impossible"
+        );
+      }
     } finally {
       setIsSaving(false);
     }
   }
+
 
   function persistVendors(nextVendors) {
     setVendors(nextVendors);
@@ -247,11 +414,10 @@ export default function SettingsPage() {
               aria-selected={activeTab === id}
               aria-controls={`settings-panel-${id}`}
               onClick={() => setActiveTab(id)}
-              className={`inline-flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-semibold transition ${
-                activeTab === id
+              className={`inline-flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-semibold transition ${activeTab === id
                   ? "border-emerald-800 text-emerald-900"
                   : "border-transparent text-slate-500 hover:text-slate-900"
-              }`}
+                }`}
             >
               <Icon size={17} />
               {label}
@@ -292,7 +458,7 @@ export default function SettingsPage() {
                     <div><h2 className="font-bold text-slate-950">Couleurs de la vitrine</h2><p className="text-xs text-slate-500">Les accents suivent ces couleurs après l’enregistrement.</p></div>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    {[ ["primaryColor", "Couleur principale"], ["secondaryColor", "Couleur secondaire"] ].map(([key, label]) => (
+                    {[["primaryColor", "Couleur principale"], ["secondaryColor", "Couleur secondaire"]].map(([key, label]) => (
                       <FormField key={key} label={label}>
                         <div className="flex items-center gap-3 rounded-lg border border-slate-300 px-3 py-2">
                           <input aria-label={label} type="color" value={settings[key]} onChange={(event) => updateSetting(key, event.target.value)} className="h-9 w-11 cursor-pointer border-0 bg-transparent p-0" />
