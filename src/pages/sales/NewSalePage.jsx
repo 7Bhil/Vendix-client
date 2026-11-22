@@ -13,6 +13,7 @@ import ReceiptModal from "../../components/sales/ReceiptModal";
 import { getProductTierPrice } from "../../utils/pricingUtils";
 import { useToast } from "../../context/ToastContext";
 import { salesService } from "../../api/services.js";
+import { savePendingSale } from "../../utils/offlineQueue";
 
 const CART_STORAGE_KEY = "vendix_pos_active_cart";
 
@@ -101,105 +102,161 @@ export default function NewSalePage() {
     }
   };
 
-  const handleConfirmPayment = async (payment) => {
-    // Mapping strict selon le contrat Prisma / Backend (PaymentMethod: CASH, MOMO, CREDIT, SPLIT)
-    let mappedPaymentMethod = 'CASH';
-    const methodUpper = String(payment.paymentMethod || '').toUpperCase();
-    if (methodUpper === 'MOMO' || methodUpper === 'MOBILE_MONEY') {
-      mappedPaymentMethod = 'MOMO';
-    } else if (methodUpper === 'CREDIT') {
-      mappedPaymentMethod = 'CREDIT';
-    } else if (methodUpper === 'SPLIT') {
-      mappedPaymentMethod = 'SPLIT';
+ 
+const handleConfirmPayment = async (payment) => {
+  // 1. Déterminer le moyen de paiement
+  let mappedPaymentMethod = 'CASH';
+  const methodUpper = String(payment.paymentMethod || '').toUpperCase();
+
+  if (methodUpper === 'MOMO' || methodUpper === 'MOBILE_MONEY') {
+    mappedPaymentMethod = 'MOMO';
+  } else if (methodUpper === 'CREDIT') {
+    mappedPaymentMethod = 'CREDIT';
+  } else if (methodUpper === 'SPLIT') {
+    mappedPaymentMethod = 'SPLIT';
+  }
+
+  // 2. Générer un identifiant unique
+  const clientOpUuid =
+    typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `op-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+  // 3. Calculer les prix après réduction
+  const discountFactor =
+    rawTotalAmount > 0 ? totalAmount / rawTotalAmount : 1;
+
+  let runningAdjustedSum = 0;
+
+  const computedLines = cart.map((item, index) => {
+    const { unitPrice, activeTier } = getProductTierPrice(item, item.quantity);
+
+    let adjustedUnitPrice = Math.round(Number(unitPrice) * discountFactor);
+
+    if (index === cart.length - 1) {
+      const remainingTarget = totalAmount - runningAdjustedSum;
+      const lastLineQty = Number(item.quantity) || 1;
+      adjustedUnitPrice = Math.max(
+        0,
+        Math.round(remainingTarget / lastLineQty)
+      );
     } else {
-      mappedPaymentMethod = 'CASH';
+      runningAdjustedSum += adjustedUnitPrice * Number(item.quantity);
     }
 
-    // Clé d'idempotence stricte UUID v4
-    const clientOpUuid = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `op-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    return {
+      product_id: item.id,
+      quantity: Number(item.quantity),
+      unit_label: activeTier?.unit || item.unit || 'Pièce',
+      conversion_factor: Number(activeTier?.conversionFactor) || 1,
+      unit_price: adjustedUnitPrice,
+    };
+  });
 
-    // Si un marchandage/rabais est consenti, on répartit proportionnellement la remise
-    // sur les lignes tout en garantissant des entiers FCFA stricts et une somme exacte.
-    const discountFactor = rawTotalAmount > 0 ? (totalAmount / rawTotalAmount) : 1;
-    let runningAdjustedSum = 0;
+  // 4. Préparer les données destinées au serveur
+  const salePayload = {
+    amount_paid: Number(payment.paidAmount) || 0,
+    payment_method: mappedPaymentMethod,
+    customer_id: payment.customerId || undefined,
+    client_op_uuid: clientOpUuid,
+    lines: computedLines,
+  };
 
-    const computedLines = cart.map((item, index) => {
+  // 5. Préparer les informations du reçu
+  let serverSale = null;
+  const receiptNumber = `VND-${Date.now()}`;
+
+  const sale = {
+    id: `sale_${Date.now()}`,
+    receiptNumber,
+    client_op_uuid: clientOpUuid,
+    date: new Date().toISOString(),
+
+    products: cart.map((item) => {
       const { unitPrice, activeTier } = getProductTierPrice(item, item.quantity);
-      let adjustedUnitPrice = Math.round(Number(unitPrice) * discountFactor);
-      
-      // Ajustement sur la dernière ligne pour combler l'écart d'arrondi
-      if (index === cart.length - 1) {
-        const remainingTarget = totalAmount - runningAdjustedSum;
-        const lastLineQty = Number(item.quantity) || 1;
-        adjustedUnitPrice = Math.max(0, Math.round(remainingTarget / lastLineQty));
-      } else {
-        runningAdjustedSum += adjustedUnitPrice * Number(item.quantity);
-      }
 
       return {
-        product_id: item.id,
-        quantity: Number(item.quantity),
-        unit_label: activeTier?.unit || item.unit || 'Pièce',
-        conversion_factor: Number(activeTier?.conversionFactor) || 1,
-        unit_price: adjustedUnitPrice,
+        id: item.id,
+        name: item.name,
+        quantity: item.quantity,
+        price: unitPrice,
+        activeTier,
+        subtotal: unitPrice * item.quantity,
       };
-    });
+    }),
 
-    const salePayload = {
-      amount_paid: Number(payment.paidAmount) || 0,
-      payment_method: mappedPaymentMethod,
-      customer_id: payment.customerId || undefined,
-      client_op_uuid: clientOpUuid,
-      lines: computedLines,
-    };
-
-    let serverSale = null;
-    try {
-      serverSale = await salesService.create(salePayload);
-    } catch (err) {
-      console.warn('Vente enregistrée en local (mode dégradé):', err?.message);
-    }
-
-    const receiptNumber = serverSale?.reference || `VND-${Date.now()}`;
-
-    const sale = {
-      id: serverSale?.id || `sale_${Date.now()}`,
-      receiptNumber,
-      client_op_uuid: clientOpUuid,
-      date: new Date().toISOString(),
-      products: cart.map((item) => {
-        const { unitPrice, activeTier } = getProductTierPrice(item, item.quantity);
-        return {
-          id: item.id,
-          name: item.name,
-          quantity: item.quantity,
-          price: unitPrice,
-          activeTier,
-          subtotal: unitPrice * item.quantity,
-        };
-      }),
-      totalAmount,
-      receivedAmount: payment.paidAmount,
-      changeAmount: payment.changeAmount,
-      remainingAmount: payment.remainingAmount,
-      paymentMethod: mappedPaymentMethod,
-      customerId: payment.customerId,
-      customerName: payment.customerName,
-      status: payment.status,
-    };
-
-    try {
-      const existingSales = JSON.parse(localStorage.getItem('vendix-custom-sales') || '[]');
-      localStorage.setItem('vendix-custom-sales', JSON.stringify([sale, ...existingSales]));
-    } catch {
-      // Ignoré si indisponible
-    }
-
-    setCompletedSale(sale);
-    setIsPaymentOpen(false);
-    setIsReceiptOpen(true);
-    success(`Vente enregistrée avec succès (${sale.receiptNumber})`, "Encaissement réussi");
+    totalAmount,
+    receivedAmount: payment.paidAmount,
+    changeAmount: payment.changeAmount,
+    remainingAmount: payment.remainingAmount,
+    paymentMethod: mappedPaymentMethod,
+    customerId: payment.customerId,
+    customerName: payment.customerName,
+    status: payment.status,
   };
+
+  // 6. Envoyer la vente au serveur ou la sauvegarder localement
+  let isPendingSync = false;
+
+  try {
+    serverSale = await salesService.create(salePayload);
+
+    sale.id = serverSale?.id || sale.id;
+    sale.receiptNumber = serverSale?.reference || sale.receiptNumber;
+    sale.syncStatus = "synced";
+
+  } catch (err) {
+    if (err.isNetworkError) {
+      await savePendingSale({
+        client_op_uuid: clientOpUuid,
+        payload: salePayload,
+        receipt: sale,
+        created_at: new Date().toISOString(),
+      });
+
+      isPendingSync = true;
+      sale.syncStatus = "pending";
+
+    } else {
+      console.error("Erreur lors de l'enregistrement de la vente :", err);
+      error("La vente n'a pas pu être enregistrée. Vérifiez les informations et réessayez.");
+      return;
+    }
+  }
+
+  // 7. Conserver l'historique local
+  try {
+    const existingSales = JSON.parse(
+      localStorage.getItem('vendix-custom-sales') || '[]'
+    );
+
+    localStorage.setItem(
+      'vendix-custom-sales',
+      JSON.stringify([sale, ...existingSales])
+    );
+  } catch {
+    // Ignoré si localStorage est indisponible
+  }
+
+  // 8. Afficher le reçu
+  setCompletedSale(sale);
+  setIsPaymentOpen(false);
+  setIsReceiptOpen(true);
+
+  // 9. Afficher la notification adaptée
+  if (isPendingSync) {
+    success(
+      "Vente enregistrée sur l'appareil. Elle sera envoyée dès le retour de la connexion.",
+      "Vente en attente de synchronisation"
+    );
+  } else {
+    success(
+      `Vente enregistrée avec succès (${sale.receiptNumber})`,
+      "Encaissement réussi"
+    );
+  }
+};
+
 
   const handleCloseReceipt = () => {
     setIsReceiptOpen(false);
