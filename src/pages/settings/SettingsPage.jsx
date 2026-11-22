@@ -447,7 +447,7 @@ export default function SettingsPage() {
                       </FormField>
                     </div>
                     <FormField label="WhatsApp officiel" hint="Numéro utilisé pour recevoir les commandes de la vitrine publique.">
-                      <input className={inputClass} type="tel" value={settings.whatsapp} onChange={(event) => updateSetting("whatsapp", event.target.value)} placeholder="+229 97 00 00 01" />
+                      <input className={inputClass} type="tel" value={settings.whatsapp} onChange={(event) => updateSetting("whatsapp", event.target.value)} placeholder="+229 01 97 00 00 01" />
                     </FormField>
                   </div>
                 </section>

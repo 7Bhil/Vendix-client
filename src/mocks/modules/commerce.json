@@ -4,7 +4,7 @@
     "name": "Boutique Le Progrès",
     "slug": "le-progres-cotonou",
     "description": "Grossiste et détaillant en vivres frais et produits alimentaires généraux à Cotonou.",
-    "whatsapp": "+22997000001",
+    "whatsapp": "+2290197000001",
     "logoUrl": "https://res.cloudinary.com/vendix/image/upload/v1/samples/logo-demo.png",
     "primaryColor": "#15803d",
     "secondaryColor": "#ca8a04",
@@ -19,7 +19,7 @@
   },
   "user": {
     "id": "usr-001",
-    "phone": "+22997000001",
+    "phone": "+2290197000001",
     "email": "commercant@leprogres.bj",
     "role": "VENDEUR",
     "status": "ACTIF"

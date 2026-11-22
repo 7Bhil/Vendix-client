@@ -4,7 +4,6 @@ export const phoneUtils = {
   /**
    * Normalise un numéro en format E.164 béninois ou international (+229...)
    * Ex: "0197000001" -> "+2290197000001"
-   * Ex: "97000001" -> "+22997000001"
    * Ex: "+2290197000001" -> "+2290197000001"
    */
   toE164(phone, defaultCountryCode = '+229') {
@@ -147,6 +146,14 @@ export const salesService = {
     return api.get(`/sales?limit=${limit}`);
   },
 
+  getSummary(params = {}) {
+    const query = new URLSearchParams();
+    if (params.startDate) query.append('startDate', params.startDate);
+    if (params.endDate) query.append('endDate', params.endDate);
+    const qs = query.toString();
+    return api.get(`/sales/summary${qs ? `?${qs}` : ''}`);
+  },
+
   getById(id) {
     return api.get(`/sales/${id}`);
   },
@@ -260,6 +267,10 @@ export const expensesService = {
     if (params.endDate) query.append('endDate', params.endDate);
     const qs = query.toString();
     return api.get(`/expenses${qs ? `?${qs}` : ''}`);
+  },
+
+  getSummary(params = {}) {
+    return this.getAll({ ...params, page: 1, limit: 1 });
   },
 
   create(expensePayload) {

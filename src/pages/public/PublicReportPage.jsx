@@ -253,7 +253,7 @@ export default function PublicReportPage() {
               type="text"
               value={shopIdentifier}
               onChange={(event) => setShopIdentifier(event.target.value)}
-              placeholder="Ex : Boutique Le Progrès ou +22997000001"
+              placeholder="Ex : Boutique Le Progrès ou +2290197000001"
               required
               className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-vendix-brand focus:ring-2 focus:ring-blue-100"
             />
@@ -343,7 +343,7 @@ export default function PublicReportPage() {
                   type="tel"
                   value={reporterPhone}
                   onChange={(event) => setReporterPhone(event.target.value)}
-                  placeholder="+229 XX XX XX XX"
+                  placeholder="+229 01 XX XX XX XX"
                   className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-vendix-brand focus:ring-2 focus:ring-blue-100"
                 />
               </div>
