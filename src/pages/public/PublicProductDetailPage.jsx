@@ -149,10 +149,17 @@ export default function PublicProductDetailPage() {
     ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
     : '#';
 
+  const brandColor = shop?.primaryColor || shop?.primary_color || 'var(--color-primary)';
+  const secondaryColor = shop?.secondaryColor || shop?.secondary_color || 'var(--color-secondary)';
+
   return (
-    <div className="min-h-screen bg-slate-50 pb-28">
+    <div
+      className="min-h-screen bg-slate-50 pb-28"
+      style={{ '--shop-primary': brandColor, '--shop-secondary': secondaryColor }}
+    >
       {/* En-tête */}
       <header className="bg-white border-b border-slate-100">
+        <div className="h-1" style={{ backgroundColor: 'var(--shop-secondary)' }} />
         <div className="max-w-6xl mx-auto px-4 py-4">
           <Link
             to={`/boutique/${slug}`}
