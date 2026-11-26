@@ -130,7 +130,7 @@ export default function NewCustomerPage() {
             <input
               type="tel"
               required
-              placeholder="Ex : +22996112233"
+              placeholder="Ex : +2290196112233"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               className="w-full rounded-xl border border-slate-300 p-2.5 text-sm outline-none focus:border-vendix-brand focus:ring-1 focus:ring-vendix-brand"

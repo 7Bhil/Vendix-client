@@ -59,8 +59,9 @@ class ApiClient {
 
   async request(endpoint, options = {}) {
     const url = `${this.baseUrl}${endpoint}`;
+    const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
     const headers = {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...options.headers,
     };
 
@@ -180,10 +181,11 @@ class ApiClient {
   }
 
   post(endpoint, body, options = {}) {
+    const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
     return this.request(endpoint, {
       ...options,
       method: 'POST',
-      body: JSON.stringify(body),
+      body: isFormData ? body : JSON.stringify(body),
     });
   }
 

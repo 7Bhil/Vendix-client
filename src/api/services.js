@@ -4,7 +4,6 @@ export const phoneUtils = {
   /**
    * Normalise un numéro en format E.164 béninois ou international (+229...)
    * Ex: "0197000001" -> "+2290197000001"
-   * Ex: "97000001" -> "+22997000001"
    * Ex: "+2290197000001" -> "+2290197000001"
    */
   toE164(phone, defaultCountryCode = '+229') {
@@ -147,6 +146,14 @@ export const salesService = {
     return api.get(`/sales?limit=${limit}`);
   },
 
+  getSummary(params = {}) {
+    const query = new URLSearchParams();
+    if (params.startDate) query.append('startDate', params.startDate);
+    if (params.endDate) query.append('endDate', params.endDate);
+    const qs = query.toString();
+    return api.get(`/sales/summary${qs ? `?${qs}` : ''}`);
+  },
+
   getById(id) {
     return api.get(`/sales/${id}`);
   },
@@ -262,6 +269,10 @@ export const expensesService = {
     return api.get(`/expenses${qs ? `?${qs}` : ''}`);
   },
 
+  getSummary(params = {}) {
+    return this.getAll({ ...params, page: 1, limit: 1 });
+  },
+
   create(expensePayload) {
     const body = {
       amount: Math.round(Number(expensePayload.amount)),
@@ -339,30 +350,81 @@ export const cashService = {
   },
 };
 
+
+export const commerceService = {
+  getCommerce() {
+    return api.get('/commerce');
+  },
+
+  updateCommerce(payload) {
+    return api.patch('/commerce', payload);
+  },
+};
+
+
 export const publicShopService = {
+  // Récupérer les informations publiques d'une boutique
   getShop(slug) {
-    return api.get(`/public/shop/${slug}`, { isPublic: true });
+    return api.get(`/public/shop/${slug}`, {
+      isPublic: true,
+    });
   },
 
+  // Alias pour récupérer une boutique par son slug
   getBySlug(slug) {
-    return api.get(`/public/shop/${slug}`, { isPublic: true });
+    return api.get(`/public/shop/${slug}`, {
+      isPublic: true,
+    });
   },
 
+  // Récupérer les produits publics d'une boutique
   getProducts(slug, params = {}) {
     const query = new URLSearchParams();
+
     if (params.limit) query.append('limit', String(params.limit));
     if (params.offset) query.append('offset', String(params.offset));
     if (params.search) query.append('search', params.search);
     if (params.categoryId) query.append('categoryId', params.categoryId);
+
     const qs = query.toString();
-    return api.get(`/public/shop/${slug}/products${qs ? `?${qs}` : ''}`, { isPublic: true });
+
+    return api.get(
+      `/public/shop/${slug}/products${qs ? `?${qs}` : ''}`,
+      { isPublic: true }
+    );
   },
 
+  // Récupérer un produit par son identifiant
   getProductById(slug, productId) {
-    return api.get(`/public/shop/${slug}/products/${productId}`, { isPublic: true });
+    return api.get(
+      `/public/shop/${slug}/products/${productId}`,
+      { isPublic: true }
+    );
   },
 
+  // Nouvelle méthode : récupérer les détails d'un produit public
+  getProductDetail(slug, productId) {
+    return api.get(
+      `/public/shop/${slug}/products/${productId}`,
+      { isPublic: true }
+    );
+  },
+
+  // Enregistrer une visite sur la boutique
   trackVisit(slug, payload = {}) {
-    return api.post(`/public/shop/${slug}/track-visit`, payload, { isPublic: true });
+    return api.post(
+      `/public/shop/${slug}/track-visit`,
+      payload,
+      { isPublic: true }
+    );
+  },
+
+  // Nouvelle méthode : soumettre un signalement citoyen
+  submitReport(payload) {
+    return api.post(
+      '/public/reports',
+      payload,
+      { isPublic: true }
+    );
   },
 };
